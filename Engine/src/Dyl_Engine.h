@@ -3,6 +3,7 @@
 #include "dyl_lib.h"
 #include "renderer/Dyl_Renderer.h"
 #include "Window/dyl_window.h"
+#include "Events/dyl_events.h"
  
 
 #ifdef USING_SDL
@@ -31,6 +32,7 @@ typedef struct Engine
 {
 	Dyl_Window* window;
 	Renderer2D* renderer;
+	Dyl_Event* event;
 
 	
 }Engine;

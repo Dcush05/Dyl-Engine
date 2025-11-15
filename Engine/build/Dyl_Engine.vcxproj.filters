@@ -1,46 +1,49 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Dyl_Engine.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Dyl_Engine.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\Dyl_Renderer.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Events\dyl_events.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\Model.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Dyl_Renderer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\Shader.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Model.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\Sprite.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Shader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\Texture.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Sprite.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\camera.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Texture.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\mesh.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\camera.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Renderer\terrain.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\mesh.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\Window\dyl_window.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\terrain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\src\glad.c">
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Window\dyl_window.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\CMakeLists.txt" />
+    <CustomBuild Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{6AACA323-2552-3319-8509-E90DAD3C50D1}</UniqueIdentifier>
+      <UniqueIdentifier>{E056CB90-AA56-3C14-9EAF-78F270CA436E}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

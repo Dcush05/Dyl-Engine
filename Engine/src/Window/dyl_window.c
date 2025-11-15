@@ -16,6 +16,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, 
 	window->height = height;
 	window->window_flags = window_flags;
 	window->window_name = write_string(window_name);
+	window->is_window_open = true;
 
 	#ifdef USING_SDL	
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -43,7 +44,7 @@ void window_start(Dyl_Window* window)
 		SDL_GL_MakeCurrent(window->window_handle, window->gl_context);
 	#endif
 
-	glClearColor(1.0,1.0,1.0,1.0);
+	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

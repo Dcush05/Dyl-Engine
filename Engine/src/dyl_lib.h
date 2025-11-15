@@ -527,12 +527,12 @@ static inline Arena arena_alloc(size_t size)
 	arena.offset = 0;
 	return arena;
 }
-static inline void *arena_push(Arena* arena, size_t size)
+static inline void* arena_push(Arena* arena, size_t size)
 {
 	
 	if(!arena || !arena->data)
 		return NULL;
-	if(arena->offset+size <= arena->length)
+	if(arena->offset + size <= arena->length)
 	{
 		void *p = &arena->data[arena->offset];
 		arena->offset += size;

@@ -2,13 +2,13 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\build\x64\Debug\ZERO_CHECK</FullPath>
+      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\x64\Debug\ZERO_CHECK</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\build\Debug\Dyl_Engine.dll</FullPath>
+      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Debug\Dyl_Engine.dll</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl Engine\Engine\build\x64\Debug\ALL_BUILD</FullPath>
+      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\x64\Debug\ALL_BUILD</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />
