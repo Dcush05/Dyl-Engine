@@ -34,10 +34,13 @@ typedef struct Engine
 	Renderer2D* renderer;
 	Dyl_Event* event;
 
+
 	
 }Engine;
 
 typedef void(*Frame_Call_Back)(Engine*);
+typedef void(*Event_Call_Back)(Engine*);
+
 
 
 ENGINE_API void engine_initialize(Engine* engine);

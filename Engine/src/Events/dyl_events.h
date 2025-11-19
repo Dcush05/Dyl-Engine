@@ -2,8 +2,9 @@
 #define DYL_EVENTS_H
 
 
+#include "../dyl_lib.h"
 
-
+#include <stdbool.h>
 #ifdef USING_SDL
 	#include <SDL3/SDL_events.h>
 	typedef SDL_Event Event_Handle;
@@ -68,6 +69,7 @@ typedef struct
 
 void dyl_event_initalize(Dyl_Event* event);
 int dyl_event_poll(Dyl_Event* event);
+bool dyl_event_key_press(Dyl_Event* event, Dyl_Key_Type type, Dyl_Key_State state);
 
 
 #endif
