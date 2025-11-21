@@ -4,6 +4,8 @@
 #include "renderer/Dyl_Renderer.h"
 #include "Window/dyl_window.h"
 #include "Events/dyl_events.h"
+#include "renderer_engine_interface.h"
+
  
 
 #ifdef USING_SDL
@@ -27,24 +29,24 @@
 extern Arena global_arena;
 
 
-//CALLBACK FUNCTIONS
 typedef struct Engine
 {
 	Dyl_Window* window;
 	Renderer2D* renderer;
 	Dyl_Event* event;
-
-
 	
 }Engine;
 
+
+
+//CALLBACK FUNCTIONS
 typedef void(*Frame_Call_Back)(Engine*);
 typedef void(*Event_Call_Back)(Engine*);
 
 
 
 ENGINE_API void engine_initialize(Engine* engine);
-ENGINE_API void engine_run(Engine* engine, Frame_Call_Back callback);
+ENGINE_API void engine_run(Engine* engine, Frame_Call_Back frame_callback, Event_Call_Back event_callback);
 ENGINE_API void engine_shutdown(Engine* engine);
 
 

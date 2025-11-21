@@ -42,6 +42,7 @@ typedef enum
 	DYLKEY_X,
 	DYLKEY_Y,
 	DYLKEY_Z,
+
 	DYL_KEY_AMOUNT,
 
 	
@@ -51,14 +52,16 @@ typedef enum
 typedef enum
 {
 	DYL_KEY_PRESSED,
-	DYL_KEY_RELEASED
-}Dyl_Key_State;
+	DYL_KEY_RELEASED,
+	DYL_SYS_QUIT,
+	DYL_SYS_RESIZE,
+}Dyl_Event_State;
 
 
 typedef struct
 {
 	Dyl_Key_Type key_type;
-	Dyl_Key_State key_state;
+	Dyl_Event_State key_state;
 }Dyl_Key;
 typedef struct
 {
@@ -69,7 +72,8 @@ typedef struct
 
 void dyl_event_initalize(Dyl_Event* event);
 int dyl_event_poll(Dyl_Event* event);
-bool dyl_event_key_press(Dyl_Event* event, Dyl_Key_Type type, Dyl_Key_State state);
+bool dyl_event_window_dispatch(Dyl_Event* event, Dyl_Event_State state);
+bool dyl_event_key_press(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state);
 
 
 #endif

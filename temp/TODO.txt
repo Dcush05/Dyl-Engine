@@ -1,0 +1,12 @@
+------ENGINE TODO LIST------
+
+
+#DONE:
+
+
+#STARTED:
+
+#TODO LIST:	
+	Setup better debug and logging system
+	Setup entity system and be able to interface with the system in the editor
+	Editor Ui implementation

@@ -67,7 +67,7 @@ typedef uint64_t u64_d;
 #define COLOR_GREEN 0,255,0,255
 #define COLOR_WHITE 255,255,255,255
 //COLOR
-typedef struct {int r,g,b,a; }Color;
+typedef struct {float r,g,b,a; }Color;
 //vectors
 typedef struct {int x, y;} vec2i;
 typedef struct {float x, y;} vec2f;
