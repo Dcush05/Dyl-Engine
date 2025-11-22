@@ -25,7 +25,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 		dyl_profiler_add("programclose");
 
-		dyl_profiler_add("arena_alloc1");			
+		dyl_profiler_start("arena_alloc1");			
 		global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE);	
 		dyl_profiler_end("arena_alloc1");			
 		dyl_profiler_print_func("arena_alloc1");
