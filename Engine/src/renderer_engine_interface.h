@@ -5,9 +5,9 @@
 
 
 #ifdef ENGINE_EXPORTS
-#define ENGINE_RENDERER_API __declspec(dllexport)
+	#define ENGINE_RENDERER_API __declspec(dllexport)
 #else
-#define ENGINE_RENDERER_API __declspec(dllimport)
+	#define ENGINE_RENDERER_API __declspec(dllimport)
 #endif
 typedef enum
 {

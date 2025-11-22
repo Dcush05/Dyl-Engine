@@ -15,6 +15,7 @@ int main(void)
 {
 	//TTEST
 	Engine engine;
+	Dyl_App_Print_Log("Hello world i am %d\n", 5);
 	engine_initialize(&engine);
 	engine_run(&engine, frame_scene_callback, event_scene_callback);
 	engine_shutdown(&engine);
