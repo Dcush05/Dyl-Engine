@@ -1,4 +1,5 @@
 #include "Core/dyl_profiler.h"
+#include "Core/entity_manager.h"
 #include "Events/dyl_events.h"
 #include "Renderer/Dyl_Renderer.h"
 #include "cglm/types.h"
@@ -12,6 +13,7 @@
 #include "Core/dyl_profiler.h"
 
 Arena global_arena;
+Arena entity_arena;
 
 
 ENGINE_API void engine_initialize(Engine* engine)
@@ -44,6 +46,8 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_profiler_print_func("window+renderer setup");
 	engine->event = (Dyl_Event*)arena_push(&global_arena, sizeof(Dyl_Event));
 	dyl_event_initalize(engine->event);
+	entity_arena = arena_alloc(sizeof(Entity_Manager) * MAX_ENTITY_COUNT * MAX_ENTITY_COUNT);
+	entity_manager_initialize(&engine->manager, &entity_arena);
 
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
@@ -54,11 +58,12 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 
 
-ENGINE_API void engine_run(Engine* engine, Frame_Call_Back frame_callback, Event_Call_Back event_callback)
+
+ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_callback, Frame_Call_Back frame_callback, Event_Call_Back event_callback)
 {
-	printf("Meow");
 	ASSERT(frame_callback, "Please setup a frame call back function");
 
+	entity_scene_callback(engine);	
 
 	while(engine->window->is_window_open)
 	{
@@ -81,10 +86,11 @@ ENGINE_API void engine_run(Engine* engine, Frame_Call_Back frame_callback, Event
 				event_callback(engine);
 		}
 		window_start(engine->window);
-	//	dyl_profiler_start("frame_callback");
+		dyl_profiler_start("frame_callback");
 		frame_callback(engine);
-	//	dyl_profiler_end("frame_callback");
-	//	dyl_profiler_print_func("frame_callback");
+	//	entity_manager_render(engine->renderer, &engine->manager);
+		dyl_profiler_end("frame_callback");
+		dyl_profiler_print_func("frame_callback");
 		window_end(engine->window);
 	}
 }
@@ -133,6 +139,7 @@ ENGINE_API void engine_shutdown(Engine* engine)
 	dyl_profiler_start("programclose");
 	window_destroy(engine->window);
 	arena_free(&global_arena);
+	arena_free(&entity_arena);
 	dyl_profiler_end("programclose");
 	dyl_profiler_print_func("programclose");
 	#if LOG_CONFIGURATION == DEBUG_LOG

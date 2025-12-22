@@ -1,10 +1,11 @@
 #ifndef DYL_ENGINE_H
 #define DYL_ENGINE_H
+#include "Core/entity_manager.h"
 #include "dyl_lib.h"
 #include "renderer/Dyl_Renderer.h"
 #include "Window/dyl_window.h"
 #include "Events/dyl_events.h"
-#include "renderer_engine_interface.h"
+#include "core/entity_manager.h"
 
  
 
@@ -27,6 +28,7 @@
 
 #define GLOBAL_ARENA_START_SIZE (1280 * 1280)
 extern Arena global_arena;
+extern Arena entity_arena;
 
 
 typedef struct Engine
@@ -34,19 +36,22 @@ typedef struct Engine
 	Dyl_Window* window;
 	Renderer2D* renderer;
 	Dyl_Event* event;
+	Entity_Manager manager;
 	
 }Engine;
 
 
 
 //CALLBACK FUNCTIONS
+//
+typedef void(*Entity_Scene_Call_Back)(Engine*);
 typedef void(*Frame_Call_Back)(Engine*);
 typedef void(*Event_Call_Back)(Engine*);
 
 
 
 ENGINE_API void engine_initialize(Engine* engine);
-ENGINE_API void engine_run(Engine* engine, Frame_Call_Back frame_callback, Event_Call_Back event_callback);
+ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_callback, Frame_Call_Back frame_callback, Event_Call_Back event_callback);
 ENGINE_API void engine_shutdown(Engine* engine);
 
 

@@ -25,7 +25,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, 
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 		if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 			SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not initialize SDL: %s", SDL_GetError());
-			return 1;
+			return;
 		}
 		window->window_handle = SDL_CreateWindow(window->window_name->string, window->width, window->height, window->window_flags);
 		SDL_SetWindowPosition(window->window_handle, window->x, window->y);

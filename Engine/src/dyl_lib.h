@@ -73,6 +73,8 @@ typedef struct {int x, y;} vec2i;
 typedef struct {float x, y;} vec2f;
 typedef struct {int x,y,z;} vec3i;
 typedef struct {float x, y, z;} vec3f;
+typedef struct {float x, y, z, w;} vec4i;
+typedef struct {float x, y, z, w;} vec4f;
 typedef union {
 	
 	struct
