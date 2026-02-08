@@ -44,6 +44,8 @@ void window_start(Dyl_Window* window)
 		SDL_GL_MakeCurrent(window->window_handle, window->gl_context);
 	#endif
 
+	//TODO: Please make a more uniformed way of sending GPU commands
+
 	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glEnable(GL_BLEND);

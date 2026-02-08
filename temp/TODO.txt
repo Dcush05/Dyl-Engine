@@ -5,7 +5,19 @@
 	Setup better debug and logging system
 
 #STARTED(Started meaning that the scaffolding is setup but not fully implemented):
+	Setup entity system and be able to interface with the system in the editor
+	3D SUPPORT
+	Split editor renderer and scene renderer
 
 #TODO LIST:	
-	Setup entity system and be able to interface with the system in the editor
+	Make renderer better and more compact
+		-Add rendering commands plz
+		-Optional to use batch rendering or regular rendering... maybe only batch render for more intensive objects and not simple ones
+		-simply do more research on batch rendering instead of relying on llm
+	DONT KNOW IF BATCH RENDERING SHOULD BE TAKING UP THAT MUCH GPU
+
+	Setup assets system
+	Fix camera code so that it is window agnostic or  make an interface for the camera code
+	Setup a scene handling system
+		different scenes
 	Editor Ui implementation

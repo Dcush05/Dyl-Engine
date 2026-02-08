@@ -49,12 +49,15 @@ void camera_input(Camera* camera, SDL_Event* event)
 	switch(event->type)
 	{
 		case SDL_EVENT_KEY_DOWN:
+
 		case SDL_EVENT_KEY_UP:
+
 			bool pressed = (event->type == SDL_EVENT_KEY_DOWN);
 			switch(event->key.key)
 			{
 				case SDLK_W:
 					camera->move_forward = pressed;	
+					printf("recorded forward movement\n");
 				break;
 				case SDLK_A:
 					camera->move_left = pressed;

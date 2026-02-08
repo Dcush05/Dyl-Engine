@@ -168,7 +168,7 @@ void model_init(Model* model, const char* filename, mat4 projection)
 	size_t stride = OBJ_SIZE / sizeof(float);
 
 	//float* vertex_buffer = (float*)malloc(OBJ_SIZE * num_triangles * 3);
-	vertices_setup(&model->vertices, num_triangles * 3);
+//	vertices_setup(&model->vertices, num_triangles * 3);
 	memset(model->textures, 0, sizeof(Model_Texture) * TEXTURE_AMOUNT);
 	for(size_t i = 0; i < TEXTURE_AMOUNT; ++i)
 	{
@@ -320,7 +320,7 @@ void model_init(Model* model, const char* filename, mat4 projection)
 	    vertex_buffer[(3 * i + k) * stride + 11] = vertex_buffer[(3 * i + k) * stride + 8];*/
 	  }
 
-		  vertices_push(&model->vertices, vert);
+	//	  vertices_push(&model->vertices, vert);
 
 
 		}
@@ -595,7 +595,7 @@ void model_free(Model* model)
 {
 	glDeleteVertexArrays(1, &model->vao);
 	glDeleteBuffers(1, &model->vb);
-	vertices_free(&model->vertices);	
+//	vertices_free(&model->vertices);	
 	//free textures as well when implemented
 //	memset(model, 0, sizeof(Model));
 }

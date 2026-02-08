@@ -4,6 +4,7 @@
 #include "Sprite.h"
 #include "Shader.h"
 #include "renderer_config.h"
+#include "../dyl_lib.h"
 #include "cglm/types.h"
 #include <cglm/cglm.h>
 #include <cglm/vec3.h>
@@ -52,6 +53,7 @@ void shader_on_id_set_mat4(shader_data* data, size_t id, const char* name, mat4 
 typedef struct
 {
 	mat4 projection;
+	mat4 view;
 	unsigned int sprite_vao;
     unsigned int sprite_vbo;
 	unsigned int quad_vao;
@@ -62,24 +64,79 @@ typedef struct
 	unsigned int light_vao;
 	unsigned int light_vbo;
 	shader_data shaders;
+	bool is_3d;
 
 
 	
 }Renderer2D;
 
-Renderer2D renderer_init(mat4* projection);
+Renderer2D renderer_init(float window_width, float window_height, bool is_3d);
 void init_render_data(Renderer2D* renderer);
 void renderer_projection_adjust(Renderer2D* renderer,mat4* projection);
 void draw_texture(Renderer2D* renderer, Texture2D* texture, vec4 texture_rect, vec2 position, vec2 size, float rotate, vec4 color);
 void draw_sprite(Renderer2D* renderer, Sprite* sprite);
 //More primitives plz
+void renderer_set_view(Renderer2D* renderer, mat4* view);
 
 void draw_rectangle(Renderer2D* renderer, vec2 position, vec2 size,float rotate, vec4 color);
-void draw_cube(Renderer2D* renderer, mat4 view, vec3 position, vec3 size, float rotate, vec4 color);
-void draw_textured_cube(Renderer2D* renderer,mat4 view, Texture2D* texture, vec4 texture_rect, vec3 position, vec3 size, float rotate, vec4 color);
-
+void draw_cube(Renderer2D* renderer, vec3 position, vec3 size, float rotate, vec4 color);
+void draw_textured_cube(Renderer2D* renderer, Texture2D* texture, vec4 texture_rect, vec3 position, vec3 size, float rotate, vec4 color);
 
 void renderer_destroy(Renderer2D* renderer);
+
+typedef struct
+{
+
+	vec4 color;
+	vec3 position;
+	vec3 normals;
+	vec2 tex_coords;
+	vec2 size;
+	float rotate;
+
+
+}Vertex;
+
+
+typedef struct
+{
+	Vertex* vertices;
+	size_t vertex_count;
+	size_t capacity;
+
+}Vertex_Data;
+
+
+void vertices_push(Vertex_Data* vertices, Vertex vertex);
+
+typedef struct
+{
+
+	shader_data shaders;
+	Arena batch_arena;
+	Vertex_Data vertex_data;
+	mat4 projection;
+	mat4 model;
+	unsigned int vbo;
+	unsigned int vao;
+	unsigned int ebo;
+	unsigned int texture_id;
+	shader_id shader_tag;
+
+	
+}Dyl_Batch_Renderer;
+
+
+Dyl_Batch_Renderer dyl_batch_renderer_init(size_t max_vertices);
+void dyl_batch_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4 proj);
+void dyl_batch_renderer_set_shader_tag(Dyl_Batch_Renderer* renderer, shader_id shader_tag);
+void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size
+					   ,float rotate, vec4 color);
+
+void db_flush(Dyl_Batch_Renderer* renderer);
+
+
+
 
 //MODEL RENDERER
 /*typedef struct

@@ -3,7 +3,7 @@
 
 
 
-void vertices_setup(Vertices* vertices, size_t size)
+/*void vertices_setup(Vertices* vertices, size_t size)
 {
 	ASSERT(vertices, "Vertices is Null!");
 	vertices->capacity = size;
@@ -52,12 +52,12 @@ void vertices_free(Vertices* vertices)
 	vertices->count = 0;
 	vertices->capacity = 0;
 	
-}
+}*/
 
 void mesh_setup(Mesh* mesh, size_t num_vertices)
 {
 	ASSERT(mesh, "No!");
-	vertices_setup(&mesh->vertices, num_vertices);
+//	vertices_setup(&mesh->vertices, num_vertices);
 	mesh->m_vao = 0;
 	mesh->m_vbo = 0;
 
@@ -67,7 +67,7 @@ void mesh_setup(Mesh* mesh, size_t num_vertices)
 	//depending on implementation(if im drawing a primitive, model, or terrain)
 	
 	//bottom left
-	vertices_push(&mesh->vertices, (Vertex){
+/*	vertices_push(&mesh->vertices, (Vertex){
 		.position[0] = -0.5f, 
 		.position[1] = 0.0f,
 		.position[2] = -0.5f,
@@ -75,10 +75,10 @@ void mesh_setup(Mesh* mesh, size_t num_vertices)
 		.color[1] = 0.5f,
 		.color[2] = 0.5f,
 		.tex_coords[0] = 0.0,
-		.tex_coords[1] = 0.0});
+		.tex_coords[1] = 0.0});*/
 
 	//bottom right
-	vertices_push(&mesh->vertices, (Vertex){
+/*	vertices_push(&mesh->vertices, (Vertex){
 		.position[0] = 0.5f, 
 		.position[1] = 0.0f,
 		.position[2] = -0.5f,
@@ -86,10 +86,10 @@ void mesh_setup(Mesh* mesh, size_t num_vertices)
 		.color[1] = 0.5f,
 		.color[2] = 0.5f,
 		.tex_coords[0] = 1.0,
-		.tex_coords[1] = 0.0});
+		.tex_coords[1] = 0.0});*/
 
 	//top right
-	vertices_push(&mesh->vertices, (Vertex){
+/*	vertices_push(&mesh->vertices, (Vertex){
 		.position[0] = 0.5f, 
 		.position[1] = 0.0f,
 		.position[2] = 0.5f,
@@ -97,10 +97,10 @@ void mesh_setup(Mesh* mesh, size_t num_vertices)
 		.color[1] = 0.5f,
 		.color[2] = 0.5f,
 		.tex_coords[0] = 1.0,
-		.tex_coords[1] = 1.0});
+		.tex_coords[1] = 1.0});*/
 
 	//top left
-	vertices_push(&mesh->vertices, (Vertex){
+/*	vertices_push(&mesh->vertices, (Vertex){
 		.position[0] = -0.5f, 
 		.position[1] = 0.0f,
 		.position[2] = 0.5f,
@@ -109,7 +109,7 @@ void mesh_setup(Mesh* mesh, size_t num_vertices)
 		.color[2] = 0.5f,
 		.tex_coords[0] = 0.0f,
 		.tex_coords[1] = 1.0f});
-	mesh->has_texture = false;
+	mesh->has_texture = false;*/
 
 
 	mesh->mesh_shader = shader_init("assets/shaders/mesh.vs", "assets/shaders/mesh.fs");
@@ -186,7 +186,7 @@ void mesh_free(Mesh* mesh)
 	glDeleteVertexArrays(1, &mesh->m_vao);
 	glDeleteBuffers(1, &mesh->m_vbo);
 	texture2D_free(&mesh->texture);
-	vertices_free(&mesh->vertices);
-	memset(mesh, 0, sizeof(Mesh));
+//	vertices_free(&mesh->vertices);
+//	memset(mesh, 0, sizeof(Mesh));
 
 }

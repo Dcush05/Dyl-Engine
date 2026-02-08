@@ -1,5 +1,6 @@
 #include "Dyl_Renderer.h"
 #include "Shader.h"
+#include "Texture.h"
 #include "cglm/affine-pre.h"
 #include "cglm/mat4.h"
 #include "../dyl_lib.h"
@@ -180,7 +181,7 @@ void shader_cleanup(shader_data* data)
 
 //RENDERER STUFF
 
-Renderer2D renderer_init(mat4* projection)
+Renderer2D renderer_init(float window_width, float window_height, bool is_3d)
 {
 	Renderer2D renderer = {0};
 	shader_initialize(&renderer.shaders);
@@ -193,7 +194,14 @@ Renderer2D renderer_init(mat4* projection)
 	//create_ShaderProgram(&shaders);
 	//create_ShaderProgram(&rect_shader);
 	//renderer.projection = projection;
-	memcpy(renderer.projection,*projection, sizeof(mat4));
+	renderer.is_3d = is_3d;
+	if(renderer.is_3d)
+	{
+		glEnable(GL_DEPTH_TEST);
+		glm_perspective(glm_rad(45.0f), (float)window_width / (float)window_height, 0.1f, 100.0f, renderer.projection);
+	}else{
+		glm_ortho(0.0f, 900,900, 0.0F, -1.0f, 1.0f, renderer.projection);	
+	}
 	init_render_data(&renderer);
 	shader_programs_create_type(&renderer.shaders, SHADER_HOT);
 	return renderer;
@@ -258,64 +266,66 @@ void init_render_data(Renderer2D* renderer)
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     glBindVertexArray(0); 
 
-	#if SUPPORT_3D == YES_3D
-	float cube_vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	if(renderer->is_3d)
+	{
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		float cube_vertices[] = {
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+			 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+			-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+			-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    glGenVertexArrays(1, &renderer->cube_vao);
-    glGenBuffers(1, &renderer->cube_vbo);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->cube_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
+			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
-    glBindVertexArray(renderer->cube_vao);
-    
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+			 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+		};
+		glGenVertexArrays(1, &renderer->cube_vao);
+		glGenBuffers(1, &renderer->cube_vbo);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, renderer->cube_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-#endif
+		glBindVertexArray(renderer->cube_vao);
+		
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
 	
 	
 }
@@ -439,10 +449,20 @@ void draw_rectangle(Renderer2D* renderer, vec2 position, vec2 size, float rotate
     glBindVertexArray(0);
 
 }
-#if SUPPORT_3D == YES_3D
-void draw_cube(Renderer2D* renderer, mat4 view, vec3 position, vec3 size, float rotate, vec4 color)
+
+
+void renderer_set_view(Renderer2D* renderer, mat4* view)
 {
+	assert(renderer && view);
+	memcpy(&renderer->view, view, sizeof(mat4));
+}
+
+void draw_cube(Renderer2D* renderer, vec3 position, vec3 size, float rotate, vec4 color)
+{
+
 	ASSERT(renderer != NULL, "Renderer IS NOT INITIALIZED");
+	ASSERT(renderer->is_3d, "Renderer does not support 3d artifacts");
+
 	shader_on_id_use(&renderer->shaders, SHADER_CUBE);	
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "projection", renderer->projection);
 	mat4 model;
@@ -458,7 +478,7 @@ void draw_cube(Renderer2D* renderer, mat4 view, vec3 position, vec3 size, float 
 	
 	shader_on_id_set_bool(&renderer->shaders, SHADER_CUBE, "is_texture", false);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "model", model);
-	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "view", view);
+	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "view", renderer->view);
 	shader_on_id_set_vec4f(&renderer->shaders, SHADER_CUBE, "aColor", adjusted_color);
 	shader_on_id_set_vec4f(&renderer->shaders, SHADER_CUBE, "textureRegion", (vec4){0.0f, 0.0f, 1.0f, 1.0f});
 	shader_on_id_set_int(&renderer->shaders, SHADER_CUBE, "image", 0);
@@ -466,10 +486,12 @@ void draw_cube(Renderer2D* renderer, mat4 view, vec3 position, vec3 size, float 
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
-void draw_textured_cube(Renderer2D* renderer,mat4 view, Texture2D* texture, vec4 texture_rect, vec3 position, vec3 size, float rotate, vec4 color)
+void draw_textured_cube(Renderer2D* renderer, Texture2D* texture, vec4 texture_rect, vec3 position, vec3 size, float rotate, vec4 color)
 {
 	ASSERT(renderer != NULL, "Renderer IS NOT INITLIAZED");
 	ASSERT(texture != NULL, "Texture IS NOT INITLIAZED");
+	ASSERT(renderer->is_3d, "Renderer does not support 3d artifacts");
+
 	shader_on_id_use(&renderer->shaders, SHADER_CUBE);	
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "projection", renderer->projection);
 	mat4 model;
@@ -490,7 +512,7 @@ void draw_textured_cube(Renderer2D* renderer,mat4 view, Texture2D* texture, vec4
 	adjusted_color[3] = color[3]/255.0f;
 	shader_on_id_set_bool(&renderer->shaders, SHADER_CUBE, "is_texture", true);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "model", model);
-	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "view", view);
+	shader_on_id_set_mat4(&renderer->shaders, SHADER_CUBE, "view", renderer->view);
 	shader_on_id_set_vec4f(&renderer->shaders, SHADER_CUBE, "aColor", adjusted_color);
 	shader_on_id_set_int(&renderer->shaders, SHADER_CUBE, "image", 0);
 	shader_on_id_set_vec4f(&renderer->shaders, SHADER_CUBE, "textureRegion", texCoordsConversion);
@@ -502,17 +524,198 @@ void draw_textured_cube(Renderer2D* renderer,mat4 view, Texture2D* texture, vec4
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 }
-#else
-void draw_cube(Renderer2D* renderer, mat4 view, vec3 position, vec3 size, float rotate, vec4 color)
-{
-	ASSERT(NO_3D, "3D IS NOT SUPPORTED");
-}
-void draw_textured_cube(Renderer2D* renderer, mat4 view, Texture2D* texture, vec4 texture_rect, vec3 position, vec3 size, float rotate, vec4 color)
+
+void vertices_push(Vertex_Data* vertices, Vertex vertex)
 {
 
-	ASSERT(NO_3D,"3D IS NOT SUPPORTED");
+	ASSERT(vertices, "Vertices is Null!");
+	ASSERT(vertices->vertex_count < vertices->capacity, "Over allocated vertices");
+	vertices->vertices[vertices->vertex_count++] = vertex;
 }
-#endif
+
+
+
+//Batch renderer
+
+
+
+
+Dyl_Batch_Renderer dyl_batch_renderer_init(size_t max_vertices)
+{
+	Dyl_Batch_Renderer renderer;
+	renderer.batch_arena = arena_alloc(max_vertices * sizeof(Vertex) * max_vertices);
+	renderer.vertex_data.vertices = arena_push(&renderer.batch_arena, sizeof(Vertex) * max_vertices);
+
+	shader_initialize(&renderer.shaders);
+
+
+
+	Shader shader = shader_init("assets/shaders/db_Shader.vs", "assets/shaders/db_Shader.fs");
+
+	shader_add(&renderer.shaders, &shader, SHADER_RECT, SHADER_HOT);
+	shader_programs_create_type(&renderer.shaders, SHADER_HOT);
+
+	renderer.vertex_data.vertex_count = 0;
+	renderer.vertex_data.capacity = max_vertices;
+
+
+	glGenVertexArrays(1, &renderer.vao);
+	glBindVertexArray(renderer.vao);
+
+	glGenBuffers(1, &renderer.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, renderer.vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * renderer.vertex_data.capacity
+			  ,NULL, GL_DYNAMIC_DRAW);
+	 
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, position));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, normals));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, color));
+
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, tex_coords));
+
+	return renderer;
+}
+
+void dyl_batch_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4 proj)
+{
+	ASSERT(renderer, "Renderer(Null)");	
+	memcpy(renderer->projection,proj ,sizeof(mat4));
+}
+
+void dyl_batch_renderer_set_shader_tag(Dyl_Batch_Renderer* renderer, shader_id shader_tag)
+{
+	renderer->shader_tag = shader_tag;
+}
+
+//hmmm maybe sort the vertices and render them that way
+
+
+void db_flush(Dyl_Batch_Renderer* renderer)
+{
+	if(renderer->vertex_data.vertex_count == 0)
+		return;
+
+	shader_on_id_use(&renderer->shaders, renderer->shader_tag);
+
+	shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
+
+//	shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "model", renderer->model);
+
+	if(renderer->shader_tag == SHADER_SPRITE)
+	{
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, renderer->texture_id);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
+					   "u_texture", 0);
+	}
+	
+	glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * renderer->vertex_data.vertex_count, renderer->vertex_data.vertices);
+
+	glBindVertexArray(renderer->vao);
+	glDrawArrays(GL_TRIANGLES, 0, renderer->vertex_data.vertex_count);
+
+	renderer->vertex_data.vertex_count = 0;
+	arena_reset(&renderer->batch_arena);
+	
+
+
+	
+	
+}
+
+
+void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size, float rotate, vec4 color)
+{
+	ASSERT(renderer, "Renderer(Null)");
+	float x1 = position[0];
+	float y1 = position[1];
+
+	float x2 = position[0] + size[0];
+	float y2 = position[1] + size[1];
+
+	Vertex v1;
+
+    v1.position[0] = x1; v1.position[1] = y1; v1.position[2] = 0.0f;
+
+	v1.size[0] = size[0];
+	v1.size[1] = size[1];
+
+	
+	v1.color[0] = color[0];
+	v1.color[1] = color[1];
+	v1.color[2] = color[2];
+	v1.color[3] = color[3];
+
+	v1.rotate = rotate;
+
+	Vertex v2;
+
+    v2.position[0] = x2; v2.position[1] = y2; v2.position[2] = 0.0f;
+
+	v2.size[0] = size[0];
+	v2.size[1] = size[1];
+
+	
+	v2.color[0] = color[0];
+	v2.color[1] = color[1];
+	v2.color[2] = color[2];
+	v2.color[3] = color[3];
+
+	v2.rotate = rotate;
+
+
+	Vertex v3;
+
+    v3.position[0] = x1; v3.position[1] = y2; v3.position[2] = 0.0f;
+
+	v3.size[0] = size[0];
+	v3.size[1] = size[1];
+
+	
+	v3.color[0] = color[0];
+	v3.color[1] = color[1];
+	v3.color[2] = color[2];
+	v3.color[3] = color[3];
+
+	v3.rotate = rotate;
+
+
+	Vertex v4;
+
+    v4.position[0] = x2; v4.position[1] = y1; v4.position[2] = 0.0f;
+
+	v4.size[0] = size[0];
+	v4.size[1] = size[1];
+
+	
+	v4.color[0] = color[0];
+	v4.color[1] = color[1];
+	v4.color[2] = color[2];
+	v4.color[3] = color[3];
+
+	v4.rotate = rotate;
+
+
+
+
+	vertices_push(&renderer->vertex_data, v1);
+	vertices_push(&renderer->vertex_data, v3);
+	vertices_push(&renderer->vertex_data, v2);
+
+	vertices_push(&renderer->vertex_data, v1);
+	vertices_push(&renderer->vertex_data, v4);
+	vertices_push(&renderer->vertex_data, v2);
+
+
+}
 
 //FONT STUFF
 Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection)

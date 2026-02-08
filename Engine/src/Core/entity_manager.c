@@ -1,6 +1,8 @@
 #include "entity_manager.h"
 #include "cglm/types.h"
+#include "dyl_debug.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 
@@ -26,7 +28,11 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Arena* arena)
 uint32_t entity_create(Entity_Manager* entity_manager, uint32_t component_flag, Entity_Type type)
 {
 	ASSERT(entity_manager, "Cannot pass null entity manager into func");
-	ASSERT(entity_manager->entity_count < MAX_ENTITY_COUNT, "Have reached entity limit");
+	if(entity_manager->entity_count >= MAX_ENTITY_COUNT)
+	{
+		Dyl_App_Print_Log("Have reached entity limit");
+		return INVALID_ENTITY;
+	}
 
 	for(size_t i = 0; i < MAX_ENTITY_COUNT; ++i)
 	{
@@ -88,8 +94,8 @@ ENGINE_ENTITY_API void entity_render_from_view(Renderer2D* renderer, Entity enti
 	if(*entity->entity_ref.type == ENTITY_PRIMITIVE)
 	{
 		draw_rectangle(renderer, (vec2){
-			entity->entity_ref.shape->position.x, entity->entity_ref.shape->position.y
-		}, (vec2){entity->entity_ref.shape->size.x, entity->entity_ref.shape->size.y}, entity->entity_ref.shape->rotation, (vec4){entity->entity_ref.shape->color.r,
+			entity->entity_ref.shape->position2f.x, entity->entity_ref.shape->position2f.y
+		}, (vec2){entity->entity_ref.shape->size2f.x, entity->entity_ref.shape->size2f.y}, entity->entity_ref.shape->rotation, (vec4){entity->entity_ref.shape->color.r,
 				 entity->entity_ref.shape->color.g, entity->entity_ref.shape->color.b, entity->entity_ref.shape->color.b});
 
 	}
@@ -108,8 +114,8 @@ ENGINE_ENTITY_API void entity_manager_render(Renderer2D* renderer, Entity_Manage
 
 		if(entity_manager->type[i] == ENTITY_PRIMITIVE)
 		{
-			draw_rectangle(renderer, (vec2){entity_manager->shape[i].position.x, entity_manager->shape[i].position.y},
-				  (vec2){entity_manager->shape[i].size.x, entity_manager->shape[i].size.y}, entity_manager->shape[i].rotation, 
+			draw_rectangle(renderer, (vec2){entity_manager->shape[i].position2f.x, entity_manager->shape[i].position2f.y},
+				  (vec2){entity_manager->shape[i].size2f.x, entity_manager->shape[i].size2f.y}, entity_manager->shape[i].rotation, 
 				  (vec4){entity_manager->shape[i].color.r, entity_manager->shape[i].color.g, entity_manager->shape[i].color.b,
 				  entity_manager->shape[i].color.a});
 		}

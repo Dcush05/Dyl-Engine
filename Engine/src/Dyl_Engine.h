@@ -1,8 +1,10 @@
 #ifndef DYL_ENGINE_H
 #define DYL_ENGINE_H
 #include "Core/entity_manager.h"
+#include "Renderer/Dyl_Renderer.h"
 #include "dyl_lib.h"
 #include "renderer/Dyl_Renderer.h"
+#include "renderer/camera.h"
 #include "Window/dyl_window.h"
 #include "Events/dyl_events.h"
 #include "core/entity_manager.h"
@@ -35,8 +37,12 @@ typedef struct Engine
 {
 	Dyl_Window* window;
 	Renderer2D* renderer;
+	Dyl_Batch_Renderer* batch_renderer;
 	Dyl_Event* event;
+	Camera* scene_camera;
+	mat4 projection;
 	Entity_Manager manager;
+
 	
 }Engine;
 

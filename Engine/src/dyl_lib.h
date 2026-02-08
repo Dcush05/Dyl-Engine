@@ -512,6 +512,7 @@ typedef struct
 	size_t offset;
 
 }Arena;
+
 static inline Arena arena_alloc(size_t size)
 {
 
@@ -529,6 +530,7 @@ static inline Arena arena_alloc(size_t size)
 	arena.offset = 0;
 	return arena;
 }
+
 static inline void* arena_push(Arena* arena, size_t size)
 {
 	
@@ -545,12 +547,15 @@ static inline void* arena_push(Arena* arena, size_t size)
 	fprintf(stderr,"Ran out of memory\n");
 	return NULL;
 }
+
 static inline void arena_reset(Arena* arena)
 {
 	if(!arena)
 		return;
 	arena->offset = 0;
 }
+
+
 static inline void arena_track(Arena* arena)
 {
 	if(arena && arena->data)

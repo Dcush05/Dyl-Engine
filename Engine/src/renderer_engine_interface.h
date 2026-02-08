@@ -13,13 +13,21 @@ typedef enum
 {
 	SHAPE_NIL,
 	SHAPE_RECT,
+	SHAPE_CUBE,
 }Shape_Primitive_Type;
 
 
 typedef struct Shape_Params
 {
-	vec2f position;
-	vec2f size;
+	union{
+		vec2f position2f;
+		vec3f position3f;
+	};
+	union
+	{
+		vec2f size2f;
+		vec3f size3f;
+	};
 	Color color;
 	float radius;
 	float rotation;
@@ -34,12 +42,23 @@ typedef struct Shape_Params
         PTR_OR_ADDR(rendererExpr, Renderer2D),                                      \
 		primitive,																	\
         (Shape_Params){                                                             \
-            .position = {0}, .size = {0}, .color = {0}, .radius = 0, .rotation = 0, \
+            .position2f = {0}, .size2f = {0}, .color = {0}, .radius = 0, .rotation = 0, \
+            __VA_ARGS__                                                             \
+        })		
+
+#define draw_shape3D(rendererExpr, primitive, ...)                                 \
+    _draw_shape3D(                                                                  \
+        PTR_OR_ADDR(rendererExpr, Renderer2D),                                      \
+		primitive,																	\
+        (Shape_Params){                                                             \
+            .position3f = {0}, .size3f = {0}, .color = {0}, .radius = 0, .rotation = 0, \
             __VA_ARGS__                                                             \
         })		
 
 
+
 ENGINE_RENDERER_API void _draw_shape2D(Renderer2D* renderer, Shape_Primitive_Type, Shape_Params params);
+ENGINE_RENDERER_API void _draw_shape3D(Renderer2D* renderer, Shape_Primitive_Type, Shape_Params params);
 
 
 #endif
