@@ -90,10 +90,9 @@ typedef struct
 	vec4 color;
 	vec3 position;
 	vec3 normals;
+	vec3 size;
 	vec2 tex_coords;
-	vec2 size;
-	float rotate;
-
+	float rotation;
 
 }Vertex;
 
@@ -108,6 +107,18 @@ typedef struct
 
 
 void vertices_push(Vertex_Data* vertices, Vertex vertex);
+typedef struct
+{
+	mat4 model;
+}Model_Container;
+
+
+typedef struct
+{
+	Model_Container* models_container;
+	size_t model_count;
+	size_t capacity;
+}Model_Data;
 
 typedef struct
 {
@@ -115,11 +126,12 @@ typedef struct
 	shader_data shaders;
 	Arena batch_arena;
 	Vertex_Data vertex_data;
+	Model_Data model_data;
 	mat4 projection;
-	mat4 model;
 	unsigned int vbo;
 	unsigned int vao;
-	unsigned int ebo;
+	unsigned int ebo; //indices
+	size_t indice_count;
 	unsigned int texture_id;
 	shader_id shader_tag;
 
@@ -134,6 +146,7 @@ void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size
 					   ,float rotate, vec4 color);
 
 void db_flush(Dyl_Batch_Renderer* renderer);
+void db_destroy(Dyl_Batch_Renderer* renderer);
 
 
 

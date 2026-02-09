@@ -58,6 +58,10 @@ Shader shader_init(const char* vertex_path, const char* fragment_path)
 	shader.fragment_shader_path = fragment_path;
 	shader.vertex_shader_path = vertex_path;
 	shader.use = false;
+	memset(shader.cache.uniform_cache, 0, sizeof(Uniform_Cache) * UNIFORM_CACHE_COUNT);
+	for(size_t i = 0; i < UNIFORM_CACHE_COUNT; ++i)
+		shader.cache.uniform_cache[i].name = "";
+	shader.cache.count = 0;
 	return shader;
 }
 void shader_create_program(Shader* shader)
@@ -124,11 +128,40 @@ void use(Shader* shader)
 	glUseProgram(shader->shader_program);
 	shader->use = true;
 }
+
+GLuint get_uniform_location(Shader* shader, const char* name)
+{
+
+
+	GLuint uniform;
+	printf("hellomynameisdylan\n");
+	for(size_t i = 0; i < UNIFORM_CACHE_COUNT; ++i)
+	{
+
+			printf("herer: %zu\n", i);
+		if(strcmp(shader->cache.uniform_cache[i].name, 
+			name) != 0)
+		{
+			return shader->cache.uniform_cache[i].uniform_type;
+		}	
+	}
+
+	printf("hellomynameisdylan\n");
+
+	ASSERT(shader->cache.count <= UNIFORM_CACHE_COUNT, "allocated too many uniforms");
+	shader->cache.uniform_cache[shader->cache.count].uniform_type = glGetUniformLocation(shader->shader_program, name);
+	strcpy((char*)shader->cache.uniform_cache[shader->cache.count].name, name);
+	uniform = shader->cache.uniform_cache[shader->cache.count].uniform_type;
+	shader->cache.count++;
+
+	return uniform;
+}
+
 void set_int(Shader *shader, const char* name, int value) 
 {
 
 	ASSERT(shader, "Uninitialized shader!\n");
-	GLuint uniform = glGetUniformLocation(shader->shader_program, name);
+	GLuint uniform = get_uniform_location(shader, name);
 	ASSERT(uniform != -1, "Unable to find uniform for int");
 	glUniform1i(uniform, value);
 }
@@ -136,7 +169,7 @@ void set_float(Shader* shader, const char* name, float value)
 {
 
 	ASSERT(shader, "Uninitialized shader!\n");
-	GLuint uniform = glGetUniformLocation(shader->shader_program, name);
+	GLuint uniform = get_uniform_location(shader, name);
 	ASSERT(uniform != -1, "Unable to find uniform for float");
 	glUniform1i(uniform, value);
 
@@ -144,7 +177,7 @@ void set_float(Shader* shader, const char* name, float value)
 void set_bool(Shader* shader, const char* name, bool value)
 {
 	ASSERT(shader, "Uninitialized shader!\n");
-	GLuint uniform = glGetUniformLocation(shader->shader_program, name);
+	GLuint uniform = get_uniform_location(shader, name);
 	ASSERT(uniform != -1, "Unable to find uniform for bool(int)");
 	glUniform1i(uniform, value);
 }
@@ -152,7 +185,7 @@ void set_vec3f(Shader* shader, const char* name, vec4 coords)
 {
 	ASSERT(shader, "Uninitialized shader!\n");
 	//printf("HELLO\n");
-	GLuint uniform = glGetUniformLocation(shader->shader_program, name);
+	GLuint uniform = get_uniform_location(shader, name);
 	ASSERT(uniform != -1, "Unable to find uniform for vec3f");
 	glUniform3f(uniform, coords[0], coords[1], coords[2]);
 
@@ -161,7 +194,7 @@ void set_vec4f(Shader* shader, const char* name, vec4 coords)
 {
 
 	ASSERT(shader, "Uninitialized shader!\n");
-	GLuint uniform = glGetUniformLocation(shader->shader_program, name);
+	GLuint uniform = get_uniform_location(shader, name);
 	ASSERT(uniform != -1, "Unable to find uniform for vec4f");
 	glUniform4f(uniform, coords[0], coords[1], coords[2], coords[3]);
 
@@ -169,7 +202,7 @@ void set_vec4f(Shader* shader, const char* name, vec4 coords)
 void set_matrix4(Shader* shader, const char* name, mat4 model)
 {
 	ASSERT(shader, "Uninitialized shader!\n");
-	GLuint uniform = glGetUniformLocation(shader->shader_program, name);
+	GLuint uniform = get_uniform_location(shader, name);
 	ASSERT(uniform != -1, "Unable to find uniform for matrix4f");
 	glUniformMatrix4fv(uniform, 1, GL_FALSE, (const GLfloat *)model);
 

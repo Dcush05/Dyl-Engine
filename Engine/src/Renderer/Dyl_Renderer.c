@@ -543,8 +543,15 @@ void vertices_push(Vertex_Data* vertices, Vertex vertex)
 Dyl_Batch_Renderer dyl_batch_renderer_init(size_t max_vertices)
 {
 	Dyl_Batch_Renderer renderer;
-	renderer.batch_arena = arena_alloc(max_vertices * sizeof(Vertex) * max_vertices);
+
+	renderer.indice_count = max_vertices * 6;
+
+	//NOTE: Allocating space only for rectangles for now
+	renderer.batch_arena = arena_alloc((max_vertices * sizeof(Vertex)) + (renderer.indice_count * sizeof(uint32_t)));
 	renderer.vertex_data.vertices = arena_push(&renderer.batch_arena, sizeof(Vertex) * max_vertices);
+
+
+
 
 	shader_initialize(&renderer.shaders);
 
@@ -579,6 +586,41 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(size_t max_vertices)
 
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, tex_coords));
+
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, rotation));
+
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE,sizeof(Vertex), (void*)offsetof		(Vertex, size));
+	
+
+	
+	
+
+	//setting up ebo
+	
+	
+
+	unsigned int offset = 0;
+	uint32_t* indices = arena_push(&renderer.batch_arena, sizeof(uint32_t) * renderer.indice_count);
+
+	for(size_t i = 0; i < renderer.indice_count; i += 6)
+	{
+		indices[i] = 0 + offset;
+		indices[i + 1] = 1 + offset;
+		indices[i + 2] = 2 + offset;
+		indices[i + 3] = 2 + offset;
+		indices[i + 4] = 3 + offset;
+		indices[i + 5] = 0 + offset;
+		offset += 4;
+	}
+
+	glGenBuffers(1, &renderer.ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t), indices, GL_DYNAMIC_DRAW);
+
+
+	
 
 	return renderer;
 }
@@ -620,14 +662,12 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * renderer->vertex_data.vertex_count, renderer->vertex_data.vertices);
 
 	glBindVertexArray(renderer->vao);
+
 	glDrawArrays(GL_TRIANGLES, 0, renderer->vertex_data.vertex_count);
 
 	renderer->vertex_data.vertex_count = 0;
+
 	arena_reset(&renderer->batch_arena);
-	
-
-
-	
 	
 }
 
@@ -635,74 +675,114 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size, float rotate, vec4 color)
 {
 	ASSERT(renderer, "Renderer(Null)");
-	float x1 = position[0];
-	float y1 = position[1];
 
-	float x2 = position[0] + size[0];
-	float y2 = position[1] + size[1];
+	if(renderer->vertex_data.vertex_count + 6 > renderer->vertex_data.capacity)
+	{
+		db_flush(renderer);
+	}
+	vec4 adjusted_color;
+	adjusted_color[0] = color[0]/255.0f;
+	adjusted_color[1] = color[1]/255.0f;
+	adjusted_color[2] = color[2]/255.0f;
+	adjusted_color[3] = color[3]/255.0f;
+
+	
+//	float x1 = position[0];
+//	float y1 = position[1];
+
+//	float x2 = x1 + size[0];
+//	float y2 = y1 + size[1];
+
+	float cx = position[0] + size[0] * 0.5f;
+	float cy = position[1] + size[1] * 0.5f;
+
+	float half_w = size[0] * 0.5f;
+	float half_h = size[1] * 0.5f;
+
+	float cos_r = cosf(rotate);
+	float sin_r = sinf(rotate);
+
+	// Top-left corner
+	float x1 = -half_w * cos_r - (-half_h) * sin_r + cx;
+	float y1 = -half_w * sin_r + (-half_h) * cos_r + cy;
+
+	// Bottom-right corner  
+	float x2 = half_w * cos_r - half_h * sin_r + cx;
+	float y2 = half_w * sin_r + half_h * cos_r + cy;
+
+	float x3 = -half_w * cos_r - half_h * sin_r + cx;
+    float y3 = -half_w * sin_r + half_h * cos_r + cy;
+    
+    float x4 = half_w * cos_r - (-half_h) * sin_r + cx;
+    float y4 = half_w * sin_r + (-half_h) * cos_r + cy;
 
 	Vertex v1;
 
     v1.position[0] = x1; v1.position[1] = y1; v1.position[2] = 0.0f;
 
+
+	
+	v1.color[0] = adjusted_color[0];
+	v1.color[1] = adjusted_color[1];
+	v1.color[2] = adjusted_color[2];
+	v1.color[3] = adjusted_color[3];
+
+	v1.rotation = rotate;
 	v1.size[0] = size[0];
 	v1.size[1] = size[1];
 
-	
-	v1.color[0] = color[0];
-	v1.color[1] = color[1];
-	v1.color[2] = color[2];
-	v1.color[3] = color[3];
-
-	v1.rotate = rotate;
 
 	Vertex v2;
 
     v2.position[0] = x2; v2.position[1] = y2; v2.position[2] = 0.0f;
 
+
+	
+	v2.color[0] = adjusted_color[0];
+	v2.color[1] = adjusted_color[1];
+	v2.color[2] = adjusted_color[2];
+	v2.color[3] = adjusted_color[3];
+
+
+	v2.rotation = rotate;
 	v2.size[0] = size[0];
 	v2.size[1] = size[1];
 
-	
-	v2.color[0] = color[0];
-	v2.color[1] = color[1];
-	v2.color[2] = color[2];
-	v2.color[3] = color[3];
-
-	v2.rotate = rotate;
 
 
 	Vertex v3;
 
-    v3.position[0] = x1; v3.position[1] = y2; v3.position[2] = 0.0f;
+    v3.position[0] = x3; v3.position[1] = y3; v3.position[2] = 0.0f;
 
+
+	
+	v3.color[0] = adjusted_color[0];
+	v3.color[1] = adjusted_color[1];
+	v3.color[2] = adjusted_color[2];
+	v3.color[3] = adjusted_color[3];
+
+
+	v3.rotation = rotate;
 	v3.size[0] = size[0];
 	v3.size[1] = size[1];
 
-	
-	v3.color[0] = color[0];
-	v3.color[1] = color[1];
-	v3.color[2] = color[2];
-	v3.color[3] = color[3];
-
-	v3.rotate = rotate;
 
 
 	Vertex v4;
 
-    v4.position[0] = x2; v4.position[1] = y1; v4.position[2] = 0.0f;
+    v4.position[0] = x4; v4.position[1] = y4; v4.position[2] = 0.0f;
 
-	v4.size[0] = size[0];
-	v4.size[1] = size[1];
 
 	
-	v4.color[0] = color[0];
-	v4.color[1] = color[1];
-	v4.color[2] = color[2];
-	v4.color[3] = color[3];
+	v4.color[0] = adjusted_color[0];
+	v4.color[1] = adjusted_color[1];
+	v4.color[2] = adjusted_color[2];
+	v4.color[3] = adjusted_color[3];
 
-	v4.rotate = rotate;
 
+	v4.rotation = rotate;
+	v4.size[0] = size[0];
+	v4.size[1] = size[1];
 
 
 
@@ -713,7 +793,6 @@ void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size, f
 	vertices_push(&renderer->vertex_data, v1);
 	vertices_push(&renderer->vertex_data, v4);
 	vertices_push(&renderer->vertex_data, v2);
-
 
 }
 
@@ -807,6 +886,13 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 	new_font_renderer.font_shader = shader_init("assets/shaders/font_shader.vs", "assets/shaders/font_shader.fs");
 	shader_create_program(&new_font_renderer.font_shader);
 	return new_font_renderer;
+}
+
+
+void db_destroy(Dyl_Batch_Renderer* renderer)
+{
+	ASSERT(renderer, "Renderer(Null)");
+	arena_free(&renderer->batch_arena);
 }
 
 

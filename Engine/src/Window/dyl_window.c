@@ -33,6 +33,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, 
 		window->gl_context = SDL_GL_CreateContext(window->window_handle);
 		ASSERT(window->gl_context, "Unable to create OpenGl context: %s", SDL_GetError);
 		ASSERT(gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress), "Unable to initialize Opengl");
+		SDL_GL_SetSwapInterval(1);
 
 
 	#endif

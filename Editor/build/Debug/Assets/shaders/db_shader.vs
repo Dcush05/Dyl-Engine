@@ -9,6 +9,9 @@ out vec4 vertexColor;
 
 void main()
 {
+
+
 	gl_Position = projection * vec4(position, 1.0);
+
 	vertexColor = color;
 }

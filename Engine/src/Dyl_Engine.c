@@ -72,7 +72,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 	
 //	*engine->renderer = renderer_init(engine->window->width, engine->window->height, true);
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
-	*engine->batch_renderer = dyl_batch_renderer_init(8000);
+	*engine->batch_renderer = dyl_batch_renderer_init(10000);
 
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
@@ -171,8 +171,9 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 	//	renderer_set_view(engine->renderer, &engine->scene_camera->view);	
 
 		//frame_callback(engine);
-		db_rectangle_draw(engine->batch_renderer, (vec2){100,132},
-					(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
+	//	db_rectangle_draw(engine->batch_renderer, (vec2){100,132},
+				
+	//				(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
 	//	db_rectangle_draw(engine->batch_renderer, (vec2){100,164},
 					
 				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
@@ -181,18 +182,21 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 	//	db_rectangle_draw(engine->batch_renderer, (vec2){132, 164},
 				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
 
-		for(size_t i = 0; i < 10; ++i)
+
+		static int frame_count;
+		frame_count += 3;
+		for(size_t i = 0; i < 50; ++i)
 		{
 			for(size_t j = 0; j < 50; ++j)
 			{
-				db_rectangle_draw(engine->batch_renderer, (vec2){(i * 32) + 5, j * 32},
-					(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
+				db_rectangle_draw(engine->batch_renderer, (vec2){i * 32, j * 32},
+					(vec2){64, 64}, 0.5 * frame_count, (vec4){255,255,0,255});
+
 			}
 		}
+
 		dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_RECT);
-
 		db_flush(engine->batch_renderer);
-
 			//	entity_manager_render(engine->renderer, &engine->manager);
 	//	nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
 		dyl_profiler_end("frame_callback");
@@ -264,6 +268,8 @@ ENGINE_API void engine_shutdown(Engine* engine)
 {
 	dyl_profiler_start("programclose");
 	window_destroy(engine->window);
+	db_destroy(engine->batch_renderer);
+
 	arena_free(&global_arena);
 	arena_free(&entity_arena);
 //	nk_sdl_shutdown();
