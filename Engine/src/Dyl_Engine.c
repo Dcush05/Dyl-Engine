@@ -2,6 +2,8 @@
 #include "Core/entity_manager.h"
 #include "Events/dyl_events.h"
 #include "Renderer/Dyl_Renderer.h"
+#include "Renderer/Shader.h"
+#include "SDL3/SDL_video.h"
 #include "cglm/types.h"
 #include "dyl_lib.h"
 #include "renderer/camera.h"
@@ -57,22 +59,23 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 		dyl_profiler_add("programclose");
 
-		dyl_profiler_start("arena_alloc1");			
-		global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE);	
-		dyl_profiler_end("arena_alloc1");			
-		dyl_profiler_print_func("arena_alloc1");
-		
 	#endif
+	dyl_profiler_start("arena_alloc1");			
+	global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE);	
+	dyl_profiler_end("arena_alloc1");			
+	dyl_profiler_print_func("arena_alloc1");
 
 	dyl_profiler_start("window+renderer setup");			
 	engine->window = (Dyl_Window*)arena_push(&global_arena, sizeof(Dyl_Window));
-	window_initialize(engine->window, "Engine", 500, 500, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
+	window_initialize(engine->window, "Engine", 500,250, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
 //	engine->renderer = (Renderer2D*)arena_push(&global_arena, sizeof(Renderer2D)); //set up
+
 	
 	
-//	*engine->renderer = renderer_init(engine->window->width, engine->window->height, true);
+//	*engine->renderer = renderer_init((float)WIDTH, (float)HEIGHT, false);
+	
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
-	*engine->batch_renderer = dyl_batch_renderer_init(10000);
+	*engine->batch_renderer = dyl_batch_renderer_init(true,100);
 
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
@@ -80,8 +83,12 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_event_initalize(engine->event);
 	entity_arena = arena_alloc(sizeof(Entity_Manager) * MAX_ENTITY_COUNT * MAX_ENTITY_COUNT);
 	entity_manager_initialize(&engine->manager, &entity_arena);
-//	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-//	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0,0,0}, false, engine->window->width, engine->window->height );
+	Texture_Path path;
+	path.path = "spritesheet.png";
+	printf("%s", path.path);
+	engine->texture = texture_init(path, TEXTURE_2D);
+	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
+	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,0.5,1.0}, true,engine->window->width, engine->window->height );
 
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
@@ -104,7 +111,13 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 
 	}
-	glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
+	//glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
+	
+	glm_perspective(glm_rad(45.0f), (float)engine->window->width / (float)engine->window->height, 0.1f, 100.0f, engine->projection);
+
+	engine->wireframe_mode = false;
+
+	
 }
 
 
@@ -119,7 +132,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 	while(engine->window->is_window_open)
 	{
 		
-		dyl_batch_renderer_set_proj(engine->batch_renderer,engine->projection);
+		dyl_batch_renderer_set_proj(engine->batch_renderer,&engine->projection);
+		
 
 		while(dyl_event_poll(engine->event))
 		{
@@ -128,18 +142,23 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			{
 				engine->window->is_window_open = false;
 			}
-			if(dyl_event_key_press(engine->event, DYLKEY_A, DYL_KEY_PRESSED))
+			if(dyl_event_key_press(engine->event, DYLKEY_E, DYL_KEY_PRESSED))
 			{
 				printf("A Key has been pressed\n");
+				engine->wireframe_mode = !engine->wireframe_mode;
+			}else if(dyl_event_key_press(engine->event, DYLKEY_X, DYL_KEY_PRESSED))
+			{
+				engine_shutdown(engine);
 			}
 			if(event_callback)
 				event_callback(engine);
 			nk_sdl_handle_event(nuk_ctx, &engine->event->event);
 			nk_input_end(nuk_ctx);
 
-		//	camera_input(engine->scene_camera, &engine->event->event);
+			camera_input(engine->scene_camera, &engine->event->event);
 
 		}
+		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
 
 	/*	if(nk_begin(nuk_ctx, "Hello Engine", nk_rect(0,0,250,450), NK_WINDOW_BORDER|NK_WINDOW_CLOSABLE|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
@@ -162,11 +181,18 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		}
 		nk_end(nuk_ctx);*/
 		
+		float dt = 1/144.0f;
 
+		camera_update(engine->scene_camera, dt);
 		window_start(engine->window);
-		dyl_profiler_start("frame_callback");
-	//	if(engine->manager.entity_count < MAX_ENTITY_COUNT)
+
+		//draw_rectangle(engine->renderer, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,0,255,255});
+//		dyl_profiler_start("frame_callback");
+
+		//NOTE: MY REGLAR RENDERER DOESNT WORK FOR SOME REASON FIX IT WHEN WE COME BACK if(engine->manager.entity_count < MAX_ENTITY_COUNT)
 //		camera_update(engine->scene_camera, 0.01667);
+		//FIX:bruv it was because of incorrect comparison of the strings in the shader uniform caching code
+
 	//	printf("%f, %f, %f", engine->scene_camera->camera_pos[0], engine->scene_camera->camera_pos[1],engine->scene_camera->camera_pos[2]);
 	//	renderer_set_view(engine->renderer, &engine->scene_camera->view);	
 
@@ -178,29 +204,61 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 					
 				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
 	//	db_rectangle_draw(engine->batch_renderer, (vec2){132,100},
-				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
+	//				(vec2){32,32}, 0.0, (vec4){255,100,255,255});
 	//	db_rectangle_draw(engine->batch_renderer, (vec2){132, 164},
 				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
 
-
+		dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_DYNAMIC);	
+		//db_cube_draw(engine->batch_renderer, (vec3){0,0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
 		static int frame_count;
 		frame_count += 3;
 		for(size_t i = 0; i < 50; ++i)
 		{
 			for(size_t j = 0; j < 50; ++j)
 			{
-				db_rectangle_draw(engine->batch_renderer, (vec2){i * 32, j * 32},
-					(vec2){64, 64}, 0.5 * frame_count, (vec4){255,255,0,255});
+//				db_rectangle_draw(engine->batch_renderer, (vec2){i * 32, j * 32},
+//				(vec2){64, 64}, 0.5 * frame_count, (vec4){255,255,0,255});
+			//	draw_rectangle(engine->renderer, (vec2){i * 32, j * 32},
+			//	(vec2){64, 64}, 0.5 * frame_count, (vec4){255,255,0,255});
+			
+
+				db_cube_draw(engine->batch_renderer, (vec3){i / 1.0, (j) / 1.0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
+				
+		//		db_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){i * 32, j * 32}, (vec2){32,32}, 0.0, (vec4){255,255,255,255} );
 
 			}
 		}
 
-		dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_RECT);
+		//draw_texture(engine->renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,255,255,255});
+		
+		//printf("%d %d\n", engine->texture.width, engine->texture.height);
+	    // db_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,255,255,255} );
+		//dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_SPRITE);
+
+
+		//fprintf(stdout, "Vertices sent: %zu/%zu\n", engine->batch_renderer->vertex_data.vertex_count, engine->batch_renderer->vertex_data.capacity);
+
+		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
+					   ,(vec3){-0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
+					   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
+					   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+		GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
+		glPolygonMode(GL_FRONT_AND_BACK, mode);
+
+
+
 		db_flush(engine->batch_renderer);
+		
+		
+		
+
 			//	entity_manager_render(engine->renderer, &engine->manager);
 	//	nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
-		dyl_profiler_end("frame_callback");
-		dyl_profiler_print_func("frame_callback");
+	//	dyl_profiler_end("frame_callback");
+	//	dyl_profiler_print_func("frame_callback");
+	  //  frame_callback(engine);
 
 		window_end(engine->window);
 	}
@@ -208,16 +266,17 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 
 //-------RENDERER ENGINE INTERFACE API IMPLEMENTATION-------
-ENGINE_RENDERER_API void _draw_shape2D(Renderer2D* renderer, Shape_Primitive_Type type, Shape_Params params)
+ENGINE_RENDERER_API void _draw_shape2D(Dyl_Batch_Renderer* renderer, Shape_Primitive_Type type, Shape_Params params)
 {
 	//printf("Param data: %f, %f, %f, %f", params.position.x, params.position.y, params.size.x, params.size.y);
+	
 	switch(type)
 	{
 		case SHAPE_NIL:
 
 		break;
 		case SHAPE_RECT:
-			draw_rectangle(renderer, (vec2){params.position2f.x, params.position2f.y}, (vec2){params.position2f.x, params.position2f.y}, params.rotation, 
+			db_rectangle_draw(renderer, (vec2){params.position2f.x, params.position2f.y}, (vec2){params.position2f.x, params.position2f.y}, params.rotation, 
 				  (vec4){params.color.r, params.color.g, params.color.b, params.color.a});
 		break;
 		default:
@@ -227,7 +286,7 @@ ENGINE_RENDERER_API void _draw_shape2D(Renderer2D* renderer, Shape_Primitive_Typ
 	}
 }
 
-ENGINE_RENDERER_API void _draw_shape3D(Renderer2D* renderer, Shape_Primitive_Type type, Shape_Params params)
+ENGINE_RENDERER_API void _draw_shape3D(Dyl_Batch_Renderer* renderer, Shape_Primitive_Type type, Shape_Params params)
 {
 	//printf("Param data: %f, %f, %f, %f", params.position.x, params.position.y, params.size.x, params.size.y);
 	switch(type)
@@ -236,7 +295,7 @@ ENGINE_RENDERER_API void _draw_shape3D(Renderer2D* renderer, Shape_Primitive_Typ
 
 		break;
 		case SHAPE_CUBE:
-			draw_cube(renderer, (vec3){params.position3f.x, params.position3f.y, params.position3f.z}, 
+			db_cube_draw(renderer, (vec3){params.position3f.x, params.position3f.y, params.position3f.z}, 
 			 (vec3){params.size3f.x, params.size3f.y, params.size3f.z}, params.rotation, 
 				  (vec4){params.color.r, params.color.g, params.color.b, params.color.a});
 		break;
@@ -245,6 +304,7 @@ ENGINE_RENDERER_API void _draw_shape3D(Renderer2D* renderer, Shape_Primitive_Typ
 		break;
 			
 	}
+
 }
 //END 
 

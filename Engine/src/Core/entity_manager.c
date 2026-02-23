@@ -86,7 +86,7 @@ ENGINE_ENTITY_API Entity_View entity_get_from_id(Entity_Manager* manager, uint32
 }
 
 
-ENGINE_ENTITY_API void entity_render_from_view(Renderer2D* renderer, Entity entity)
+/*ENGINE_ENTITY_API void entity_render_from_view(Renderer2D* renderer, Entity entity)
 {
 	ASSERT(renderer, "Cannot pass null renderer through func");
 	ASSERT(entity, "Cannot pass null entity through func");
@@ -99,9 +99,9 @@ ENGINE_ENTITY_API void entity_render_from_view(Renderer2D* renderer, Entity enti
 				 entity->entity_ref.shape->color.g, entity->entity_ref.shape->color.b, entity->entity_ref.shape->color.b});
 
 	}
-}
+}*/
 
-ENGINE_ENTITY_API void entity_manager_render(Renderer2D* renderer, Entity_Manager* entity_manager)
+/*ENGINE_ENTITY_API void entity_manager_render(Renderer2D* renderer, Entity_Manager* entity_manager)
 {
 	ASSERT(renderer, "Cannot pass null renderer through func");
 	ASSERT(entity_manager, "Cannot pass null entity manager through func");
@@ -120,7 +120,7 @@ ENGINE_ENTITY_API void entity_manager_render(Renderer2D* renderer, Entity_Manage
 				  entity_manager->shape[i].color.a});
 		}
 	}
-}
+}*/
 
 
 

@@ -1,5 +1,6 @@
 #include "camera.h"
 #include "SDL3/SDL_events.h"
+#include "SDL3/SDL_keycode.h"
 #include "SDL3/SDL_mouse.h"
 #include "cglm/vec3-ext.h"
 #include "cglm/vec3.h"
@@ -68,6 +69,9 @@ void camera_input(Camera* camera, SDL_Event* event)
 				case SDLK_D:
 					camera->move_right = pressed;
 				break;
+				case SDLK_SPACE:
+					camera->move_up = pressed;
+				break;
 			}
 		break;
 		case SDL_EVENT_MOUSE_MOTION:
@@ -116,6 +120,8 @@ void camera_update(Camera* camera, float dt)
 		glm_vec3_sub(camera->vel, camera->camera_right, camera->vel);
 	if(camera->move_right)
 		glm_vec3_add(camera->vel, camera->camera_right, camera->vel);
+	if(camera->move_up)
+		glm_vec3_add(camera->vel, camera->camera_up,camera->vel);
 
 
 	if(!glm_vec3_eqv(camera->vel, (vec3){0,0,0}))

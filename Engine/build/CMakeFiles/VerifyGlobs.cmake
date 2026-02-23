@@ -10,13 +10,8 @@ set(OLD_GLOB
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Dyl_Engine.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Events/dyl_events.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Dyl_Renderer.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Model.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Shader.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Sprite.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Texture.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/camera.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/mesh.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/terrain.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Window/dyl_window.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/glad.c"
   )

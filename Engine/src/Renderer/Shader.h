@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define UNIFORM_NAME_COUNT 256
 
 typedef struct
 {

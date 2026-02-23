@@ -25,6 +25,7 @@ typedef struct
 	bool move_backward;
 	bool move_left;
 	bool move_right;
+	bool move_up;
 }Camera;
 
 void camera_init(Camera* camera, SDL_Window* window, vec3 pos, bool relative_mouse, float window_width, float window_height);

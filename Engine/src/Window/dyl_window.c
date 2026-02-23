@@ -19,14 +19,15 @@ void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, 
 	window->is_window_open = true;
 
 	#ifdef USING_SDL	
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 		if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 			SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not initialize SDL: %s", SDL_GetError());
 			return;
 		}
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+		
 		window->window_handle = SDL_CreateWindow(window->window_name->string, window->width, window->height, window->window_flags);
 		SDL_SetWindowPosition(window->window_handle, window->x, window->y);
 		ASSERT(window->window_handle, "Unable to create window: %s", SDL_GetError);
@@ -46,9 +47,10 @@ void window_start(Dyl_Window* window)
 	#endif
 
 	//TODO: Please make a more uniformed way of sending GPU commands
+	//glViewport(0,0,window->width, window->height);
 
-	glClearColor(0.0,0.0,0.0,1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(1.0,1.0,1.0,1.0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

@@ -520,6 +520,7 @@ static inline Arena arena_alloc(size_t size)
 	//uint8_t *memory = (uint8_t* )malloc(size);
 	
 	arena.data = (uint8_t* )malloc(size);
+
 	if(!arena.data)
 	{
 		
@@ -539,6 +540,8 @@ static inline void* arena_push(Arena* arena, size_t size)
 	if(arena->offset + size <= arena->length)
 	{
 		void *p = &arena->data[arena->offset];
+
+
 		arena->offset += size;
 		memset(p, 0, size);
 		return p;
@@ -575,6 +578,8 @@ static inline void arena_free(Arena* arena)
 {
 	if(arena && arena->data)
 	{
+
+		
 		free(arena->data);
 		arena->data = NULL;
 		arena->length = 0;

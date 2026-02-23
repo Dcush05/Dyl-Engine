@@ -6,6 +6,7 @@
 #include "../Events/dyl_events.h"
 #include <stdint.h>
 
+
 #define MAX_ENTITY_COUNT 1024
 #define INVALID_ENTITY 0xFFFFFFF
 #ifdef ENGINE_EXPORTS
@@ -64,7 +65,7 @@ typedef Entity_View* Entity;
 
 void entity_manager_initialize(Entity_Manager* entity_manager, Arena* arena);
 void entity_manager_update(Entity_Manager* entity_manager, float dt);
-ENGINE_ENTITY_API void entity_manager_render(Renderer2D* renderer, Entity_Manager* entity_manager);
+ENGINE_ENTITY_API void entity_manager_render(Dyl_Renderer* renderer, Entity_Manager* entity_manager);
 int entity_initialize(Entity_Manager* manager, uint32_t component_flag, Entity_Type type);
 
 ENGINE_ENTITY_API uint32_t entity_shape_create(Entity_Manager* entity_manager, Shape_Params shape);
@@ -75,7 +76,7 @@ Entity_View* get_all_entities_of_type(Entity_Manager* entity_manager, Entity_Typ
 Entity_View entity_get_from_type(Entity_Manager* manager, Entity_Type type); //gets the first type in the array
 ENGINE_ENTITY_API Entity_View entity_get_from_id(Entity_Manager* manager, uint32_t id);
 void entity_update_from_view(Entity entity, float dt);
-ENGINE_ENTITY_API void entity_render_from_view(Renderer2D* renderer, Entity entity);
+ENGINE_ENTITY_API void entity_render_from_view(Dyl_Renderer* renderer, Entity entity);
 
 
 

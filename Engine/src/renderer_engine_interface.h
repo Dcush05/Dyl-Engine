@@ -57,8 +57,8 @@ typedef struct Shape_Params
 
 
 
-ENGINE_RENDERER_API void _draw_shape2D(Renderer2D* renderer, Shape_Primitive_Type, Shape_Params params);
-ENGINE_RENDERER_API void _draw_shape3D(Renderer2D* renderer, Shape_Primitive_Type, Shape_Params params);
+ENGINE_RENDERER_API void _draw_shape2D(Dyl_Batch_Renderer* renderer, Shape_Primitive_Type, Shape_Params params);
+ENGINE_RENDERER_API void _draw_shape3D(Dyl_Batch_Renderer* renderer, Shape_Primitive_Type, Shape_Params params);
 
 
 #endif
