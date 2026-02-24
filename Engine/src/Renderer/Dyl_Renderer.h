@@ -9,7 +9,7 @@
 #include <cglm/vec2.h>
 #include <cglm/vec4.h>
 #include "Shader.h"
-#include "../dyl_lib.h"
+#include "../utils/dyl_base.h"
 #include "stb_image.h"
 
 #include FT_FREETYPE_H
@@ -162,9 +162,9 @@ typedef struct
 	
 	mat4 projection;
 	mat4 view;
-	unsigned int vbo;
-	unsigned int vao;
-	unsigned int ebo; //indices
+	u32 vbo;
+	u32 vao;
+	u32 ebo; //indices
 	size_t indice_count;
 	size_t quad_count;
 	shader_id shader_tag;

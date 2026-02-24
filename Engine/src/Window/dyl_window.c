@@ -7,7 +7,7 @@
 
 
 
-void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, uint32_t y, uint32_t width, uint32_t height, unsigned long long window_flags)
+void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y, u32 width, u32 height, unsigned long long window_flags)
 {
 	ASSERT(window, "Window pointer is NULL");
 	window->x = x;
@@ -15,9 +15,8 @@ void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, 
 	window->width = width;
 	window->height = height;
 	window->window_flags = window_flags;
-	window->window_name = write_string(window_name);
 	window->is_window_open = true;
-
+	window->window_name = DYL_STR_LIT(window_name);
 	#ifdef USING_SDL	
 		if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 			SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not initialize SDL: %s", SDL_GetError());
@@ -28,7 +27,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, uint32_t x, 
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 		
-		window->window_handle = SDL_CreateWindow(window->window_name->string, window->width, window->height, window->window_flags);
+		window->window_handle = SDL_CreateWindow((char*)window->window_name.string_data, window->width, window->height, window->window_flags);
 		SDL_SetWindowPosition(window->window_handle, window->x, window->y);
 		ASSERT(window->window_handle, "Unable to create window: %s", SDL_GetError);
 		window->gl_context = SDL_GL_CreateContext(window->window_handle);
@@ -73,7 +72,6 @@ void window_destroy(Dyl_Window* window)
 	window->width = 0;
 	window->height = 0;
 	window->window_flags = 0;
-	string_free(window->window_name);
 	
 	#ifdef USING_SDL
 	SDL_DestroyWindow(window->window_handle);

@@ -14,6 +14,8 @@ set(OLD_GLOB
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/camera.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Window/dyl_window.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/glad.c"
+  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/utils/dyl_arena.c"
+  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/utils/dyl_str.c"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")

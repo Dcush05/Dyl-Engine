@@ -1,8 +1,8 @@
 #ifndef DYL_ENGINE_H
 #define DYL_ENGINE_H
+#include "utils/dyl_base.h"
 #include "Core/entity_manager.h"
 #include "Renderer/Dyl_Renderer.h"
-#include "dyl_lib.h"
 #include "Renderer/Dyl_Renderer.h"
 #include "renderer/camera.h"
 #include "Window/dyl_window.h"

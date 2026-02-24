@@ -1,8 +1,8 @@
 #ifndef ENTITY_MANAGER_H
 #define ENTITY_MANAGER_H	
 
+#include "../utils/dyl_base.h"
 #include "../renderer_engine_interface.h"
-#include "../dyl_lib.h"
 #include "../Events/dyl_events.h"
 #include <stdint.h>
 
@@ -45,8 +45,8 @@ typedef struct
 	vec2f* size;
 	vec2f* position;
 	Entity_Type* type;
-	uint32_t* component_flag;
-	uint32_t* id;
+	u32* component_flag;
+	u32* id;
 	int entity_count;
 
 	
@@ -66,15 +66,15 @@ typedef Entity_View* Entity;
 void entity_manager_initialize(Entity_Manager* entity_manager, Arena* arena);
 void entity_manager_update(Entity_Manager* entity_manager, float dt);
 ENGINE_ENTITY_API void entity_manager_render(Dyl_Renderer* renderer, Entity_Manager* entity_manager);
-int entity_initialize(Entity_Manager* manager, uint32_t component_flag, Entity_Type type);
+int entity_initialize(Entity_Manager* manager, u32 component_flag, Entity_Type type);
 
-ENGINE_ENTITY_API uint32_t entity_shape_create(Entity_Manager* entity_manager, Shape_Params shape);
-ENGINE_ENTITY_API uint32_t entity_actor_create(Entity_Manager* entity_manager, vec2f position, vec2f size, Color color, bool has_texture);
+ENGINE_ENTITY_API u32 entity_shape_create(Entity_Manager* entity_manager, Shape_Params shape);
+ENGINE_ENTITY_API u32 entity_actor_create(Entity_Manager* entity_manager, vec2f position, vec2f size, Color color, bool has_texture);
 
 
 Entity_View* get_all_entities_of_type(Entity_Manager* entity_manager, Entity_Type type);
 Entity_View entity_get_from_type(Entity_Manager* manager, Entity_Type type); //gets the first type in the array
-ENGINE_ENTITY_API Entity_View entity_get_from_id(Entity_Manager* manager, uint32_t id);
+ENGINE_ENTITY_API Entity_View entity_get_from_id(Entity_Manager* manager, u32 id);
 void entity_update_from_view(Entity entity, float dt);
 ENGINE_ENTITY_API void entity_render_from_view(Dyl_Renderer* renderer, Entity entity);
 

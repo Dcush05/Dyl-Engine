@@ -1,8 +1,7 @@
 #ifndef DYL_EVENTS_H
 #define DYL_EVENTS_H
+#include "../utils/dyl_base.h"
 
-
-#include "../dyl_lib.h"
 
 #include <stdbool.h>
 #ifdef USING_SDL

@@ -1,7 +1,7 @@
 #ifndef DYL_PROFILER_H
 #define DYL_PROFILER_H
 #include <time.h>
-#include "../dyl_lib.h"
+#include "../utils/dyl_base.h"
 
 #define MAX_PROFILED_FUNCTIONS 50
 
@@ -13,7 +13,7 @@ typedef enum
 
 typedef struct
 {
-	dyl_string* function_names;
+	Dyl_Str function_name;
 	Profile_Type type;
 }Dyl_Profile_Id;
 

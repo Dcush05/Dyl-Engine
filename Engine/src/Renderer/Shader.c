@@ -1,5 +1,5 @@
 #include "Shader.h"
-#include "../dyl_lib.h"
+
 
 
 
@@ -126,7 +126,6 @@ void shader_create_program(Shader* shader)
 }
 void use(Shader* shader)
 {
-	assert(shader);
 	ASSERT(shader, "Uninitialized shader!, this shader cannot be used\n");
 	glUseProgram(shader->shader_program);
 	shader->use = true;

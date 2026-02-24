@@ -1,6 +1,7 @@
 #ifndef	SHADER_H
 #define SHADER_H
 #include "cglm/types.h"
+#include "../utils/dyl_base.h"
 #include <glad/glad.h>
 #include <stdio.h>
 #include <stdlib.h>

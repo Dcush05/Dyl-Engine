@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{86053E4D-CE98-3D11-9F8C-3322ADB5E490}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

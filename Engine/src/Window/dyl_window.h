@@ -2,7 +2,7 @@
 #define DYL_WINDOW_H
 #include <stdint.h>
 #include <stdbool.h>
-#include "../dyl_lib.h"
+#include "../utils/dyl_base.h"
 #include <glad/glad.h>
 #ifdef USING_SDL
 	#include <SDL3/SDL.h>
@@ -19,12 +19,12 @@ typedef struct
 	Window_Handle window_handle;
 	GL_Context_Handle gl_context;
 	unsigned long long window_flags;
-	dyl_string* window_name;
-	uint32_t x, y, width, height;
+	Dyl_Str window_name;
+	u32 x, y, width, height;
 	bool is_window_open;
 }Dyl_Window;
 
-void window_initialize(Dyl_Window* window, const char* window_name,uint32_t x, uint32_t y, uint32_t width, uint32_t height, unsigned long long window_flags);
+void window_initialize(Dyl_Window* window, const char* window_name,uint32_t x, u32 y, u32 width, u32 height, unsigned long long window_flags);
 void window_start(Dyl_Window* window);
 void window_end(Dyl_Window* window);
 void window_destroy(Dyl_Window* window);

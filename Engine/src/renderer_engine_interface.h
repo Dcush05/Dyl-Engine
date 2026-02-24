@@ -1,7 +1,6 @@
 #ifndef RENDERER_ENGINE_INTERFACE_H
 #define RENDERER_ENGINE_INTERFACE_H
 #include "Renderer/Dyl_Renderer.h"
-#include "dyl_lib.h"
 
 
 #ifdef ENGINE_EXPORTS

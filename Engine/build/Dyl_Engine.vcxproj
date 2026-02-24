@@ -323,6 +323,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\camera.c" />
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Window\dyl_window.c" />
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad.c" />
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_arena.c" />
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_str.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\ZERO_CHECK.vcxproj">

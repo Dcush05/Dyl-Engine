@@ -5,7 +5,6 @@
 #include "Renderer/Shader.h"
 #include "SDL3/SDL_video.h"
 #include "cglm/types.h"
-#include "dyl_lib.h"
 #include "renderer/camera.h"
 #include "renderer_engine_interface.h"
 #include <complex.h>
@@ -187,7 +186,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		window_start(engine->window);
 
 		//draw_rectangle(engine->renderer, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,0,255,255});
-//		dyl_profiler_start("frame_callback");
+		dyl_profiler_start("frame_callback");
 
 		//NOTE: MY REGLAR RENDERER DOESNT WORK FOR SOME REASON FIX IT WHEN WE COME BACK if(engine->manager.entity_count < MAX_ENTITY_COUNT)
 //		camera_update(engine->scene_camera, 0.01667);
@@ -256,11 +255,12 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 			//	entity_manager_render(engine->renderer, &engine->manager);
 	//	nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
-	//	dyl_profiler_end("frame_callback");
-	//	dyl_profiler_print_func("frame_callback");
 	  //  frame_callback(engine);
-
 		window_end(engine->window);
+		dyl_profiler_end("frame_callback");
+		dyl_profiler_print_func("frame_callback");
+
+
 	}
 }
 

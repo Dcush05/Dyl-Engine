@@ -2,7 +2,6 @@
 #include "Shader.h"
 #include "cglm/affine-pre.h"
 #include "cglm/mat4.h"
-#include "../dyl_lib.h"
 #include "cglm/types.h"
 #include <assert.h>
 #include <freetype/freetype.h>

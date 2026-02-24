@@ -28,6 +28,12 @@
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_arena.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_str.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\CMakeLists.txt" />
