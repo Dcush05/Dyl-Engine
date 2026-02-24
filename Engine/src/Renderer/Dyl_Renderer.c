@@ -493,20 +493,34 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	{
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture_id);
-	//	printf("Texture id: %u ", renderer->object_data.texture_id);
-		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
+	    shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "u_texture", 0);
 
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 1);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+	}else if(renderer->current_mode == MODE_CUBEMAP){
+		glDepthMask(GL_FALSE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->object_data.texture_id);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 1);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 0);
+
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
+					   "need_texture", 0);
+
 	}else{
 	//	printf("wkekke\n");	
 		//TODO: temp
+
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+	//	renderer->object_data.texture_id = 0;
 		
 	}
 	
+
 	glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * renderer->object_data.vertices.vertex_count, renderer->object_data.vertices.vertices);
 	glBindVertexArray(renderer->vao);
@@ -515,7 +529,9 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
-	renderer->object_data.texture_id = 0;
+//	renderer->object_data.texture_id = 0;
+	glDepthMask(GL_TRUE);
+	
 
 	//arena_reset(&renderer->batch_arena);
 	
@@ -1874,6 +1890,490 @@ void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 t
 	renderer->quad_count++;
 
 	
+
+}
+
+
+void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
+{
+	ASSERT(renderer, "Renderer(Null)");
+	ASSERT(texture, "Texture(Null)");
+	
+	if(renderer->object_data.vertices.vertex_count + 24 > renderer->object_data.vertices.capacity)
+	{
+		db_flush(renderer);
+	}
+	if (renderer->object_data.texture_id != texture->ID && renderer->current_mode != MODE_CUBEMAP) {
+        db_flush(renderer);
+		renderer->current_mode = MODE_CUBEMAP;
+        renderer->object_data.texture_id = texture->ID;
+    }
+
+	vec4 texCoordsConversion;
+ 	texCoordsConversion[0] = texture->width;
+ 	texCoordsConversion[1] = texture->height;
+ 	texCoordsConversion[2] = texture->width;
+ 	texCoordsConversion[3] = texture->height;
+
+
+	vec4 adjusted_color;
+	adjusted_color[0] = color[0]/255.0f;
+	adjusted_color[1] = color[1]/255.0f;
+	adjusted_color[2] = color[2]/255.0f;
+	adjusted_color[3] = color[3]/255.0f;
+
+	float x1 = -50.0;
+	float y1 = -50.0;
+	float z1 = -50.0;
+
+	float x2 = 50.0;
+	float y2 = 50.0;
+	float z2 = 50.0;
+
+	//FRONT FACE	
+	Vertex v1; //bottom left
+	v1.position[0] = x1;
+	v1.position[1] = y1;
+	v1.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v1.color[0] = adjusted_color[0];
+	v1.color[1] = adjusted_color[1];
+	v1.color[2] = adjusted_color[2];
+	v1.color[3] = adjusted_color[3];
+
+	Vertex v2;
+	v2.position[0] = x2;
+	v2.position[1] = y2;
+	v2.position[2] = z1;
+
+
+	v2.color[0] = adjusted_color[0];
+	v2.color[1] = adjusted_color[1];
+	v2.color[2] = adjusted_color[2];
+	v2.color[3] = adjusted_color[3];
+	Vertex v3;
+
+	v3.position[0] = x2;
+	v3.position[1] = y1;
+	v3.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v3.color[0] = adjusted_color[0];
+	v3.color[1] = adjusted_color[1];
+	v3.color[2] = adjusted_color[2];
+	v3.color[3] = adjusted_color[3];
+
+
+	Vertex v4;
+
+	v4.position[0] = x1;
+	v4.position[1] = y2;
+	v4.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v4.color[0] = adjusted_color[0];
+	v4.color[1] = adjusted_color[1];
+	v4.color[2] = adjusted_color[2];
+	v4.color[3] = adjusted_color[3];
+
+	Vertex v5;
+
+	v5.position[0] = x1;
+	v5.position[1] = y1;
+	v5.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v5.color[0] = adjusted_color[0];
+	v5.color[1] = adjusted_color[1];
+	v5.color[2] = adjusted_color[2];
+	v5.color[3] = adjusted_color[3];
+
+	Vertex v6;
+	v6.position[0] = x2;
+	v6.position[1] = y2;
+	v6.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v6.color[0] = adjusted_color[0];
+	v6.color[1] = adjusted_color[1];
+	v6.color[2] = adjusted_color[2];
+	v6.color[3] = adjusted_color[3];
+
+
+	Vertex v7;
+	v7.position[0] = x2;
+	v7.position[1] = y1;
+	v7.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v7.color[0] = adjusted_color[0];
+	v7.color[1] = adjusted_color[1];
+	v7.color[2] = adjusted_color[2];
+	v7.color[3] = adjusted_color[3];
+
+
+	Vertex v8;
+	v8.position[0] = x1;
+	v8.position[1] = y2;
+	v8.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v8.color[0] = adjusted_color[0];
+	v8.color[1] = adjusted_color[1];
+	v8.color[2] = adjusted_color[2];
+	v8.color[3] = adjusted_color[3];
+
+
+	Vertex v9;
+	v9.position[0] = x1;
+	v9.position[1] = y1;
+	v9.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v9.color[0] = adjusted_color[0];
+	v9.color[1] = adjusted_color[1];
+	v9.color[2] = adjusted_color[2];
+	v9.color[3] = adjusted_color[3];
+
+	Vertex v10;
+	v10.position[0] = x1;
+	v10.position[1] = y2;
+	v10.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v10.color[0] = adjusted_color[0];
+	v10.color[1] = adjusted_color[1];
+	v10.color[2] = adjusted_color[2];
+	v10.color[3] = adjusted_color[3];
+
+	Vertex v11;
+	v11.position[0] = x1;
+	v11.position[1] = y1;
+	v11.position[2] = z1;
+
+	//	memcpy(v1.size, size, sizeof(vec3));
+
+	v11.color[0] = adjusted_color[0];
+	v11.color[1] = adjusted_color[1];
+	v11.color[2] = adjusted_color[2];
+	v11.color[3] = adjusted_color[3];
+
+	Vertex v12;
+	v12.position[0] = x1;
+	v12.position[1] = y2;
+	v12.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v12.color[0] = adjusted_color[0];
+	v12.color[1] = adjusted_color[1];
+	v12.color[2] = adjusted_color[2];
+	v12.color[3] = adjusted_color[3];
+
+
+	Vertex v13;
+	v13.position[0] = x2;
+	v13.position[1] = y1;
+	v13.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v13.color[0] = adjusted_color[0];
+	v13.color[1] = adjusted_color[1];
+	v13.color[2] = adjusted_color[2];
+	v13.color[3] = adjusted_color[3];
+
+
+
+	
+	Vertex v14;
+	v14.position[0] = x2;
+	v14.position[1] = y2;
+	v14.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v14.color[0] = adjusted_color[0];
+	v14.color[1] = adjusted_color[1];
+	v14.color[2] = adjusted_color[2];
+	v14.color[3] = adjusted_color[3];
+
+
+
+	Vertex v15;
+	v15.position[0] = x2;
+	v15.position[1] = y1;
+	v15.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v15.color[0] = adjusted_color[0];
+	v15.color[1] = adjusted_color[1];
+	v15.color[2] = adjusted_color[2];
+	v15.color[3] = adjusted_color[3];
+
+
+
+	Vertex v16;
+	v16.position[0] = x2;
+	v16.position[1] = y2;
+	v16.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v16.color[0] = adjusted_color[0];
+	v16.color[1] = adjusted_color[1];
+	v16.color[2] = adjusted_color[2];
+	v16.color[3] = adjusted_color[3];
+
+
+
+	//TOP 
+	Vertex v17;
+	v17.position[0] = x1;
+	v17.position[1] = y1;
+	v17.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v17.color[0] = adjusted_color[0];
+	v17.color[1] = adjusted_color[1];
+	v17.color[2] = adjusted_color[2];
+	v17.color[3] = adjusted_color[3];
+
+
+
+	Vertex v18;
+	v18.position[0] = x2;
+	v18.position[1] = y1;
+	v18.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v18.color[0] = adjusted_color[0];
+	v18.color[1] = adjusted_color[1];
+	v18.color[2] = adjusted_color[2];
+	v18.color[3] = adjusted_color[3];
+
+
+
+	Vertex v19;
+	v19.position[0] = x2;
+	v19.position[1] = y1;
+	v19.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v19.color[0] = adjusted_color[0];
+	v19.color[1] = adjusted_color[1];
+	v19.color[2] = adjusted_color[2];
+	v19.color[3] = adjusted_color[3];
+
+
+
+	Vertex v20;
+	v20.position[0] = x1;
+	v20.position[1] = y1;
+	v20.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v20.color[0] = adjusted_color[0];
+	v20.color[1] = adjusted_color[1];
+	v20.color[2] = adjusted_color[2];
+	v20.color[3] = adjusted_color[3];
+
+
+
+
+	//BOTTOM
+
+	Vertex v21;
+	v21.position[0] = x1;
+	v21.position[1] = y2;
+	v21.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v21.color[0] = adjusted_color[0];
+	v21.color[1] = adjusted_color[1];
+	v21.color[2] = adjusted_color[2];
+	v21.color[3] = adjusted_color[3];
+
+
+
+	Vertex v22;
+	v22.position[0] = x2;
+	v22.position[1] = y2;
+	v22.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v22.color[0] = adjusted_color[0];
+	v22.color[1] = adjusted_color[1];
+	v22.color[2] = adjusted_color[2];
+	v22.color[3] = adjusted_color[3];
+
+
+
+	Vertex v23;
+	v23.position[0] = x2;
+	v23.position[1] = y2;
+	v23.position[2] = z1;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v23.color[0] = adjusted_color[0];
+	v23.color[1] = adjusted_color[1];
+	v23.color[2] = adjusted_color[2];
+	v23.color[3] = adjusted_color[3];
+
+
+
+	Vertex v24;
+	v24.position[0] = x1;
+	v24.position[1] = y2;
+	v24.position[2] = z2;
+
+//	memcpy(v1.size, size, sizeof(vec3));
+
+	v24.color[0] = adjusted_color[0];
+	v24.color[1] = adjusted_color[1];
+	v24.color[2] = adjusted_color[2];
+	v24.color[3] = adjusted_color[3];
+
+
+	
+
+	v1.tex_coords[0] = texCoordsConversion[0]; 
+	v1.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v2.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v2.tex_coords[1] = texCoordsConversion[1];
+
+	v3.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v3.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v4.tex_coords[0] = texCoordsConversion[0];
+	v4.tex_coords[1] = texCoordsConversion[1];
+
+
+	v5.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2]; 
+	v5.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v6.tex_coords[0] = texCoordsConversion[0];
+	v6.tex_coords[1] = texCoordsConversion[1];
+
+	v7.tex_coords[0] = texCoordsConversion[0];
+	v7.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v8.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v8.tex_coords[1] = texCoordsConversion[1];
+
+
+	v9.tex_coords[0] = texCoordsConversion[0]; 
+	v9.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v10.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v10.tex_coords[1] = texCoordsConversion[1];
+
+	v11.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v11.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v12.tex_coords[0] = texCoordsConversion[0];
+	v12.tex_coords[1] = texCoordsConversion[1];
+
+
+	v13.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2]; 
+	v13.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v14.tex_coords[0] = texCoordsConversion[0];
+	v14.tex_coords[1] = texCoordsConversion[1];
+
+	v15.tex_coords[0] = texCoordsConversion[0];
+	v15.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v16.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v16.tex_coords[1] = texCoordsConversion[1];
+
+
+	v17.tex_coords[0] = texCoordsConversion[0]; 
+	v17.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v18.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v18.tex_coords[1] = texCoordsConversion[1];
+
+	v19.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v19.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v20.tex_coords[0] = texCoordsConversion[0];
+	v20.tex_coords[1] = texCoordsConversion[1];
+
+
+	v21.tex_coords[0] = texCoordsConversion[0]; 
+	v21.tex_coords[1] = texCoordsConversion[1];
+
+	v22.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v22.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	v23.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v23.tex_coords[1] = texCoordsConversion[1];
+
+	v24.tex_coords[0] = texCoordsConversion[0];
+	v24.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+
+
+
+	
+	vertices_push(&renderer->object_data.vertices, v1);
+	vertices_push(&renderer->object_data.vertices, v3);
+	vertices_push(&renderer->object_data.vertices, v2);
+	vertices_push(&renderer->object_data.vertices, v4);
+	renderer->quad_count++;
+
+	vertices_push(&renderer->object_data.vertices, v5);
+	vertices_push(&renderer->object_data.vertices, v7);
+	vertices_push(&renderer->object_data.vertices, v6);
+	vertices_push(&renderer->object_data.vertices, v8);
+	renderer->quad_count++;
+
+	vertices_push(&renderer->object_data.vertices, v9);
+	vertices_push(&renderer->object_data.vertices, v11);
+	vertices_push(&renderer->object_data.vertices, v10);
+	vertices_push(&renderer->object_data.vertices, v12);
+	renderer->quad_count++;
+
+	vertices_push(&renderer->object_data.vertices, v13);
+	vertices_push(&renderer->object_data.vertices, v15);
+	vertices_push(&renderer->object_data.vertices, v14);
+	vertices_push(&renderer->object_data.vertices, v16);
+	renderer->quad_count++;
+
+	vertices_push(&renderer->object_data.vertices, v17);
+	vertices_push(&renderer->object_data.vertices, v19);
+	vertices_push(&renderer->object_data.vertices, v18);
+	vertices_push(&renderer->object_data.vertices, v20);
+	renderer->quad_count++;
+
+	vertices_push(&renderer->object_data.vertices, v21);
+	vertices_push(&renderer->object_data.vertices, v23);
+	vertices_push(&renderer->object_data.vertices, v22);
+	vertices_push(&renderer->object_data.vertices, v24);
+	renderer->quad_count++;
+
+	
+
 
 }
 

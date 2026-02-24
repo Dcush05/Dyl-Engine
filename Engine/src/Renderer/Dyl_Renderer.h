@@ -181,9 +181,12 @@ void dyl_batch_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
 void dyl_batch_renderer_set_shader_tag(Dyl_Batch_Renderer* renderer, shader_id shader_tag);
 void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size
 					   ,float rotate, vec4 color);
+void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 texture_rect, vec2 position, vec2 size, float rotate, vec4 color);
+
 void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float rotate, vec4 color);
 void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 texture_rect,vec3 position, vec3 size, float rotate, vec4 color);
-void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 texture_rect, vec2 position, vec2 size, float rotate, vec4 color);
+void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color);
+
 void db_flush(Dyl_Batch_Renderer* renderer);
 void db_destroy(Dyl_Batch_Renderer* renderer);
 

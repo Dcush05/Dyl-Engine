@@ -42,6 +42,7 @@ typedef struct Engine
 	mat4 projection;
 	Entity_Manager manager;
 	Texture texture;
+	Texture sky_box_texture;
 	bool wireframe_mode;
 
 	

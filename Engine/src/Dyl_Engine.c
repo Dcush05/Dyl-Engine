@@ -86,8 +86,12 @@ ENGINE_API void engine_initialize(Engine* engine)
 	path.path = "spritesheet.png";
 	printf("%s", path.path);
 	engine->texture = texture_init(path, TEXTURE_2D);
+	
+	Texture_Path skybox_paths = (Texture_Path){.face_paths[0] = "assets/right.jpg",.face_paths[1] = "assets/left.jpg", 
+		.face_paths[2] = "assets/top.jpg",. face_paths[3] = "assets/bottom.jpg" ,.face_paths[4] = "assets/front.jpg", .face_paths[5] = "assets/back.jpg"};
+	engine->sky_box_texture = texture_init(skybox_paths, TEXTURE_CUBE_MAP);
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,0.5,1.0}, true,engine->window->width, engine->window->height );
+	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,0.5,5.0}, true,engine->window->width, engine->window->height );
 
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
@@ -222,7 +226,6 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			
 
 				db_cube_draw(engine->batch_renderer, (vec3){i / 1.0, (j) / 1.0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
-				
 		//		db_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){i * 32, j * 32}, (vec2){32,32}, 0.0, (vec4){255,255,255,255} );
 
 			}
@@ -243,12 +246,16 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 					   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
 		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
 					   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+
 		GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 		glPolygonMode(GL_FRONT_AND_BACK, mode);
 
 
 
-		db_flush(engine->batch_renderer);
+
+
+		db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
+		db_flush(engine->batch_renderer); //separate flush for our sky box cubemap
 		
 		
 		
