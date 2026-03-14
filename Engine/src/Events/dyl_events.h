@@ -64,8 +64,9 @@ typedef struct
 }Dyl_Key;
 typedef struct
 {
-	Event_Handle event;
+
 	Dyl_Key keys[DYL_KEY_AMOUNT];
+	Event_Handle event;
 }Dyl_Event;
 
 

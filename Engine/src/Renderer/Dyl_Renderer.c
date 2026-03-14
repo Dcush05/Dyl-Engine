@@ -4,6 +4,7 @@
 #include "cglm/mat4.h"
 #include "cglm/types.h"
 #include <assert.h>
+#include <complex.h>
 #include <freetype/freetype.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -270,9 +271,10 @@ void generate(Texture *texture)
 					//printf("meow\n");
 			}
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
-			glGenerateMipmap(type);  // Optionally generate mipmaps for better performance
 
 		}
+			glGenerateMipmap(type);  // Optionally generate mipmaps for better performance -> NOTE: (dylan) getting invalid enum errors from this line in renderdoc at the first frame, <--- should check if im still getting this
+
 
 	}
 }
@@ -297,6 +299,7 @@ void texture2D_free(Texture* texture)
 
 //RENDERER STUFF
 
+
 void vertices_push(Vertex_Data* vertices, Vertex vertex)
 {
 
@@ -304,9 +307,50 @@ void vertices_push(Vertex_Data* vertices, Vertex vertex)
 	ASSERT(vertices->vertex_count < vertices->capacity, "Over allocated vertices");
 	vertices->vertices[vertices->vertex_count++] = vertex;
 }
+void mesh_setup(Mesh* mesh, Mesh_Type type, size_t num_vertices)
+{
+	ASSERT(mesh, "Mesh is Null");
+	ASSERT(mesh->vertices.vertices, "Vertices in mesh is null");
+
+//	memset(mesh, 0, sizeof(Mesh));
+
+	mesh->vertices.vertex_count = 0;
+	mesh->vertices.capacity = num_vertices;
+	mesh->type = type;
+
+}
+
+void mesh_initialize_render_data(Mesh* mesh)
+{
+	ASSERT(mesh, "Mesh is Null!");
 
 
-Dyl_Batch_Renderer dyl_batch_renderer_init(bool is_3d, size_t max_vertices)
+	glGenVertexArrays(1, &mesh->m_vao);
+	glGenBuffers(1, &mesh->m_vbo);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->m_vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh->vertices.vertex_count * sizeof(Vertex),
+			  mesh->vertices.vertices, GL_STATIC_DRAW);
+
+	glBindVertexArray(mesh->m_vao);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+					   (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+					   (void*)offsetof(Vertex, color));
+
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	glBindVertexArray(0);
+
+	//setup for when mesh has a texture
+
+}
+
+
+
+Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_vertices)
 {
 
 	Dyl_Batch_Renderer renderer;
@@ -320,10 +364,10 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(bool is_3d, size_t max_vertices)
 	
 
 	//NOTE: Allocating space only for rectangles for now
-	renderer.vertex_arena = arena_alloc(max_vertices * sizeof(Vertex));
-	renderer.index_arena = arena_alloc(renderer.indice_count * sizeof(uint32_t));
+	//renderer.vertex_arena = arena_alloc(max_vertices * sizeof(Vertex));
+	//renderer.index_arena = arena_alloc(renderer.indice_count * sizeof(uint32_t));
 
-	renderer.object_data.vertices.vertices = arena_push(&renderer.vertex_arena, sizeof(Vertex) * max_vertices);
+	renderer.object_data.vertices.vertices = arena_push(arena, sizeof(Vertex) * max_vertices);
 	renderer.quad_count = 0;
 
 
@@ -378,15 +422,17 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(bool is_3d, size_t max_vertices)
 	
 
 	unsigned int offset = 0;
-	uint32_t* indices = arena_push(&renderer.index_arena, sizeof(uint32_t) * renderer.indice_count);
+	uint32_t* indices = arena_push(arena, sizeof(uint32_t) * renderer.indice_count);
 	if(renderer.is_3d)
 	{
 			
 		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_CULL_FACE);
+
+	    glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 		for(size_t i = 0; i < renderer.indice_count; i += indices_per_unit)
 			{
-				indices[i + 0] = 0 + offset;
+				indices[i + 0] = offset;
 				indices[i + 1] = 1 + offset;
 				indices[i + 2] = 2 + offset; //FACE 1
 				indices[i + 3] = 2 + offset;
@@ -491,8 +537,10 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
 	if(renderer->current_mode == MODE_TEXTURE || renderer->current_mode == MODE_CUBE_TEXTURE)
 	{
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE0 + SLOT_TEXTURE2D);
 		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture_id);
+
+		glCullFace(GL_BACK);
 	    shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "u_texture", 0);
 
@@ -501,10 +549,13 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
 	}else if(renderer->current_mode == MODE_CUBEMAP){
 		glDepthMask(GL_FALSE);
-		glActiveTexture(GL_TEXTURE0);
+		glCullFace(GL_FRONT);
+
+
+		glActiveTexture(GL_TEXTURE0 + SLOT_CUBEMAP);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->object_data.texture_id);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 1);
-		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 0);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 1);
 
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
@@ -801,9 +852,6 @@ void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float 
 		db_flush(renderer);
 		renderer->current_mode = MODE_CUBE;
     }
-	
-
-
 
 	vec4 adjusted_color;
 	adjusted_color[0] = color[0]/255.0f;
@@ -818,519 +866,53 @@ void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float 
 	float x2 = position[0] + size[0];
 	float y2 = position[1] + size[1];
 	float z2 = position[2] + size[2];
-
-	//FRONT FACE	
-	Vertex v1; //bottom left
-	v1.position[0] = x1;
-	v1.position[1] = y1;
-	v1.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v1.size[0] = size[0];
-	v1.size[1] = size[1];
-	v1.size[2] = size[2];
-
-	v1.color[0] = adjusted_color[0];
-	v1.color[1] = adjusted_color[1];
-	v1.color[2] = adjusted_color[2];
-	v1.color[3] = adjusted_color[3];
-
-	v1.tex_coords[0] = 0.0f;
-	v1.tex_coords[1] = 0.0f;
-
-	Vertex v2;
-	v2.position[0] = x2;
-	v2.position[1] = y2;
-	v2.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v2.size[0] = size[0];
-	v2.size[1] = size[1];
-	v2.size[2] = size[2];
-
-	v2.color[0] = adjusted_color[0];
-	v2.color[1] = adjusted_color[1];
-	v2.color[2] = adjusted_color[2];
-	v2.color[3] = adjusted_color[3];
-
-	v2.tex_coords[0] = 1.0f;
-	v2.tex_coords[1] = 0.0f;
-
-
-
-	Vertex v3;
-
-	v3.position[0] = x2;
-	v3.position[1] = y1;
-	v3.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v3.size[0] = size[0];
-	v3.size[1] = size[1];
-	v3.size[2] = size[2];
-
-	v3.color[0] = adjusted_color[0];
-	v3.color[1] = adjusted_color[1];
-	v3.color[2] = adjusted_color[2];
-	v3.color[3] = adjusted_color[3];
-
-	v3.tex_coords[0] = 1.0f;
-	v3.tex_coords[1] = 1.0f;
-
-
-	Vertex v4;
-
-	v4.position[0] = x1;
-	v4.position[1] = y2;
-	v4.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v4.size[0] = size[0];
-	v4.size[1] = size[1];
-	v4.size[2] = size[2];
-
-	v4.color[0] = adjusted_color[0];
-	v4.color[1] = adjusted_color[1];
-	v4.color[2] = adjusted_color[2];
-	v4.color[3] = adjusted_color[3];
-
-	v4.tex_coords[0] = 0.0f;
-	v4.tex_coords[1] = 1.0f;
-
-
-	//BACK FACE
-	Vertex v5;
-
-	v5.position[0] = x1;
-	v5.position[1] = y1;
-	v5.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v5.size[0] = size[0];
-	v5.size[1] = size[1];
-	v5.size[2] = size[2];
-
-	v5.color[0] = adjusted_color[0];
-	v5.color[1] = adjusted_color[1];
-	v5.color[2] = adjusted_color[2];
-	v5.color[3] = adjusted_color[3];
-
-	v5.tex_coords[0] = 0.0f;
-	v5.tex_coords[1] = 0.0f;
-
-
-
-
-	Vertex v6;
-	v6.position[0] = x2;
-	v6.position[1] = y2;
-	v6.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v6.size[0] = size[0];
-	v6.size[1] = size[1];
-	v6.size[2] = size[2];
-
-	v6.color[0] = adjusted_color[0];
-	v6.color[1] = adjusted_color[1];
-	v6.color[2] = adjusted_color[2];
-	v6.color[3] = adjusted_color[3];
-
-	v6.tex_coords[0] = 1.0f;
-	v6.tex_coords[1] = 0.0f;
-
-
-
-	Vertex v7;
-	v7.position[0] = x2;
-	v7.position[1] = y1;
-	v7.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v7.size[0] = size[0];
-	v7.size[1] = size[1];
-	v7.size[2] = size[2];
-
-	v7.color[0] = adjusted_color[0];
-	v7.color[1] = adjusted_color[1];
-	v7.color[2] = adjusted_color[2];
-	v7.color[3] = adjusted_color[3];
-
-	v7.tex_coords[0] = 1.0f;
-	v7.tex_coords[1] = 1.0f;
-
-
-
-	Vertex v8;
-	v8.position[0] = x1;
-	v8.position[1] = y2;
-	v8.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v8.size[0] = size[0];
-	v8.size[1] = size[1];
-	v8.size[2] = size[2];
-
-	v8.color[0] = adjusted_color[0];
-	v8.color[1] = adjusted_color[1];
-	v8.color[2] = adjusted_color[2];
-	v8.color[3] = adjusted_color[3];
-
-	v8.tex_coords[0] = 0.0f;
-	v8.tex_coords[1] = 1.0f;
-
-
-	//LEFT FACE
-	
-	Vertex v9;
-	v9.position[0] = x1;
-	v9.position[1] = y1;
-	v9.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v9.size[0] = size[0];
-	v9.size[1] = size[1];
-	v9.size[2] = size[2];
-
-	v9.color[0] = adjusted_color[0];
-	v9.color[1] = adjusted_color[1];
-	v9.color[2] = adjusted_color[2];
-	v9.color[3] = adjusted_color[3];
-
-	v9.tex_coords[0] = 0.0f;
-	v9.tex_coords[1] = 0.0f;
-
-
-	Vertex v10;
-	v10.position[0] = x1;
-	v10.position[1] = y2;
-	v10.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v10.size[0] = size[0];
-	v10.size[1] = size[1];
-	v10.size[2] = size[2];
-
-	v10.color[0] = adjusted_color[0];
-	v10.color[1] = adjusted_color[1];
-	v10.color[2] = adjusted_color[2];
-	v10.color[3] = adjusted_color[3];
-
-	v10.tex_coords[0] = 1.0f;
-	v10.tex_coords[1] = 0.0f;
-
-
-	Vertex v11;
-	v11.position[0] = x1;
-	v11.position[1] = y1;
-	v11.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v11.size[0] = size[0];
-	v11.size[1] = size[1];
-	v11.size[2] = size[2];
-
-	v11.color[0] = adjusted_color[0];
-	v11.color[1] = adjusted_color[1];
-	v11.color[2] = adjusted_color[2];
-	v11.color[3] = adjusted_color[3];
-
-	v11.tex_coords[0] = 1.0f;
-	v11.tex_coords[1] = 1.0f;
-
-
-	Vertex v12;
-	v12.position[0] = x1;
-	v12.position[1] = y2;
-	v12.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v12.size[0] = size[0];
-	v12.size[1] = size[1];
-	v12.size[2] = size[2];
-
-	v12.color[0] = adjusted_color[0];
-	v12.color[1] = adjusted_color[1];
-	v12.color[2] = adjusted_color[2];
-	v12.color[3] = adjusted_color[3];
-
-	v12.tex_coords[0] = 0.0f;
-	v12.tex_coords[1] = 1.0f;
-
-	//RIGHT face
-
-	Vertex v13;
-	v13.position[0] = x2;
-	v13.position[1] = y1;
-	v13.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v13.size[0] = size[0];
-	v13.size[1] = size[1];
-	v13.size[2] = size[2];
-
-	v13.color[0] = adjusted_color[0];
-	v13.color[1] = adjusted_color[1];
-	v13.color[2] = adjusted_color[2];
-	v13.color[3] = adjusted_color[3];
-
-	v13.tex_coords[0] = 0.0f;
-	v13.tex_coords[1] = 0.0f;
-
-
-	
-	Vertex v14;
-	v14.position[0] = x2;
-	v14.position[1] = y2;
-	v14.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v14.size[0] = size[0];
-	v14.size[1] = size[1];
-	v14.size[2] = size[2];
-
-	v14.color[0] = adjusted_color[0];
-	v14.color[1] = adjusted_color[1];
-	v14.color[2] = adjusted_color[2];
-	v14.color[3] = adjusted_color[3];
-
-	v14.tex_coords[0] = 1.0f;
-	v14.tex_coords[1] = 0.0f;
-
-
-	Vertex v15;
-	v15.position[0] = x2;
-	v15.position[1] = y1;
-	v15.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v15.size[0] = size[0];
-	v15.size[1] = size[1];
-	v15.size[2] = size[2];
-
-	v15.color[0] = adjusted_color[0];
-	v15.color[1] = adjusted_color[1];
-	v15.color[2] = adjusted_color[2];
-	v15.color[3] = adjusted_color[3];
-
-	v15.tex_coords[0] = 1.0f;
-	v15.tex_coords[1] = 0.0f;
-
-
-	Vertex v16;
-	v16.position[0] = x2;
-	v16.position[1] = y2;
-	v16.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v16.size[0] = size[0];
-	v16.size[1] = size[1];
-	v16.size[2] = size[2];
-
-	v16.color[0] = adjusted_color[0];
-	v16.color[1] = adjusted_color[1];
-	v16.color[2] = adjusted_color[2];
-	v16.color[3] = adjusted_color[3];
-
-	v16.tex_coords[0] = 1.0f;
-	v16.tex_coords[1] = 0.0f;
-
-
-	//TOP 
-	Vertex v17;
-	v17.position[0] = x1;
-	v17.position[1] = y1;
-	v17.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v17.size[0] = size[0];
-	v17.size[1] = size[1];
-	v17.size[2] = size[2];
-
-	v17.color[0] = adjusted_color[0];
-	v17.color[1] = adjusted_color[1];
-	v17.color[2] = adjusted_color[2];
-	v17.color[3] = adjusted_color[3];
-
-	v17.tex_coords[0] = 1.0f;
-	v17.tex_coords[1] = 0.0f;
-
-
-	Vertex v18;
-	v18.position[0] = x2;
-	v18.position[1] = y1;
-	v18.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v18.size[0] = size[0];
-	v18.size[1] = size[1];
-	v18.size[2] = size[2];
-
-	v18.color[0] = adjusted_color[0];
-	v18.color[1] = adjusted_color[1];
-	v18.color[2] = adjusted_color[2];
-	v18.color[3] = adjusted_color[3];
-
-	v18.tex_coords[0] = 1.0f;
-	v18.tex_coords[1] = 0.0f;
-
-
-	Vertex v19;
-	v19.position[0] = x2;
-	v19.position[1] = y1;
-	v19.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v19.size[0] = size[0];
-	v19.size[1] = size[1];
-	v19.size[2] = size[2];
-
-	v19.color[0] = adjusted_color[0];
-	v19.color[1] = adjusted_color[1];
-	v19.color[2] = adjusted_color[2];
-	v19.color[3] = adjusted_color[3];
-
-	v19.tex_coords[0] = 1.0f;
-	v19.tex_coords[1] = 0.0f;
-
-
-	Vertex v20;
-	v20.position[0] = x1;
-	v20.position[1] = y1;
-	v20.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v20.size[0] = size[0];
-	v20.size[1] = size[1];
-	v20.size[2] = size[2];
-
-	v20.color[0] = adjusted_color[0];
-	v20.color[1] = adjusted_color[1];
-	v20.color[2] = adjusted_color[2];
-	v20.color[3] = adjusted_color[3];
-
-	v20.tex_coords[0] = 1.0f;
-	v20.tex_coords[1] = 0.0f;
-
-
-
-	//BOTTOM
-
-	Vertex v21;
-	v21.position[0] = x1;
-	v21.position[1] = y2;
-	v21.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v21.size[0] = size[0];
-	v21.size[1] = size[1];
-	v21.size[2] = size[2];
-
-	v21.color[0] = adjusted_color[0];
-	v21.color[1] = adjusted_color[1];
-	v21.color[2] = adjusted_color[2];
-	v21.color[3] = adjusted_color[3];
-
-	v21.tex_coords[0] = 1.0f;
-	v21.tex_coords[1] = 0.0f;
-
-
-	Vertex v22;
-	v22.position[0] = x2;
-	v22.position[1] = y2;
-	v22.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v22.size[0] = size[0];
-	v22.size[1] = size[1];
-	v22.size[2] = size[2];
-
-	v22.color[0] = adjusted_color[0];
-	v22.color[1] = adjusted_color[1];
-	v22.color[2] = adjusted_color[2];
-	v22.color[3] = adjusted_color[3];
-
-	v22.tex_coords[0] = 1.0f;
-	v22.tex_coords[1] = 0.0f;
-
-
-	Vertex v23;
-	v23.position[0] = x2;
-	v23.position[1] = y2;
-	v23.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v23.size[0] = size[0];
-	v23.size[1] = size[1];
-	v23.size[2] = size[2];
-
-	v23.color[0] = adjusted_color[0];
-	v23.color[1] = adjusted_color[1];
-	v23.color[2] = adjusted_color[2];
-	v23.color[3] = adjusted_color[3];
-
-	v23.tex_coords[0] = 1.0f;
-	v23.tex_coords[1] = 0.0f;
-
-
-	Vertex v24;
-	v24.position[0] = x1;
-	v24.position[1] = y2;
-	v24.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v24.size[0] = size[0];
-	v24.size[1] = size[1];
-	v24.size[2] = size[2];
-
-	v24.color[0] = adjusted_color[0];
-	v24.color[1] = adjusted_color[1];
-	v24.color[2] = adjusted_color[2];
-	v24.color[3] = adjusted_color[3];
-
-	v24.tex_coords[0] = 1.0f;
-	v24.tex_coords[1] = 0.0f;
-
-
-	
-	
-	vertices_push(&renderer->object_data.vertices, v1);
-	vertices_push(&renderer->object_data.vertices, v3);
-	vertices_push(&renderer->object_data.vertices, v2);
-	vertices_push(&renderer->object_data.vertices, v4);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v5);
-	vertices_push(&renderer->object_data.vertices, v7);
-	vertices_push(&renderer->object_data.vertices, v6);
-	vertices_push(&renderer->object_data.vertices, v8);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v9);
-
-	vertices_push(&renderer->object_data.vertices, v11);
-	vertices_push(&renderer->object_data.vertices, v10);
-	vertices_push(&renderer->object_data.vertices, v12);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v13);
-	vertices_push(&renderer->object_data.vertices, v15);
-	vertices_push(&renderer->object_data.vertices, v14);
-	vertices_push(&renderer->object_data.vertices, v16);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v17);
-	vertices_push(&renderer->object_data.vertices, v19);
-	vertices_push(&renderer->object_data.vertices, v18);
-	vertices_push(&renderer->object_data.vertices, v20);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v21);
-	vertices_push(&renderer->object_data.vertices, v23);
-	vertices_push(&renderer->object_data.vertices, v22);
-	vertices_push(&renderer->object_data.vertices, v24);
-	renderer->quad_count++;
-
+	float faces[6][4][3] = {
+        { {x1,y1,z1}, {x1,y2,z1}, {x2,y2,z1}, {x2,y1,z1} }, // front
+        { {x2,y1,z2}, {x2,y2,z2}, {x1,y2,z2}, {x1,y1,z2} }, // back
+        { {x1,y2,z1}, {x1,y2,z2}, {x2,y2,z2}, {x2,y2,z1} }, // top
+        { {x1,y1,z2}, {x1,y1,z1}, {x2,y1,z1}, {x2,y1,z2} }, // bottom
+        { {x2,y1,z1}, {x2,y2,z1}, {x2,y2,z2}, {x2,y1,z2} }, // right
+        { {x1,y1,z2}, {x1,y2,z2}, {x1,y2,z1}, {x1,y1,z1} }, // left
+    };
+
+    float uvs[4][2] = {
+        {0.0f, 0.0f},
+        {0.0f, 1.0f},
+        {1.0f, 0.0f},
+        {1.0f, 1.0f},
+    };
+
+    // push order per face: corner 0, 2, 1, 3
+    int push_order[4] = {0, 1, 2, 3};
+
+
+	for(size_t i = 0; i < 6; ++i)
+	{
+		for(size_t j = 0; j < 4; ++j)
+		{
+			int c = push_order[j];
+			Vertex v = {0};
+			v.size[0] = size[0];
+			v.size[1] = size[1];
+			v.size[2] = size[2];
+
+			v.color[0] = adjusted_color[0];
+			v.color[1] = adjusted_color[1];
+			v.color[2] = adjusted_color[2];
+			v.color[3] = adjusted_color[3];
+
+			v.position[0] = faces[i][c][0];
+			v.position[1] = faces[i][c][1];
+			v.position[2] = faces[i][c][2];
+
+			v.tex_coords[0] = uvs[c][0];
+
+			v.tex_coords[1] = uvs[c][1];
+			vertices_push(&renderer->object_data.vertices, v);
+
+		}
+		renderer->quad_count++;
+	}
 
 }
 
@@ -1373,523 +955,52 @@ void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 t
 	float x2 = position[0] + size[0];
 	float y2 = position[1] + size[1];
 	float z2 = position[2] + size[2];
-
-	//FRONT FACE	
-	Vertex v1; //bottom left
-	v1.position[0] = x1;
-	v1.position[1] = y1;
-	v1.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v1.size[0] = size[0];
-	v1.size[1] = size[1];
-	v1.size[2] = size[2];
-
-	v1.color[0] = adjusted_color[0];
-	v1.color[1] = adjusted_color[1];
-	v1.color[2] = adjusted_color[2];
-	v1.color[3] = adjusted_color[3];
-
-	Vertex v2;
-	v2.position[0] = x2;
-	v2.position[1] = y2;
-	v2.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v2.size[0] = size[0];
-	v2.size[1] = size[1];
-	v2.size[2] = size[2];
-
-	v2.color[0] = adjusted_color[0];
-	v2.color[1] = adjusted_color[1];
-	v2.color[2] = adjusted_color[2];
-	v2.color[3] = adjusted_color[3];
-	Vertex v3;
-
-	v3.position[0] = x2;
-	v3.position[1] = y1;
-	v3.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v3.size[0] = size[0];
-	v3.size[1] = size[1];
-	v3.size[2] = size[2];
-
-	v3.color[0] = adjusted_color[0];
-	v3.color[1] = adjusted_color[1];
-	v3.color[2] = adjusted_color[2];
-	v3.color[3] = adjusted_color[3];
-
-
-	Vertex v4;
-
-	v4.position[0] = x1;
-	v4.position[1] = y2;
-	v4.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v4.size[0] = size[0];
-	v4.size[1] = size[1];
-	v4.size[2] = size[2];
-
-	v4.color[0] = adjusted_color[0];
-	v4.color[1] = adjusted_color[1];
-	v4.color[2] = adjusted_color[2];
-	v4.color[3] = adjusted_color[3];
-
-	Vertex v5;
-
-	v5.position[0] = x1;
-	v5.position[1] = y1;
-	v5.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v5.size[0] = size[0];
-	v5.size[1] = size[1];
-	v5.size[2] = size[2];
-
-	v5.color[0] = adjusted_color[0];
-	v5.color[1] = adjusted_color[1];
-	v5.color[2] = adjusted_color[2];
-	v5.color[3] = adjusted_color[3];
-
-	Vertex v6;
-	v6.position[0] = x2;
-	v6.position[1] = y2;
-	v6.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v6.size[0] = size[0];
-	v6.size[1] = size[1];
-	v6.size[2] = size[2];
-
-	v6.color[0] = adjusted_color[0];
-	v6.color[1] = adjusted_color[1];
-	v6.color[2] = adjusted_color[2];
-	v6.color[3] = adjusted_color[3];
-
-
-	Vertex v7;
-	v7.position[0] = x2;
-	v7.position[1] = y1;
-	v7.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v7.size[0] = size[0];
-	v7.size[1] = size[1];
-	v7.size[2] = size[2];
-
-	v7.color[0] = adjusted_color[0];
-	v7.color[1] = adjusted_color[1];
-	v7.color[2] = adjusted_color[2];
-	v7.color[3] = adjusted_color[3];
-
-
-	Vertex v8;
-	v8.position[0] = x1;
-	v8.position[1] = y2;
-	v8.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v8.size[0] = size[0];
-	v8.size[1] = size[1];
-	v8.size[2] = size[2];
-
-	v8.color[0] = adjusted_color[0];
-	v8.color[1] = adjusted_color[1];
-	v8.color[2] = adjusted_color[2];
-	v8.color[3] = adjusted_color[3];
-
-
-	Vertex v9;
-	v9.position[0] = x1;
-	v9.position[1] = y1;
-	v9.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v9.size[0] = size[0];
-	v9.size[1] = size[1];
-	v9.size[2] = size[2];
-
-	v9.color[0] = adjusted_color[0];
-	v9.color[1] = adjusted_color[1];
-	v9.color[2] = adjusted_color[2];
-	v9.color[3] = adjusted_color[3];
-
-	Vertex v10;
-	v10.position[0] = x1;
-	v10.position[1] = y2;
-	v10.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v10.size[0] = size[0];
-	v10.size[1] = size[1];
-	v10.size[2] = size[2];
-
-	v10.color[0] = adjusted_color[0];
-	v10.color[1] = adjusted_color[1];
-	v10.color[2] = adjusted_color[2];
-	v10.color[3] = adjusted_color[3];
-
-	Vertex v11;
-	v11.position[0] = x1;
-	v11.position[1] = y1;
-	v11.position[2] = z1;
-
-	//	memcpy(v1.size, size, sizeof(vec3));
-	v11.size[0] = size[0];
-	v11.size[1] = size[1];
-	v11.size[2] = size[2];
-
-	v11.color[0] = adjusted_color[0];
-	v11.color[1] = adjusted_color[1];
-	v11.color[2] = adjusted_color[2];
-	v11.color[3] = adjusted_color[3];
-
-	Vertex v12;
-	v12.position[0] = x1;
-	v12.position[1] = y2;
-	v12.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v12.size[0] = size[0];
-	v12.size[1] = size[1];
-	v12.size[2] = size[2];
-
-	v12.color[0] = adjusted_color[0];
-	v12.color[1] = adjusted_color[1];
-	v12.color[2] = adjusted_color[2];
-	v12.color[3] = adjusted_color[3];
-
-
-	Vertex v13;
-	v13.position[0] = x2;
-	v13.position[1] = y1;
-	v13.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v13.size[0] = size[0];
-	v13.size[1] = size[1];
-	v13.size[2] = size[2];
-
-	v13.color[0] = adjusted_color[0];
-	v13.color[1] = adjusted_color[1];
-	v13.color[2] = adjusted_color[2];
-	v13.color[3] = adjusted_color[3];
-
-
-
-	
-	Vertex v14;
-	v14.position[0] = x2;
-	v14.position[1] = y2;
-	v14.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v14.size[0] = size[0];
-	v14.size[1] = size[1];
-	v14.size[2] = size[2];
-
-	v14.color[0] = adjusted_color[0];
-	v14.color[1] = adjusted_color[1];
-	v14.color[2] = adjusted_color[2];
-	v14.color[3] = adjusted_color[3];
-
-
-
-	Vertex v15;
-	v15.position[0] = x2;
-	v15.position[1] = y1;
-	v15.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v15.size[0] = size[0];
-	v15.size[1] = size[1];
-	v15.size[2] = size[2];
-
-	v15.color[0] = adjusted_color[0];
-	v15.color[1] = adjusted_color[1];
-	v15.color[2] = adjusted_color[2];
-	v15.color[3] = adjusted_color[3];
-
-
-
-	Vertex v16;
-	v16.position[0] = x2;
-	v16.position[1] = y2;
-	v16.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v16.size[0] = size[0];
-	v16.size[1] = size[1];
-	v16.size[2] = size[2];
-
-	v16.color[0] = adjusted_color[0];
-	v16.color[1] = adjusted_color[1];
-	v16.color[2] = adjusted_color[2];
-	v16.color[3] = adjusted_color[3];
-
-
-
-	//TOP 
-	Vertex v17;
-	v17.position[0] = x1;
-	v17.position[1] = y1;
-	v17.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v17.size[0] = size[0];
-	v17.size[1] = size[1];
-	v17.size[2] = size[2];
-
-	v17.color[0] = adjusted_color[0];
-	v17.color[1] = adjusted_color[1];
-	v17.color[2] = adjusted_color[2];
-	v17.color[3] = adjusted_color[3];
-
-
-
-	Vertex v18;
-	v18.position[0] = x2;
-	v18.position[1] = y1;
-	v18.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v18.size[0] = size[0];
-	v18.size[1] = size[1];
-	v18.size[2] = size[2];
-
-	v18.color[0] = adjusted_color[0];
-	v18.color[1] = adjusted_color[1];
-	v18.color[2] = adjusted_color[2];
-	v18.color[3] = adjusted_color[3];
-
-
-
-	Vertex v19;
-	v19.position[0] = x2;
-	v19.position[1] = y1;
-	v19.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v19.size[0] = size[0];
-	v19.size[1] = size[1];
-	v19.size[2] = size[2];
-
-	v19.color[0] = adjusted_color[0];
-	v19.color[1] = adjusted_color[1];
-	v19.color[2] = adjusted_color[2];
-	v19.color[3] = adjusted_color[3];
-
-
-
-	Vertex v20;
-	v20.position[0] = x1;
-	v20.position[1] = y1;
-	v20.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v20.size[0] = size[0];
-	v20.size[1] = size[1];
-	v20.size[2] = size[2];
-
-	v20.color[0] = adjusted_color[0];
-	v20.color[1] = adjusted_color[1];
-	v20.color[2] = adjusted_color[2];
-	v20.color[3] = adjusted_color[3];
-
-
-
-
-	//BOTTOM
-
-	Vertex v21;
-	v21.position[0] = x1;
-	v21.position[1] = y2;
-	v21.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v21.size[0] = size[0];
-	v21.size[1] = size[1];
-	v21.size[2] = size[2];
-
-	v21.color[0] = adjusted_color[0];
-	v21.color[1] = adjusted_color[1];
-	v21.color[2] = adjusted_color[2];
-	v21.color[3] = adjusted_color[3];
-
-
-
-	Vertex v22;
-	v22.position[0] = x2;
-	v22.position[1] = y2;
-	v22.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v22.size[0] = size[0];
-	v22.size[1] = size[1];
-	v22.size[2] = size[2];
-
-	v22.color[0] = adjusted_color[0];
-	v22.color[1] = adjusted_color[1];
-	v22.color[2] = adjusted_color[2];
-	v22.color[3] = adjusted_color[3];
-
-
-
-	Vertex v23;
-	v23.position[0] = x2;
-	v23.position[1] = y2;
-	v23.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v23.size[0] = size[0];
-	v23.size[1] = size[1];
-	v23.size[2] = size[2];
-
-	v23.color[0] = adjusted_color[0];
-	v23.color[1] = adjusted_color[1];
-	v23.color[2] = adjusted_color[2];
-	v23.color[3] = adjusted_color[3];
-
-
-
-	Vertex v24;
-	v24.position[0] = x1;
-	v24.position[1] = y2;
-	v24.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-	v24.size[0] = size[0];
-	v24.size[1] = size[1];
-	v24.size[2] = size[2];
-
-	v24.color[0] = adjusted_color[0];
-	v24.color[1] = adjusted_color[1];
-	v24.color[2] = adjusted_color[2];
-	v24.color[3] = adjusted_color[3];
-
-
-	
-
-	v1.tex_coords[0] = texCoordsConversion[0]; 
-	v1.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v2.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v2.tex_coords[1] = texCoordsConversion[1];
-
-	v3.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v3.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v4.tex_coords[0] = texCoordsConversion[0];
-	v4.tex_coords[1] = texCoordsConversion[1];
-
-
-	v5.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2]; 
-	v5.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v6.tex_coords[0] = texCoordsConversion[0];
-	v6.tex_coords[1] = texCoordsConversion[1];
-
-	v7.tex_coords[0] = texCoordsConversion[0];
-	v7.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v8.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v8.tex_coords[1] = texCoordsConversion[1];
-
-
-	v9.tex_coords[0] = texCoordsConversion[0]; 
-	v9.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v10.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v10.tex_coords[1] = texCoordsConversion[1];
-
-	v11.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v11.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v12.tex_coords[0] = texCoordsConversion[0];
-	v12.tex_coords[1] = texCoordsConversion[1];
-
-
-	v13.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2]; 
-	v13.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v14.tex_coords[0] = texCoordsConversion[0];
-	v14.tex_coords[1] = texCoordsConversion[1];
-
-	v15.tex_coords[0] = texCoordsConversion[0];
-	v15.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v16.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v16.tex_coords[1] = texCoordsConversion[1];
-
-
-	v17.tex_coords[0] = texCoordsConversion[0]; 
-	v17.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v18.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v18.tex_coords[1] = texCoordsConversion[1];
-
-	v19.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v19.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v20.tex_coords[0] = texCoordsConversion[0];
-	v20.tex_coords[1] = texCoordsConversion[1];
-
-
-	v21.tex_coords[0] = texCoordsConversion[0]; 
-	v21.tex_coords[1] = texCoordsConversion[1];
-
-	v22.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v22.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v23.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v23.tex_coords[1] = texCoordsConversion[1];
-
-	v24.tex_coords[0] = texCoordsConversion[0];
-	v24.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-
-
-
-	
-	vertices_push(&renderer->object_data.vertices, v1);
-	vertices_push(&renderer->object_data.vertices, v3);
-	vertices_push(&renderer->object_data.vertices, v2);
-	vertices_push(&renderer->object_data.vertices, v4);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v5);
-	vertices_push(&renderer->object_data.vertices, v7);
-	vertices_push(&renderer->object_data.vertices, v6);
-	vertices_push(&renderer->object_data.vertices, v8);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v9);
-	vertices_push(&renderer->object_data.vertices, v11);
-	vertices_push(&renderer->object_data.vertices, v10);
-	vertices_push(&renderer->object_data.vertices, v12);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v13);
-	vertices_push(&renderer->object_data.vertices, v15);
-	vertices_push(&renderer->object_data.vertices, v14);
-	vertices_push(&renderer->object_data.vertices, v16);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v17);
-	vertices_push(&renderer->object_data.vertices, v19);
-	vertices_push(&renderer->object_data.vertices, v18);
-	vertices_push(&renderer->object_data.vertices, v20);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v21);
-	vertices_push(&renderer->object_data.vertices, v23);
-	vertices_push(&renderer->object_data.vertices, v22);
-	vertices_push(&renderer->object_data.vertices, v24);
-	renderer->quad_count++;
-
-	
+	float faces[6][4][3] = {
+        { {x1,y1,z1}, {x1,y2,z1}, {x2,y2,z1}, {x2,y1,z1} }, // front
+        { {x2,y1,z2}, {x2,y2,z2}, {x1,y2,z2}, {x1,y1,z2} }, // back
+        { {x1,y2,z1}, {x1,y2,z2}, {x2,y2,z2}, {x2,y2,z1} }, // top
+        { {x1,y1,z2}, {x1,y1,z1}, {x2,y1,z1}, {x2,y1,z2} }, // bottom
+        { {x2,y1,z1}, {x2,y2,z1}, {x2,y2,z2}, {x2,y1,z2} }, // right
+        { {x1,y1,z2}, {x1,y2,z2}, {x1,y2,z1}, {x1,y1,z1} }, // left
+    };
+    float uvs[4][2] = {
+
+        {texCoordsConversion[0], texCoordsConversion[1] + texCoordsConversion[3]},
+        {texCoordsConversion[0], texCoordsConversion[1]},
+        {texCoordsConversion[0] + texCoordsConversion[2], texCoordsConversion[1]},
+		{texCoordsConversion[0] + texCoordsConversion[2], texCoordsConversion[1] + texCoordsConversion[3]},
+    };
+
+    int push_order[4] = {0, 1, 2, 3};
+
+
+	for(size_t i = 0; i < 6; ++i)
+	{
+		for(size_t j = 0; j < 4; ++j)
+		{
+			int c = push_order[j];
+			Vertex v = {0};
+			v.size[0] = size[0];
+			v.size[1] = size[1];
+			v.size[2] = size[2];
+
+			v.color[0] = adjusted_color[0];
+			v.color[1] = adjusted_color[1];
+			v.color[2] = adjusted_color[2];
+			v.color[3] = adjusted_color[3];
+
+			v.position[0] = faces[i][c][0];
+			v.position[1] = faces[i][c][1];
+			v.position[2] = faces[i][c][2];
+
+			v.tex_coords[0] = uvs[c][0];
+
+			v.tex_coords[1] = uvs[c][1];
+			vertices_push(&renderer->object_data.vertices, v);
+
+		}
+		renderer->quad_count++;
+	}
 
 }
 
@@ -1929,451 +1040,53 @@ void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
 	float x2 = 50.0;
 	float y2 = 50.0;
 	float z2 = 50.0;
-
-	//FRONT FACE	
-	Vertex v1; //bottom left
-	v1.position[0] = x1;
-	v1.position[1] = y1;
-	v1.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v1.color[0] = adjusted_color[0];
-	v1.color[1] = adjusted_color[1];
-	v1.color[2] = adjusted_color[2];
-	v1.color[3] = adjusted_color[3];
-
-	Vertex v2;
-	v2.position[0] = x2;
-	v2.position[1] = y2;
-	v2.position[2] = z1;
-
-
-	v2.color[0] = adjusted_color[0];
-	v2.color[1] = adjusted_color[1];
-	v2.color[2] = adjusted_color[2];
-	v2.color[3] = adjusted_color[3];
-	Vertex v3;
-
-	v3.position[0] = x2;
-	v3.position[1] = y1;
-	v3.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v3.color[0] = adjusted_color[0];
-	v3.color[1] = adjusted_color[1];
-	v3.color[2] = adjusted_color[2];
-	v3.color[3] = adjusted_color[3];
-
-
-	Vertex v4;
-
-	v4.position[0] = x1;
-	v4.position[1] = y2;
-	v4.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v4.color[0] = adjusted_color[0];
-	v4.color[1] = adjusted_color[1];
-	v4.color[2] = adjusted_color[2];
-	v4.color[3] = adjusted_color[3];
-
-	Vertex v5;
-
-	v5.position[0] = x1;
-	v5.position[1] = y1;
-	v5.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v5.color[0] = adjusted_color[0];
-	v5.color[1] = adjusted_color[1];
-	v5.color[2] = adjusted_color[2];
-	v5.color[3] = adjusted_color[3];
-
-	Vertex v6;
-	v6.position[0] = x2;
-	v6.position[1] = y2;
-	v6.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v6.color[0] = adjusted_color[0];
-	v6.color[1] = adjusted_color[1];
-	v6.color[2] = adjusted_color[2];
-	v6.color[3] = adjusted_color[3];
-
-
-	Vertex v7;
-	v7.position[0] = x2;
-	v7.position[1] = y1;
-	v7.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v7.color[0] = adjusted_color[0];
-	v7.color[1] = adjusted_color[1];
-	v7.color[2] = adjusted_color[2];
-	v7.color[3] = adjusted_color[3];
-
-
-	Vertex v8;
-	v8.position[0] = x1;
-	v8.position[1] = y2;
-	v8.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v8.color[0] = adjusted_color[0];
-	v8.color[1] = adjusted_color[1];
-	v8.color[2] = adjusted_color[2];
-	v8.color[3] = adjusted_color[3];
-
-
-	Vertex v9;
-	v9.position[0] = x1;
-	v9.position[1] = y1;
-	v9.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v9.color[0] = adjusted_color[0];
-	v9.color[1] = adjusted_color[1];
-	v9.color[2] = adjusted_color[2];
-	v9.color[3] = adjusted_color[3];
-
-	Vertex v10;
-	v10.position[0] = x1;
-	v10.position[1] = y2;
-	v10.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v10.color[0] = adjusted_color[0];
-	v10.color[1] = adjusted_color[1];
-	v10.color[2] = adjusted_color[2];
-	v10.color[3] = adjusted_color[3];
-
-	Vertex v11;
-	v11.position[0] = x1;
-	v11.position[1] = y1;
-	v11.position[2] = z1;
-
-	//	memcpy(v1.size, size, sizeof(vec3));
-
-	v11.color[0] = adjusted_color[0];
-	v11.color[1] = adjusted_color[1];
-	v11.color[2] = adjusted_color[2];
-	v11.color[3] = adjusted_color[3];
-
-	Vertex v12;
-	v12.position[0] = x1;
-	v12.position[1] = y2;
-	v12.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v12.color[0] = adjusted_color[0];
-	v12.color[1] = adjusted_color[1];
-	v12.color[2] = adjusted_color[2];
-	v12.color[3] = adjusted_color[3];
-
-
-	Vertex v13;
-	v13.position[0] = x2;
-	v13.position[1] = y1;
-	v13.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v13.color[0] = adjusted_color[0];
-	v13.color[1] = adjusted_color[1];
-	v13.color[2] = adjusted_color[2];
-	v13.color[3] = adjusted_color[3];
-
-
-
-	
-	Vertex v14;
-	v14.position[0] = x2;
-	v14.position[1] = y2;
-	v14.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v14.color[0] = adjusted_color[0];
-	v14.color[1] = adjusted_color[1];
-	v14.color[2] = adjusted_color[2];
-	v14.color[3] = adjusted_color[3];
-
-
-
-	Vertex v15;
-	v15.position[0] = x2;
-	v15.position[1] = y1;
-	v15.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v15.color[0] = adjusted_color[0];
-	v15.color[1] = adjusted_color[1];
-	v15.color[2] = adjusted_color[2];
-	v15.color[3] = adjusted_color[3];
-
-
-
-	Vertex v16;
-	v16.position[0] = x2;
-	v16.position[1] = y2;
-	v16.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v16.color[0] = adjusted_color[0];
-	v16.color[1] = adjusted_color[1];
-	v16.color[2] = adjusted_color[2];
-	v16.color[3] = adjusted_color[3];
-
-
-
-	//TOP 
-	Vertex v17;
-	v17.position[0] = x1;
-	v17.position[1] = y1;
-	v17.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v17.color[0] = adjusted_color[0];
-	v17.color[1] = adjusted_color[1];
-	v17.color[2] = adjusted_color[2];
-	v17.color[3] = adjusted_color[3];
-
-
-
-	Vertex v18;
-	v18.position[0] = x2;
-	v18.position[1] = y1;
-	v18.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v18.color[0] = adjusted_color[0];
-	v18.color[1] = adjusted_color[1];
-	v18.color[2] = adjusted_color[2];
-	v18.color[3] = adjusted_color[3];
-
-
-
-	Vertex v19;
-	v19.position[0] = x2;
-	v19.position[1] = y1;
-	v19.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v19.color[0] = adjusted_color[0];
-	v19.color[1] = adjusted_color[1];
-	v19.color[2] = adjusted_color[2];
-	v19.color[3] = adjusted_color[3];
-
-
-
-	Vertex v20;
-	v20.position[0] = x1;
-	v20.position[1] = y1;
-	v20.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v20.color[0] = adjusted_color[0];
-	v20.color[1] = adjusted_color[1];
-	v20.color[2] = adjusted_color[2];
-	v20.color[3] = adjusted_color[3];
-
-
-
-
-	//BOTTOM
-
-	Vertex v21;
-	v21.position[0] = x1;
-	v21.position[1] = y2;
-	v21.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v21.color[0] = adjusted_color[0];
-	v21.color[1] = adjusted_color[1];
-	v21.color[2] = adjusted_color[2];
-	v21.color[3] = adjusted_color[3];
-
-
-
-	Vertex v22;
-	v22.position[0] = x2;
-	v22.position[1] = y2;
-	v22.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v22.color[0] = adjusted_color[0];
-	v22.color[1] = adjusted_color[1];
-	v22.color[2] = adjusted_color[2];
-	v22.color[3] = adjusted_color[3];
-
-
-
-	Vertex v23;
-	v23.position[0] = x2;
-	v23.position[1] = y2;
-	v23.position[2] = z1;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v23.color[0] = adjusted_color[0];
-	v23.color[1] = adjusted_color[1];
-	v23.color[2] = adjusted_color[2];
-	v23.color[3] = adjusted_color[3];
-
-
-
-	Vertex v24;
-	v24.position[0] = x1;
-	v24.position[1] = y2;
-	v24.position[2] = z2;
-
-//	memcpy(v1.size, size, sizeof(vec3));
-
-	v24.color[0] = adjusted_color[0];
-	v24.color[1] = adjusted_color[1];
-	v24.color[2] = adjusted_color[2];
-	v24.color[3] = adjusted_color[3];
-
-
-	
-
-	v1.tex_coords[0] = texCoordsConversion[0]; 
-	v1.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v2.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v2.tex_coords[1] = texCoordsConversion[1];
-
-	v3.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v3.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v4.tex_coords[0] = texCoordsConversion[0];
-	v4.tex_coords[1] = texCoordsConversion[1];
-
-
-	v5.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2]; 
-	v5.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v6.tex_coords[0] = texCoordsConversion[0];
-	v6.tex_coords[1] = texCoordsConversion[1];
-
-	v7.tex_coords[0] = texCoordsConversion[0];
-	v7.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v8.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v8.tex_coords[1] = texCoordsConversion[1];
-
-
-	v9.tex_coords[0] = texCoordsConversion[0]; 
-	v9.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v10.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v10.tex_coords[1] = texCoordsConversion[1];
-
-	v11.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v11.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v12.tex_coords[0] = texCoordsConversion[0];
-	v12.tex_coords[1] = texCoordsConversion[1];
-
-
-	v13.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2]; 
-	v13.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v14.tex_coords[0] = texCoordsConversion[0];
-	v14.tex_coords[1] = texCoordsConversion[1];
-
-	v15.tex_coords[0] = texCoordsConversion[0];
-	v15.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v16.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v16.tex_coords[1] = texCoordsConversion[1];
-
-
-	v17.tex_coords[0] = texCoordsConversion[0]; 
-	v17.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v18.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v18.tex_coords[1] = texCoordsConversion[1];
-
-	v19.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v19.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v20.tex_coords[0] = texCoordsConversion[0];
-	v20.tex_coords[1] = texCoordsConversion[1];
-
-
-	v21.tex_coords[0] = texCoordsConversion[0]; 
-	v21.tex_coords[1] = texCoordsConversion[1];
-
-	v22.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v22.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-	v23.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
-	v23.tex_coords[1] = texCoordsConversion[1];
-
-	v24.tex_coords[0] = texCoordsConversion[0];
-	v24.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
-
-
-
-
-	
-	vertices_push(&renderer->object_data.vertices, v1);
-	vertices_push(&renderer->object_data.vertices, v3);
-	vertices_push(&renderer->object_data.vertices, v2);
-	vertices_push(&renderer->object_data.vertices, v4);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v5);
-	vertices_push(&renderer->object_data.vertices, v7);
-	vertices_push(&renderer->object_data.vertices, v6);
-	vertices_push(&renderer->object_data.vertices, v8);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v9);
-	vertices_push(&renderer->object_data.vertices, v11);
-	vertices_push(&renderer->object_data.vertices, v10);
-	vertices_push(&renderer->object_data.vertices, v12);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v13);
-	vertices_push(&renderer->object_data.vertices, v15);
-	vertices_push(&renderer->object_data.vertices, v14);
-	vertices_push(&renderer->object_data.vertices, v16);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v17);
-	vertices_push(&renderer->object_data.vertices, v19);
-	vertices_push(&renderer->object_data.vertices, v18);
-	vertices_push(&renderer->object_data.vertices, v20);
-	renderer->quad_count++;
-
-	vertices_push(&renderer->object_data.vertices, v21);
-	vertices_push(&renderer->object_data.vertices, v23);
-	vertices_push(&renderer->object_data.vertices, v22);
-	vertices_push(&renderer->object_data.vertices, v24);
-	renderer->quad_count++;
-
-	
-
+	float faces[6][4][3] = {
+        { {x1,y1,z1}, {x1,y2,z1}, {x2,y2,z1}, {x2,y1,z1} }, // front
+        { {x2,y1,z2}, {x2,y2,z2}, {x1,y2,z2}, {x1,y1,z2} }, // back
+        { {x1,y2,z1}, {x1,y2,z2}, {x2,y2,z2}, {x2,y2,z1} }, // top
+        { {x1,y1,z2}, {x1,y1,z1}, {x2,y1,z1}, {x2,y1,z2} }, // bottom
+        { {x2,y1,z1}, {x2,y2,z1}, {x2,y2,z2}, {x2,y1,z2} }, // right
+        { {x1,y1,z2}, {x1,y2,z2}, {x1,y2,z1}, {x1,y1,z1} }, // left
+    };
+    float uvs[4][2] = {
+
+        {texCoordsConversion[0], texCoordsConversion[1] + texCoordsConversion[3]},
+        {texCoordsConversion[0] + texCoordsConversion[2], texCoordsConversion[1]},
+		{texCoordsConversion[0] + texCoordsConversion[2], texCoordsConversion[1] + texCoordsConversion[3]},
+
+        {texCoordsConversion[0], texCoordsConversion[1]},
+    };
+
+    int push_order[4] = {0, 1, 2, 3};
+
+
+	for(size_t i = 0; i < 6; ++i)
+	{
+		for(size_t j = 0; j < 4; ++j)
+		{
+			int c = push_order[j];
+			Vertex v = {0};
+//			v.size[0] = size[0];
+//			v.size[1] = size[1];
+//			v.size[2] = size[2];
+
+			v.color[0] = adjusted_color[0];
+			v.color[1] = adjusted_color[1];
+			v.color[2] = adjusted_color[2];
+			v.color[3] = adjusted_color[3];
+
+			v.position[0] = faces[i][c][0];
+			v.position[1] = faces[i][c][1];
+			v.position[2] = faces[i][c][2];
+
+			v.tex_coords[0] = uvs[c][0];
+
+			v.tex_coords[1] = uvs[c][1];
+			vertices_push(&renderer->object_data.vertices, v);
+
+		}
+		renderer->quad_count++;
+	}
 
 }
 
@@ -2473,8 +1186,8 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 void db_destroy(Dyl_Batch_Renderer* renderer)
 {
 	ASSERT(renderer, "Renderer(Null)");
-	arena_free(&renderer->vertex_arena);
-	arena_free(&renderer->index_arena);
+//	arena_free(&renderer->vertex_arena);
+//	arena_free(&renderer->index_arena);
 	shader_cleanup(&renderer->shaders);
 	glDeleteVertexArrays(1, &renderer->vao);
 	glDeleteBuffers(1,&renderer->vbo);
@@ -2484,6 +1197,183 @@ void db_destroy(Dyl_Batch_Renderer* renderer)
 
 
 }
+Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size)
+{
+	Dyl_Instanced_Renderer i_renderer;
+	memset(&i_renderer, 0, sizeof(Dyl_Instanced_Renderer));
+	i_renderer.objects_size = objects_size;
+
+	i_renderer.model_arena = arena_alloc((objects_size * 2 * 2) * sizeof(i_renderer.models));
+
+	i_renderer.vertex_arena = arena_alloc((objects_size * 250) * sizeof(Vertex_Data));
+	i_renderer.models.capacity = objects_size;
+
+	i_renderer.models.models_container = arena_push(&i_renderer.model_arena, objects_size);
+	i_renderer.object_data.vertices.vertices = arena_push(&i_renderer.vertex_arena, sizeof(Vertex) * 6);
+
+
+	
+	i_renderer.instance_count = 0;
+	shader_initialize(&i_renderer.shaders);
+	Shader shader = shader_init("assets/shaders/instanced_Shader.vs", "assets/shaders/instanced_Shader.fs");
+
+	shader_add(&i_renderer.shaders, &shader, SHADER_INSTANCED, SHADER_HOT);
+	shader_programs_create_type(&i_renderer.shaders, SHADER_HOT);
+	mesh_setup(&i_renderer.object_data, MESH_DYNAMIC, 6);
+
+	vertices_push(&i_renderer.object_data.vertices, 
+	(Vertex)
+	{
+		.position = {0.5, 0.5, 0.0}
+	});
+	vertices_push(&i_renderer.object_data.vertices, 
+	(Vertex)
+	{
+		.position = {0.5, -0.5, 0.0}
+	});
+	vertices_push(&i_renderer.object_data.vertices, 
+	(Vertex)
+	{
+		.position = {-0.5, 0.5, 0.0}
+	});
+	vertices_push(&i_renderer.object_data.vertices, 
+	(Vertex)
+	{
+		.position = {0.5, -0.5, 0.0}
+	});
+
+	vertices_push(&i_renderer.object_data.vertices, 
+	(Vertex)
+	{
+		.position = {-0.5, -0.5, 0.0}
+	});
+
+	vertices_push(&i_renderer.object_data.vertices, 
+	(Vertex)
+	{
+		.position = {-0.5, 0.5, 0.0}
+	});
+
+	glGenVertexArrays(1, &i_renderer.object_data.m_vao);
+	glGenBuffers(1, &i_renderer.object_data.m_vbo);
+	glGenBuffers(1, &i_renderer.vbo);
+
+
+	glBindVertexArray(i_renderer.object_data.m_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, i_renderer.object_data.m_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * i_renderer.object_data.vertices.vertex_count, i_renderer.object_data.vertices.vertices, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+					   sizeof(Vertex), (void*)offsetof(Vertex, position ));
+
+	glBindBuffer(GL_ARRAY_BUFFER, i_renderer.vbo);
+	glBufferData(GL_ARRAY_BUFFER, objects_size * sizeof(mat4), NULL, GL_DYNAMIC_DRAW);
+
+
+
+
+	// Assume instance_vbo is already generated and bound
+	size_t vec4_size = sizeof(vec4);
+
+	for (int i = 0; i < 4; i++) {
+		unsigned int location = 6 + i; // Start at 6, end at 9
+		glEnableVertexAttribArray(location);
+		glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(i * vec4_size));
+		
+		// This is the "Magic" line for instancing
+		glVertexAttribDivisor(location, 1); 
+	}
+	glBindVertexArray(0);
+
+
+
+		/*glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, i_renderer.vbo);
+	glVertexAttribPointer(2,2,GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glVertexAttribDivisor(2,1);*/
+
+	return i_renderer;
+}
+
+
+
+void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate)
+{
+/*	glm_mat4_identity(renderer->models.models_container[renderer->models.model_count].model);
+	glm_translate(renderer->models.models_container[renderer->models.model_count].model, 
+																				 (vec3){position[0], position[1], 0} );
+	glGenBuffers(1, &renderer->vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * renderer->objects_size, &renderer->models.models_container[0].model, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);*/
+
+	if (renderer->instance_count >= renderer->models.capacity) return;
+
+    mat4* model = &renderer->models.models_container[renderer->instance_count].model;
+    
+    glm_mat4_identity(*model);
+    glm_translate(*model, (vec3){position[0], position[1], 0.0f});
+    glm_rotate(*model, glm_rad(rotate), (vec3){0.0f, 0.0f, 1.0f});
+    glm_scale(*model, (vec3){size[0], size[1], 1.0f});
+
+    renderer->instance_count++;
+
+
+
+
+
+/*	renderer->object_data.indices[0] = 0;
+	renderer->object_data.indices[1] = 1;
+	renderer->object_data.indices[2] = 2;
+	renderer->object_data.indices[3] = 2;
+	renderer->object_data.indices[4] = 3;
+	renderer->object_data.indices[5] = 0;*/
+
+	
+	//NOTE(dylan): WE need to create setup mesh functions before this gets messy for every instanced object thank you.
+	//Perhaps refer to old mesh code from past renderers.
+/*	if(renderer->object_data.type == MESH_DYNAMIC)
+	{
+
+
+		//glEnableVertexAttribArray(2);
+		//glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+		//glVertexAttribPointer(2,2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+		//glVertexAttribDivisor(2,1);
+		//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}*/
+
+					
+
+	//only caring about position for now	
+
+
+}
+
+
+void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer)
+{
+	ASSERT(renderer, "Renderer is null");
+	shader_on_id_use(&renderer->shaders, SHADER_INSTANCED);
+	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "projection", renderer->projection);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
+    glBindVertexArray(renderer->object_data.m_vao);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderer->instance_count);
+    glBindVertexArray(0);
+    renderer->instance_count = 0;
+	renderer->models.model_count = 0;
+
+}
+void dyl_instanced_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
+void dyl_instanced_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
+//void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer, vec4 color);
+
+
+
 
 
 

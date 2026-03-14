@@ -21,6 +21,7 @@
 		dynamic meshes should be instanced)
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
 	Setup assets system
+	Refactor so our code has better taste
 	Fix camera code so that it is window agnostic or  make an interface for the camera code
 	Setup a scene handling system
 		different scenes

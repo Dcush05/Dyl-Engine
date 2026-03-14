@@ -1,6 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 #include <cglm/cglm.h>
+#include <assert.h>
 #include <SDL3/SDL_events.h>
 typedef struct
 {
@@ -10,22 +11,24 @@ typedef struct
 	vec3 direction;
 	vec3 camera_up;
 	vec3 camera_right;
-	int camera_speed;
 	vec3 vel;
 	vec3 camera_front;
-	bool first_mouse;
-	bool rel_mouse;
 	float yaw;
 	float pitch;
 	float lastx;
 	float lasty;
 	float fov;
 	float sense;
+
+	int camera_speed;
 	bool move_forward;
 	bool move_backward;
 	bool move_left;
 	bool move_right;
 	bool move_up;
+	bool first_mouse;
+	bool rel_mouse;
+
 }Camera;
 
 void camera_init(Camera* camera, SDL_Window* window, vec3 pos, bool relative_mouse, float window_width, float window_height);

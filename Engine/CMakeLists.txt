@@ -4,11 +4,20 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
 if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    add_compile_options(/arch:AVX2) # Ensure SIMD optimizations
-    add_compile_options(/arch:DDEBUG)
-    add_compile_options("$<$<CONFIG:Release>:/O2>")
+	 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
+	 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	#add_compile_options(/arch:AVX2) # Ensure SIMD optimizations
+	#add_compile_options(/arch:DDEBUG)
+	#add_compile_options("$<$<CONFIG:Release>:/O2>")
+	add_link_options("$<$<CONFIG:Debug>:/DEBUG>")
+	add_compile_options("$<$<CONFIG:Debug>:/Od>")
+	add_compile_options("$<$<CONFIG:Debug>:/Zi>")
+	add_compile_options("$<$<CONFIG:Debug>:/RTC1>")
+
+	add_compile_options("$<$<CONFIG:Release>:/O2>")
+	add_compile_options("$<$<CONFIG:Release>:/arch:AVX2>")
+
+
 
 endif()
 

@@ -17,28 +17,6 @@
 #include "Core/dyl_profiler.h"
 
 
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#define NK_INCLUDE_COMMAND_USERDATA
-#define NK_SDL3_OPENGL_IMPLEMENTATION
-
-#define MAX_VERTEX_MEMORY 512 * 1024
-#define MAX_ELEMENT_MEMORY 128 * 1024
-
-#include "nuklear.h"
-#include "nuklear_sdl3_opengl_renderer.h"
-
-
-static struct nk_context* nuk_ctx;
-static struct nk_colorf nuk_color;
-static struct nk_font_atlas* atlas;
-
 #define MAX_BUFFER_SIZE 64
 #define WIDTH 900
 #define HEIGHT 900
@@ -60,7 +38,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	#endif
 	dyl_profiler_start("arena_alloc1");			
-	global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE);	
+	global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE * sizeof(Engine));	
 	dyl_profiler_end("arena_alloc1");			
 	dyl_profiler_print_func("arena_alloc1");
 
@@ -74,14 +52,19 @@ ENGINE_API void engine_initialize(Engine* engine)
 //	*engine->renderer = renderer_init((float)WIDTH, (float)HEIGHT, false);
 	
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
-	*engine->batch_renderer = dyl_batch_renderer_init(true,100);
+	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
 
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
 	engine->event = (Dyl_Event*)arena_push(&global_arena, sizeof(Dyl_Event));
 	dyl_event_initalize(engine->event);
-	entity_arena = arena_alloc(sizeof(Entity_Manager) * MAX_ENTITY_COUNT * MAX_ENTITY_COUNT);
+	dyl_profiler_add("entity_arena alloc + init");
+	entity_arena = arena_alloc(sizeof(Entity_Manager) * MAX_ENTITY_COUNT);
+	dyl_profiler_end("entity_arena alloc + init");
+	dyl_profiler_print_func("entity_arena alloc + init");
 	entity_manager_initialize(&engine->manager, &entity_arena);
+//	exit(EXIT_SUCCESS);
+	printf("hllo\n");
 	Texture_Path path;
 	path.path = "spritesheet.png";
 	printf("%s", path.path);
@@ -97,24 +80,11 @@ ENGINE_API void engine_initialize(Engine* engine)
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
 	#endif
 
-	#ifdef USING_SDL
-	nuk_ctx = nk_sdl_init(engine->window->window_handle);
-	#endif
 
-
-
-	#ifdef INCLUDE_CONFIGURATOR
-
-    static struct nk_color color_table[NK_COLOR_COUNT];
-    memcpy(color_table, nk_default_color_style, sizeof(color_table));
-    #endif
-	{
-		nk_sdl_font_stash_begin(&atlas);
-		nk_sdl_font_stash_end();
-
-
-	}
-	//glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
+//	glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
+//	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
+//	*engine->instanced_renderer = dyl_instanced_setup(5);
+//	memcpy(engine->instanced_renderer->projection, engine->projection, sizeof(mat4));
 	
 	glm_perspective(glm_rad(45.0f), (float)engine->window->width / (float)engine->window->height, 0.1f, 100.0f, engine->projection);
 
@@ -130,7 +100,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 {
 	ASSERT(frame_callback, "Please setup a frame call back function");
 
-	entity_scene_callback(engine);	
+//	entity_scene_callback(engine);	 i dont think we do this every frame....
 
 	while(engine->window->is_window_open)
 	{
@@ -155,114 +125,51 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			}
 			if(event_callback)
 				event_callback(engine);
-			nk_sdl_handle_event(nuk_ctx, &engine->event->event);
-			nk_input_end(nuk_ctx);
 
 			camera_input(engine->scene_camera, &engine->event->event);
 
 		}
 		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
 
-	/*	if(nk_begin(nuk_ctx, "Hello Engine", nk_rect(0,0,250,450), NK_WINDOW_BORDER|NK_WINDOW_CLOSABLE|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-		{
-			//nk_layout_row_dynamic(nuk_ctx, 20, 1);
-				nk_layout_row_dynamic(nuk_ctx, 20, 1);
-				static int i = 0;
-				if(nk_button_label(nuk_ctx, "Create basic entity"))
-				{
-					printf("meow %d\n", i);
-					entity_shape_create(&engine->manager, (Shape_Params){(vec2f){100 + i, 100 + i}, (vec2f){2 * i, 2 * i}, (Color){255,255,255,255}});
-					i++;
-				//	inventory_add(&game->data, item_search(&game->data, "Blue Gill Fish")); //testing
-				}
-
-				char buffer[MAX_BUFFER_SIZE];
-				snprintf(buffer, MAX_BUFFER_SIZE, "Entity Count: %d, Max: %d", engine->manager.entity_count , MAX_ENTITY_COUNT);
-				nk_layout_row_dynamic(nuk_ctx, 20, 1);
-				nk_label(nuk_ctx, buffer, NK_LEFT);
-		}
-		nk_end(nuk_ctx);*/
-		
+	
 		float dt = 1/144.0f;
 
 		camera_update(engine->scene_camera, dt);
 		window_start(engine->window);
 
-		//draw_rectangle(engine->renderer, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,0,255,255});
 		dyl_profiler_start("frame_callback");
-
-		//NOTE: MY REGLAR RENDERER DOESNT WORK FOR SOME REASON FIX IT WHEN WE COME BACK if(engine->manager.entity_count < MAX_ENTITY_COUNT)
-//		camera_update(engine->scene_camera, 0.01667);
-		//FIX:bruv it was because of incorrect comparison of the strings in the shader uniform caching code
-
-	//	printf("%f, %f, %f", engine->scene_camera->camera_pos[0], engine->scene_camera->camera_pos[1],engine->scene_camera->camera_pos[2]);
-	//	renderer_set_view(engine->renderer, &engine->scene_camera->view);	
-
-		//frame_callback(engine);
-	//	db_rectangle_draw(engine->batch_renderer, (vec2){100,132},
-				
-	//				(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
-	//	db_rectangle_draw(engine->batch_renderer, (vec2){100,164},
-					
-				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
-	//	db_rectangle_draw(engine->batch_renderer, (vec2){132,100},
-	//				(vec2){32,32}, 0.0, (vec4){255,100,255,255});
-	//	db_rectangle_draw(engine->batch_renderer, (vec2){132, 164},
-				//	(vec2){32,32}, 1.0, (vec4){1.0, 1.0, 0.5, 0.5});
-
-		dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_DYNAMIC);	
-		//db_cube_draw(engine->batch_renderer, (vec3){0,0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
-		static int frame_count;
-		frame_count += 3;
-		for(size_t i = 0; i < 50; ++i)
+		if(1)
 		{
-			for(size_t j = 0; j < 50; ++j)
+			dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_DYNAMIC);	
+			static int frame_count;
+			frame_count += 3;
+			for(size_t i = 0; i < 50; ++i)
 			{
-//				db_rectangle_draw(engine->batch_renderer, (vec2){i * 32, j * 32},
-//				(vec2){64, 64}, 0.5 * frame_count, (vec4){255,255,0,255});
-			//	draw_rectangle(engine->renderer, (vec2){i * 32, j * 32},
-			//	(vec2){64, 64}, 0.5 * frame_count, (vec4){255,255,0,255});
-			
+				for(size_t j = 0; j < 50; ++j)
+				{
+					db_cube_draw(engine->batch_renderer, (vec3){i / 1.0, (j) / 1.0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
 
-				db_cube_draw(engine->batch_renderer, (vec3){i / 1.0, (j) / 1.0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
-		//		db_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){i * 32, j * 32}, (vec2){32,32}, 0.0, (vec4){255,255,255,255} );
-
+				}
 			}
+
+			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
+						   ,(vec3){-0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
+						   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
+						   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+
+			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
+			glPolygonMode(GL_FRONT_AND_BACK, mode);
+			db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
+			db_flush(engine->batch_renderer); 
 		}
-
-		//draw_texture(engine->renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,255,255,255});
-		
-		//printf("%d %d\n", engine->texture.width, engine->texture.height);
-	    // db_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}, (vec2){100,100}, (vec2){32,32}, 0.0, (vec4){255,255,255,255} );
-		//dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_SPRITE);
+		//dyl_instanced_push_rect(engine->instanced_renderer, (vec2){100,100}, (vec2){64,64}, 0.0);
 
 
-		//fprintf(stdout, "Vertices sent: %zu/%zu\n", engine->batch_renderer->vertex_data.vertex_count, engine->batch_renderer->vertex_data.capacity);
+		//dyl_instanced_draw_rectangle(engine->instanced_renderer);
 
-		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
-					   ,(vec3){-0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
-					   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-		db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
-					   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-
-		GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
-		glPolygonMode(GL_FRONT_AND_BACK, mode);
-
-
-
-
-
-		db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
-		db_flush(engine->batch_renderer); //separate flush for our sky box cubemap
-		
-		
-		
-
-			//	entity_manager_render(engine->renderer, &engine->manager);
-	//	nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
-	  //  frame_callback(engine);
+		frame_callback(engine);
 		window_end(engine->window);
 		dyl_profiler_end("frame_callback");
 		dyl_profiler_print_func("frame_callback");
@@ -335,7 +242,7 @@ ENGINE_API void engine_shutdown(Engine* engine)
 {
 	dyl_profiler_start("programclose");
 	window_destroy(engine->window);
-	db_destroy(engine->batch_renderer);
+//	db_destroy(engine->batch_renderer);
 
 	arena_free(&global_arena);
 	arena_free(&entity_arena);

@@ -28,14 +28,15 @@ typedef enum
 	SHADER_SPRITE = 1,
 	SHADER_RECT,
 	SHADER_CUBE,
-	SHADER_DYNAMIC
+	SHADER_DYNAMIC,
+	SHADER_INSTANCED,
 }shader_id;
 
 typedef struct
 {
 	Shader shaders[MAX_SHADERS];
-	shader_type type[MAX_SHADERS];
     char shader_name[MAX_SHADERS][MAX_SHADER_NAME_LEN];
+	shader_type type[MAX_SHADERS];
 	size_t curr_size;
 }shader_data;
 
@@ -50,6 +51,9 @@ void shader_on_id_set_int(shader_data* data, size_t id, const char* name, int va
 void shader_on_id_set_vec3f(shader_data* data, size_t id, const char* name, vec3 value);
 void shader_on_id_set_vec4f(shader_data* data, size_t id, const char* name, vec4 value);
 void shader_on_id_set_mat4(shader_data* data, size_t id, const char* name, mat4 value);
+
+#define SLOT_TEXTURE2D 0
+#define SLOT_CUBEMAP 1
 
 typedef enum
 {
@@ -69,11 +73,10 @@ typedef union{
 typedef struct
 {
 	Texture_Path texture_path;
-	
-	GLuint ID; //stores texture data
-	int width, height, nrChannels;
 	unsigned char* data;
+	int width, height, nrChannels;
 	Texture_Type texture_type;
+	GLuint ID; //stores texture data
 
 }Texture;
 
@@ -111,22 +114,33 @@ typedef struct
 
 }Vertex_Data;
 
+typedef enum
+{
+	MESH_NIL = 0,
+	MESH_STATIC,
+	MESH_DYNAMIC,
+
+}Mesh_Type;
+
 
 typedef struct
 {
 	Vertex_Data vertices;
-//	unsigned int m_vao;
-//	unsigned int m_vbo;
-//	Shader mesh_shader;
+	Mesh_Type type;
 	unsigned int texture_id;
+	u32 indices[6]; //setting up rectangle for now
+	u32 m_vao;
+	u32 m_vbo;
 	bool has_texture;
-
 
 }Mesh;
 
 
-
+void vertices_setup(Vertex_Data* vertices, Arena* vertex_area, size_t size);
 void vertices_push(Vertex_Data* vertices, Vertex vertex);
+void mesh_setup(Mesh* mesh, Mesh_Type type, size_t num_vertices);
+void mesh_initialize_render_data(Mesh* mesh);
+
 
 typedef struct
 {
@@ -152,30 +166,31 @@ typedef enum
 typedef struct
 {
 
+	mat4 projection;
+	mat4 view;
 	shader_data shaders;
-	Arena vertex_arena;
-	Arena index_arena;
+//	Arena vertex_arena;
+//	Arena index_arena;
 //	Vertex_Data vertex_data;
-	Renderer_Mode current_mode;
 	//Model_Data model_data;
 	Mesh object_data;
 	
-	mat4 projection;
-	mat4 view;
 	u32 vbo;
 	u32 vao;
 	u32 ebo; //indices
 	size_t indice_count;
 	size_t quad_count;
 	shader_id shader_tag;
+	Renderer_Mode current_mode;
 	bool is_3d;
+
 
 
 	
 }Dyl_Batch_Renderer;
 
 
-Dyl_Batch_Renderer dyl_batch_renderer_init(bool is_3d, size_t max_vertices);
+Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_vertices);
 void dyl_batch_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
 void dyl_batch_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
 void dyl_batch_renderer_set_shader_tag(Dyl_Batch_Renderer* renderer, shader_id shader_tag);
@@ -191,12 +206,60 @@ void db_flush(Dyl_Batch_Renderer* renderer);
 void db_destroy(Dyl_Batch_Renderer* renderer);
 
 
+typedef struct
+{
+	mat4 projection;
+	mat4 view;
+
+	shader_data shaders;
+	Mesh object_data;
+	Model_Data models;
+	Arena model_arena;
+	Arena vertex_arena;
+	u32 vbo;
+	u32 vao;
+	u32 instance_count;
+	size_t objects_size;
+
+
+
+}Dyl_Instanced_Renderer;
+
+
+Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size);
+
+void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
+void dyl_instanced_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
+void dyl_instanced_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
+void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer);
+
+
+
+
+typedef enum
+{
+	RENDERER_BATCH = 1 >> 0,
+	RENDERER_INSTANCED = 1 >> 1,
+}Renderer_Type;
+
+
 
 typedef struct
 {
 	int temp;
+	u32 renderer_flags;
+	union
+	{
+		Dyl_Batch_Renderer batch_renderer;
+		Dyl_Instanced_Renderer instanced_renderer;
+	};
+
 }Dyl_Renderer;
 
+
+
+//rendering an object we can check if its a dynamic mesh, then we render through instanced if not we render through batch
+//we can set flags on or off to determine when we want to instance or batch render
 
 
 

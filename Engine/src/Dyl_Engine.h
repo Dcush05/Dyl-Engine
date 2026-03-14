@@ -28,19 +28,21 @@
 #endif
 
 
-#define GLOBAL_ARENA_START_SIZE (1280 * 1280)
+#define GLOBAL_ARENA_START_SIZE (1280)
 extern Arena global_arena;
 extern Arena entity_arena;
 
 
 typedef struct Engine
 {
+
+	Entity_Manager manager;
+	mat4 projection;
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;
+	Dyl_Instanced_Renderer* instanced_renderer;
 	Dyl_Event* event;
 	Camera* scene_camera;
-	mat4 projection;
-	Entity_Manager manager;
 	Texture texture;
 	Texture sky_box_texture;
 	bool wireframe_mode;

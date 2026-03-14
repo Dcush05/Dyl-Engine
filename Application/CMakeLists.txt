@@ -32,4 +32,17 @@ add_custom_command(TARGET Dyl_Engine POST_BUILD
     "../../Engine/build/$<CONFIG>/Dyl_Engine.dll"
     $<TARGET_FILE_DIR:Dyl_Engine>
 )
+add_custom_command(TARGET Dyl_Engine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"../../bin/SDL3.dll"
+    $<TARGET_FILE_DIR:Dyl_Engine>
+)
+add_custom_command(TARGET Dyl_Engine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	"../../bin/brotlicommon.dll"
+    $<TARGET_FILE_DIR:Dyl_Engine>
+)
+
+
+
 

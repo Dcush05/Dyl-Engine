@@ -16,10 +16,11 @@ typedef void* GL_Context_Handle;
 
 typedef struct
 {
-	Window_Handle window_handle;
-	GL_Context_Handle gl_context;
+
 	unsigned long long window_flags;
 	Dyl_Str window_name;
+	Window_Handle window_handle;
+	GL_Context_Handle gl_context;
 	u32 x, y, width, height;
 	bool is_window_open;
 }Dyl_Window;

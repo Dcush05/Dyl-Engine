@@ -3,7 +3,7 @@
 #include <time.h>
 #include "../utils/dyl_base.h"
 
-#define MAX_PROFILED_FUNCTIONS 50
+#define MAX_PROFILED_FUNCTIONS 15
 
 typedef enum
 {
@@ -20,16 +20,18 @@ typedef struct
 
 typedef struct
 {
+
+	double total_time;
 	clock_t start_time;
 	clock_t end_time;
-	double total_time;
 
 }Dyl_Profile_Stats;
 
 typedef struct
 {
-	Dyl_Profile_Id id[MAX_PROFILED_FUNCTIONS];
+
 	Dyl_Profile_Stats stats[MAX_PROFILED_FUNCTIONS];
+	Dyl_Profile_Id id[MAX_PROFILED_FUNCTIONS];
 }Dyl_Profile_Data;
 
 extern Dyl_Profile_Data global_profiler;

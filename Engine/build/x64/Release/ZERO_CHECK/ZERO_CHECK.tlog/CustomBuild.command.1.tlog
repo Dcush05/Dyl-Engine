@@ -1,0 +1,10 @@
+^C:\USERS\DCUSH\ONEDRIVE\DESKTOP\CODING\C\DYL-ENGINE\ENGINE\BUILD\CMAKEFILES\60DA86DC7D30E27D0646C7E2DF350B0E\GENERATE.STAMP.RULE
+setlocal
+C:\Users\dcush\softwares\cmake-3.29.0-rc2-windows-x86_64\bin\cmake.exe -SC:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine -BC:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/build/Dyl_Engine.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

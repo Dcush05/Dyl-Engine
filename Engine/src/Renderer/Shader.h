@@ -31,14 +31,14 @@ typedef struct
 typedef struct
 {
 	
+	Uniform_Cache_Data cache;
+	const char* vertex_shader_path;
+	const char* fragment_shader_path;
 	GLuint vertex_shader;
 	GLuint fragment_shader;
 	GLuint shader_program;
-	const char* vertex_shader_path;
-	const char* fragment_shader_path;
 	bool use;
 	size_t id;
-	Uniform_Cache_Data cache;
 
 }Shader;
 
