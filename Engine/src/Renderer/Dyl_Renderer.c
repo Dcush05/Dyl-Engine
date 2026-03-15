@@ -1,3 +1,5 @@
+
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "Dyl_Renderer.h"
 #include "Shader.h"
 #include "cglm/affine-pre.h"
@@ -349,6 +351,446 @@ void mesh_initialize_render_data(Mesh* mesh)
 }
 
 
+inline void calc_norms(float N[3], float v0[3], float v1[3], float v2[3])
+{
+	  float v10[3];
+	  float v20[3];
+	  float len2;
+
+	  v10[0] = v1[0] - v0[0];
+	  v10[1] = v1[1] - v0[1];
+	  v10[2] = v1[2] - v0[2];
+
+	  v20[0] = v2[0] - v0[0];
+	  v20[1] = v2[1] - v0[1];
+	  v20[2] = v2[2] - v0[2];
+
+	  N[0] = v20[1] * v10[2] - v20[2] * v10[1];
+	  N[1] = v20[2] * v10[0] - v20[0] * v10[2];
+	  N[2] = v20[0] * v10[1] - v20[1] * v10[0];
+
+	  len2 = N[0] * N[0] + N[1] * N[1] + N[2] * N[2];
+	  if (len2 > 0.0f) {
+		float len = (float)sqrt((double)len2);
+
+		N[0] /= len;
+		N[1] /= len;
+		
+	}
+}
+
+void my_file_reader(
+    void* ctx,
+    const char* filename,
+    int is_mtl,
+    const char* obj_filename,
+    char** out_buf,
+    size_t* out_len)
+{
+    printf("Attempting to read: %s (is_mtl: %d)\n", filename, is_mtl);
+    
+    FILE* file = fopen(filename, "rb");
+	
+	if (!file) {
+        fprintf(stderr, "Failed to open %s: %s\n", filename, strerror(errno));
+        *out_buf = NULL;
+        *out_len = 0;
+        return;
+    }
+    
+    printf("File opened successfully\n");
+    
+    fseek(file, 0, SEEK_END);
+    long len = ftell(file);
+    printf("File size: %ld bytes\n", len);
+    
+    if (len <= 0) {
+        fprintf(stderr, "File is empty or ftell failed\n");
+        fclose(file);
+        *out_buf = NULL;
+        *out_len = 0;
+        return;
+    }
+    
+    fseek(file, 0, SEEK_SET);
+    
+    char* data = malloc(len + 1);
+    if (!data) {
+        fclose(file);
+        fprintf(stderr, "Failed to allocate buffer for %ld bytes\n", len);
+        *out_buf = NULL;
+        *out_len = 0;
+        return;
+    }
+    
+    size_t bytes_read = fread(data, 1, len, file);
+    printf("Bytes read: %zu of %ld\n", bytes_read, len);
+    
+    if (bytes_read != (size_t)len) {
+        fprintf(stderr, "Failed to read complete file. Expected %ld, got %zu\n", len, bytes_read);
+        free(data);
+        fclose(file);
+        *out_buf = NULL;
+        *out_len = 0;
+        return;
+    }
+    
+    data[len] = '\0';
+    fclose(file);
+    
+    // Debug: print first few lines of the file
+    printf("First 200 characters of file:\n");
+    for (int i = 0; i < len && i < 200; i++) {
+        if (data[i] == '\n') {
+            printf("\\n");
+        } else if (data[i] == '\r') {
+            printf("\\r");
+        } else if (data[i] >= 32 && data[i] <= 126) {
+            printf("%c", data[i]);
+        } else {
+            printf("[%02x]", (unsigned char)data[i]);
+        }
+    }
+    printf("\n");
+    
+    *out_buf = data;
+    *out_len = (size_t)len;
+    
+    printf("Successfully read %zu bytes from %s\n", (size_t)len, filename);
+
+}
+
+
+Model model_init(const char* file_name, Arena* arena)
+{
+	
+	Model model = {0};
+
+	strncpy(model.filename, file_name, sizeof(model.filename) - 1);
+	model.filename[sizeof(model.filename) - 1] = '\0';
+	tinyobj_attrib_t attrib;
+	tinyobj_shape_t* shapes;
+	size_t num_shapes = 0;
+	tinyobj_material_t* materials = NULL;
+	size_t num_materials = 0;
+
+	int check = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials, model.filename, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
+
+	if(check != TINYOBJ_SUCCESS)
+	{
+		fprintf(stderr, "Error loading OBJ\n");
+		return (Model){0};
+	}
+
+	
+	float bmin[3], bmax[3];
+	bmin[0] = FLT_MAX;
+
+	bmin[1] = FLT_MAX;
+
+	bmin[2] = FLT_MAX;
+
+	bmax[0] = -FLT_MAX;
+
+	bmax[1] = -FLT_MAX;
+
+	bmax[2] = -FLT_MAX;
+
+
+	size_t face_offset = 0;
+
+
+	model.num_triangles = attrib.num_face_num_verts;
+	size_t stride = sizeof(Vertex) / sizeof(float);
+
+	//float* vertex_buffer = (float*)malloc(OBJ_SIZE * num_triangles * 3);
+	//vertices_setup(&model.mesh.vertices, arena ,model.num_triangles * 3);
+	model.mesh.vertices.vertices = arena_push(arena, (model.num_triangles * 3) * sizeof(Vertex));
+	model.mesh.vertices.capacity = model.num_triangles * 3;
+
+
+
+	memset(model.textures, 0, sizeof(Texture) * TEXTURE_CAPACITY);
+	/*for(size_t i = 0; i < TEXTURE_AMOUNT; ++i)
+	{
+		model.textures[i].ID = 0;
+		memset(model->textures[i].model_texture_paths, 0, MAX_PATH_COUNT);
+	}*/
+	for(size_t i = 0; i < attrib.num_face_num_verts; ++i)
+	{
+		assert(attrib.face_num_verts[i] % 3 == 0);
+		for(size_t j = 0; j < (size_t)attrib.face_num_verts[i]/ 3; ++j)
+		{
+			float v[3][3];
+			float n[3][3];
+			float c[3];
+
+			float len2;
+
+
+
+			tinyobj_vertex_index_t idx0 = attrib.faces[face_offset + 3 * j + 0];
+			tinyobj_vertex_index_t idx1 = attrib.faces[face_offset + 3 * j + 1];
+			tinyobj_vertex_index_t idx2 = attrib.faces[face_offset + 3 * j + 2];
+			for(size_t k = 0; k < 3; ++k)
+			{
+				int f0 = idx0.v_idx;
+				int f1 = idx1.v_idx;
+				int f2 = idx2.v_idx;
+				
+				assert(f0 >= 0);
+				assert(f1 >= 0);
+				assert(f2 >= 0);
+				v[0][k] = attrib.vertices[3 * (size_t)f0 + k];
+				v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
+				v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
+				bmin[k] = (v[0][k] < bmin[k]) ? v[0][k] : bmin[k];
+				bmin[k] = (v[1][k] < bmin[k]) ? v[1][k] : bmin[k];
+				bmin[k] = (v[2][k] < bmin[k]) ? v[2][k] : bmin[k];
+				bmax[k] = (v[0][k] > bmax[k]) ? v[0][k] : bmax[k];
+				bmax[k] = (v[1][k] > bmax[k]) ? v[1][k] : bmax[k];
+				bmax[k] = (v[2][k] > bmax[k]) ? v[2][k] : bmax[k];
+			}
+
+			if(attrib.num_normals > 0)
+			{
+				int f0 = idx0.vn_idx;
+				int f1 = idx1.vn_idx;
+				int f2 = idx2.vn_idx;
+				if (f0 >= 0 && f1 >= 0 && f2 >= 0) {
+					assert(f0 < (int)attrib.num_normals);
+					assert(f1 < (int)attrib.num_normals);
+					assert(f2 < (int)attrib.num_normals);
+				for (size_t k = 0; k < 3; k++) {
+				  n[0][k] = attrib.normals[3 * (size_t)f0 + k];
+				  n[1][k] = attrib.normals[3 * (size_t)f1 + k];
+				  n[2][k] = attrib.normals[3 * (size_t)f2 + k];
+				}
+			} else { /* normal index is not defined for this face */
+		/* compute geometric normal */
+				calc_norms(n[0], v[0], v[1], v[2]);
+				n[1][0] = n[0][0];
+				n[1][1] = n[0][1];
+				n[1][2] = n[0][2];
+				n[2][0] = n[0][0];
+				n[2][1] = n[0][1];
+				n[2][2] = n[0][2];
+			}
+			} else {
+			  /* compute geometric normal */
+				  calc_norms(n[0], v[0], v[1], v[2]);
+				  n[1][0] = n[0][0];
+				  n[1][1] = n[0][1];
+				  n[1][2] = n[0][2];
+				  n[2][0] = n[0][0];
+				  n[2][1] = n[0][1];
+				  n[2][2] = n[0][2];
+			}
+
+			Vertex vert;
+			size_t vert_indices[3] = {idx0.vt_idx, idx1.vt_idx, idx2.vt_idx};
+			for (size_t k = 0; k < 3; k++) {
+					
+			  /*vertex_buffer[(3 * i + k) * stride + 0] = v[k][0];
+			  vertex_buffer[(3 * i + k) * stride + 1] = v[k][1];
+			  vertex_buffer[(3 * i + k) * stride + 2] = v[k][2];
+			  vertex_buffer[(3 * i + k) * stride + 3] = n[k][0];
+			  vertex_buffer[(3 * i + k) * stride + 4] = n[k][1];
+			  vertex_buffer[(3 * i + k) * stride + 5] = n[k][2];*/
+			  vert.position[0] = v[k][0];
+			  vert.position[1] = v[k][1];
+			  vert.position[2] = v[k][2];
+
+			  vert.normals[0] = n[k][0];
+			  vert.normals[1] = n[k][1];
+			  vert.normals[2] = n[k][2];
+
+			  int tex_idx = vert_indices[k];
+			  if(tex_idx >= 0)
+			  {
+				vert.tex_coords[0] = attrib.texcoords[2 * (size_t)tex_idx + 0];
+				vert.tex_coords[1] = 1.0 - attrib.texcoords[2 * (size_t)tex_idx + 1];
+				}else{
+
+					vert.tex_coords[0] = 0.0f;
+					vert.tex_coords[1] = 0.0f;
+
+				}
+
+
+				 
+
+
+			  /* Set the normal as alternate color */
+			  c[0] = n[k][0];
+			  c[1] = n[k][1];
+			  c[2] = n[k][2];
+			  vert.color[0] = c[0];
+			  vert.color[1] = c[1];
+			  vert.color[2] = c[2];
+			  len2 = c[0] * c[0] + c[1] * c[1] + c[2] * c[2];
+			  if (len2 > 0.0f) {
+				float len = (float)sqrt((double)len2);
+
+				c[0] /= len;
+				c[1] /= len;
+				c[2] /= len;
+			  }
+
+			  /*vertex_buffer[(3 * i + k) * stride + 6] = (c[0] * 0.5f + 0.5f);
+			  vertex_buffer[(3 * i + k) * stride + 7] = (c[1] * 0.5f + 0.5f);
+			  vertex_buffer[(3 * i + k) * stride + 8] = (c[2] * 0.5f + 0.5f);*/
+			  vert.color[0] = c[0] * 0.5f + 0.5f;
+			  vert.color[1] = c[1] * 0.5f + 0.5f;
+			  vert.color[2] = c[2] * 0.5f + 0.5f;
+
+		  /* now set the color from the material */
+		  if (attrib.material_ids[i] >= 0) {
+			int matidx = attrib.material_ids[i];
+			/*vertex_buffer[(3 * i + k) * stride + 9] = materials[matidx].diffuse[0];
+			vertex_buffer[(3 * i + k) * stride + 10] = materials[matidx].diffuse[1];
+			vertex_buffer[(3 * i + k) * stride + 11] = materials[matidx].diffuse[2];*/
+			vert.color[0]= materials[matidx].diffuse[0];
+			vert.color[1]= materials[matidx].diffuse[1];
+			vert.color[2]= materials[matidx].diffuse[2];
+			
+		  } else {
+			/* Just copy the default value */
+			/*vertex_buffer[(3 * i + k) * stride + 9] = vertex_buffer[(3 * i + k) * stride + 6];
+			vertex_buffer[(3 * i + k) * stride + 10] = vertex_buffer[(3 * i + k) * stride + 7];
+			vertex_buffer[(3 * i + k) * stride + 11] = vertex_buffer[(3 * i + k) * stride + 8];*/
+		  }
+
+		  vertices_push(&model.mesh.vertices, vert);
+
+
+		}
+	}
+		face_offset += (size_t)attrib.face_num_verts[i];
+	}
+	model.vb = 0;
+
+	//Texture intialization code here
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//Opengl Commands
+	glGenVertexArrays(1, &model.vao);
+	glBindVertexArray(model.vao);
+
+	glGenBuffers(1, &model.vb);
+	glBindBuffer(GL_ARRAY_BUFFER, model.vb);
+	glBufferData(GL_ARRAY_BUFFER,
+			  model.mesh.vertices.vertex_count * sizeof(Vertex),
+			  model.mesh.vertices.vertices, GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+//	glEnableVertexAttribArray(1);	
+//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normals));
+//	glEnableVertexAttribArray(3);
+//	glVertexAttribPointer(3,2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	glBindVertexArray(0);
+
+
+
+
+
+
+
+	return model;
+
+}
+Object obj_create(Object_Type type, Mesh_Type m_type,vec3 position, vec3 size, float rotate,vec4 color, Arena* arena)
+{
+	Object obj = {0};
+	
+
+	obj.obj_type = type;
+	vec4 adjusted_color;
+	adjusted_color[0] = color[0]/255.0f;
+	adjusted_color[1] = color[1]/255.0f;
+	adjusted_color[2] = color[2]/255.0f;
+	adjusted_color[3] = color[3]/255.0f;
+
+
+
+
+	switch(obj.obj_type)
+	{
+		case OBJECT_RECT:
+			obj.obj_mesh.vertices.vertices = arena_push(arena, sizeof(Vertex) * RECT_VERTICE_SIZE);
+			obj.obj_mesh.vertices.vertex_count = 0;
+			obj.obj_mesh.vertices.capacity = RECT_VERTICE_SIZE;
+			float x1 = position[0];
+			float y1 = position[1];
+			float x2 = x1 + size[0];
+			float y2 = x2 + size[1];
+			vec2 positions[4] = {{x1, y1}, {x2, y2}, {x2, y1}, {x1, y2}};
+			float vertex_order[4] = {0,1,2,3};
+			obj.obj_mesh.type = m_type;
+
+			for(size_t i = 0; i < RECT_VERTICE_SIZE; ++i)
+			{
+				Vertex v = {0}; 
+			//	v.position[0] = positions[i][0];
+			//	v.position[1] = positions[i][1];
+				v.color[0] = adjusted_color[0];
+				v.color[1] = adjusted_color[1];
+				v.color[2] = adjusted_color[2];
+				v.color[3] = adjusted_color[3];
+				v.rotation = rotate;
+				v.size[0] = size[0];
+				v.size[1] = size[1];
+				vertices_push(&obj.obj_mesh.vertices, v);
+			}
+
+			glGenVertexArrays(1, &obj.obj_mesh.m_vao);
+			glGenBuffers(GL_ARRAY_BUFFER, &obj.obj_mesh.m_vbo);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * obj.obj_mesh.vertices.vertex_count,
+			 obj.obj_mesh.vertices.vertices, GL_STATIC_DRAW);
+
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+					sizeof(Vertex), (void*)offsetof(Vertex, position ));
+
+
+
+
+
+
+			
+
+		break;
+		case OBJECT_TRIANGLE:
+		break;
+		case OBJECT_CIRCLE:
+		break;
+		case OBJECT_CUBE:
+		break;
+		case OBJECT_MODEL:
+		break;
+	}
+
+
+	return obj;
+}
+void obj_set_texture_2d(Object* obj, Texture tex);
+void obj_set_texture_3d(Object* obj, Texture tex);
+void obj_set_texture_model(Object* obj, Texture tex);
+
+
+
+
 
 Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_vertices)
 {
@@ -494,6 +936,10 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 	glGenBuffers(1, &renderer.ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * renderer.indice_count, indices, GL_DYNAMIC_DRAW);
+	glBindVertexArray(0);
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 
 
 	
@@ -538,7 +984,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	if(renderer->current_mode == MODE_TEXTURE || renderer->current_mode == MODE_CUBE_TEXTURE)
 	{
 		glActiveTexture(GL_TEXTURE0 + SLOT_TEXTURE2D);
-		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture_id);
+		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture.ID);
 
 		glCullFace(GL_BACK);
 	    shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
@@ -553,7 +999,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
 
 		glActiveTexture(GL_TEXTURE0 + SLOT_CUBEMAP);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->object_data.texture_id);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->object_data.texture.ID);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 1);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 1);
 
@@ -580,6 +1026,10 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
+    glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glUseProgram(0);
+	glCullFace(GL_BACK);
 //	renderer->object_data.texture_id = 0;
 	glDepthMask(GL_TRUE);
 	
@@ -723,9 +1173,9 @@ void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 textu
 	}
 	
 
-	if (renderer->object_data.texture_id != texture->ID && renderer->current_mode != MODE_TEXTURE) { db_flush(renderer);
+	if (renderer->object_data.texture.ID != texture->ID && renderer->current_mode != MODE_TEXTURE) { db_flush(renderer);
 		renderer->current_mode = MODE_TEXTURE;
-        renderer->object_data.texture_id = texture->ID;
+        renderer->object_data.texture = *texture;
     }
 	
 	
@@ -929,10 +1379,10 @@ void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 t
 	{
 		db_flush(renderer);
 	}
-	if (renderer->object_data.texture_id != texture->ID && renderer->current_mode != MODE_CUBE_TEXTURE) {
+	if (renderer->object_data.texture.ID != texture->ID && renderer->current_mode != MODE_CUBE_TEXTURE) {
         db_flush(renderer);
 		renderer->current_mode = MODE_CUBE_TEXTURE;
-        renderer->object_data.texture_id = texture->ID;
+        renderer->object_data.texture = *texture;
     }
 
 	vec4 texCoordsConversion;
@@ -1014,10 +1464,10 @@ void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
 	{
 		db_flush(renderer);
 	}
-	if (renderer->object_data.texture_id != texture->ID && renderer->current_mode != MODE_CUBEMAP) {
+	if (renderer->object_data.texture.ID != texture->ID && renderer->current_mode != MODE_CUBEMAP) {
         db_flush(renderer);
 		renderer->current_mode = MODE_CUBEMAP;
-        renderer->object_data.texture_id = texture->ID;
+        renderer->object_data.texture = *texture;
     }
 
 	vec4 texCoordsConversion;
@@ -1186,8 +1636,6 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 void db_destroy(Dyl_Batch_Renderer* renderer)
 {
 	ASSERT(renderer, "Renderer(Null)");
-//	arena_free(&renderer->vertex_arena);
-//	arena_free(&renderer->index_arena);
 	shader_cleanup(&renderer->shaders);
 	glDeleteVertexArrays(1, &renderer->vao);
 	glDeleteBuffers(1,&renderer->vbo);
@@ -1197,29 +1645,34 @@ void db_destroy(Dyl_Batch_Renderer* renderer)
 
 
 }
-Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size)
+Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bool is_3d)
 {
+	ASSERT(arena, "Arena passed is Null");
 	Dyl_Instanced_Renderer i_renderer;
 	memset(&i_renderer, 0, sizeof(Dyl_Instanced_Renderer));
 	i_renderer.objects_size = objects_size;
+	i_renderer.is_3d = is_3d;
+	if(i_renderer.is_3d)
+	{
+		glEnable(GL_DEPTH_TEST);
+	}
 
-	i_renderer.model_arena = arena_alloc((objects_size * 2 * 2) * sizeof(i_renderer.models));
 
-	i_renderer.vertex_arena = arena_alloc((objects_size * 250) * sizeof(Vertex_Data));
 	i_renderer.models.capacity = objects_size;
 
-	i_renderer.models.models_container = arena_push(&i_renderer.model_arena, objects_size);
-	i_renderer.object_data.vertices.vertices = arena_push(&i_renderer.vertex_arena, sizeof(Vertex) * 6);
+	i_renderer.models.models_container = arena_push(arena, objects_size * sizeof(mat4));
+	i_renderer.object_data.vertices.vertices = arena_push(arena, sizeof(Vertex) * 6);
 
 
-	
+
 	i_renderer.instance_count = 0;
 	shader_initialize(&i_renderer.shaders);
 	Shader shader = shader_init("assets/shaders/instanced_Shader.vs", "assets/shaders/instanced_Shader.fs");
 
 	shader_add(&i_renderer.shaders, &shader, SHADER_INSTANCED, SHADER_HOT);
 	shader_programs_create_type(&i_renderer.shaders, SHADER_HOT);
-	mesh_setup(&i_renderer.object_data, MESH_DYNAMIC, 6);
+	i_renderer.current_model = NULL;
+/*	mesh_setup(&i_renderer.object_data, MESH_DYNAMIC, 6);
 
 	vertices_push(&i_renderer.object_data.vertices, 
 	(Vertex)
@@ -1252,11 +1705,10 @@ Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size)
 	(Vertex)
 	{
 		.position = {-0.5, 0.5, 0.0}
-	});
+	});*/
 
-	glGenVertexArrays(1, &i_renderer.object_data.m_vao);
+	/*glGenVertexArrays(1, &i_renderer.object_data.m_vao);
 	glGenBuffers(1, &i_renderer.object_data.m_vbo);
-	glGenBuffers(1, &i_renderer.vbo);
 
 
 	glBindVertexArray(i_renderer.object_data.m_vao);
@@ -1265,28 +1717,9 @@ Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size)
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-					   sizeof(Vertex), (void*)offsetof(Vertex, position ));
+					   sizeof(Vertex), (void*)offsetof(Vertex, position ));*/
 
-	glBindBuffer(GL_ARRAY_BUFFER, i_renderer.vbo);
-	glBufferData(GL_ARRAY_BUFFER, objects_size * sizeof(mat4), NULL, GL_DYNAMIC_DRAW);
-
-
-
-
-	// Assume instance_vbo is already generated and bound
-	size_t vec4_size = sizeof(vec4);
-
-	for (int i = 0; i < 4; i++) {
-		unsigned int location = 6 + i; // Start at 6, end at 9
-		glEnableVertexAttribArray(location);
-		glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(i * vec4_size));
-		
-		// This is the "Magic" line for instancing
-		glVertexAttribDivisor(location, 1); 
-	}
-	glBindVertexArray(0);
-
-
+	
 
 		/*glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, i_renderer.vbo);
@@ -1295,6 +1728,47 @@ Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size)
 	glVertexAttribDivisor(2,1);*/
 
 	return i_renderer;
+}
+
+void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* view)
+{
+	ASSERT(renderer, "Renderer(Null)");
+	memcpy(renderer->view, view, sizeof(mat4));
+
+}
+void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* renderer, Model* model)
+{
+
+
+	glBindVertexArray(model->vao);
+	glGenBuffers(1, &model->instance_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, model->instance_vbo);
+//	mat4 model_mat;
+//	glm_translate(model_mat, (vec3){model->mesh.vertices.vertices[0].position[0],model->mesh.vertices.vertices[0].position[1], model->mesh.vertices.vertices[0].position[2]} );
+
+    glBufferData(GL_ARRAY_BUFFER, renderer->models.capacity * sizeof(mat4), NULL, GL_DYNAMIC_DRAW);
+
+
+
+	size_t vec4_size = sizeof(vec4);
+
+	for (int i = 0; i < 4; i++) {
+		unsigned int location = 6 + i; // Start at 6, end at 9
+	//	glDisableVertexAttribArray(i);
+		glEnableVertexAttribArray(location);
+		glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(i * vec4_size));
+//		glVertexAttribDivisor(i, 0);
+		
+		// This is the "Magic" line for instancing
+		
+		glVertexAttribDivisor(location, 1); 
+	}
+	
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+
 }
 
 
@@ -1311,7 +1785,7 @@ void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, ve
 
 	if (renderer->instance_count >= renderer->models.capacity) return;
 
-    mat4* model = &renderer->models.models_container[renderer->instance_count].model;
+    mat4* model = &renderer->models.models_container[renderer->instance_count];
     
     glm_mat4_identity(*model);
     glm_translate(*model, (vec3){position[0], position[1], 0.0f});
@@ -1352,24 +1826,68 @@ void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, ve
 
 }
 
-
-void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer)
+void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color)
 {
 	ASSERT(renderer, "Renderer is null");
+	ASSERT(renderer, "Model is null");
+
+	if(renderer->current_model != NULL && renderer->current_model != model)
+	{
+		dyl_instanced_draw(renderer);
+	}
+
+	if (renderer->instance_count >= renderer->models.capacity)
+	{
+		dyl_instanced_draw(renderer);
+	}
+
+	if(renderer->current_model != model)
+	{
+		renderer->current_model = model;
+	}
+
+
+	mat4* model_mat = &renderer->models.models_container[renderer->instance_count];
+    
+    glm_mat4_identity(*model_mat);
+    glm_translate(*model_mat, (vec3){position[0], position[1], position[2]});
+    glm_rotate(*model_mat, glm_rad(rotate), (vec3){0.0f, 0.0f, 1.0f});
+    glm_scale(*model_mat, (vec3){size[0], size[1], 1.0f});
+	renderer->object_data.m_vao = model->vao;
+	printf("Model vao: %u", model->vao);
+	fprintf(stderr, "Number of triangles being pushed: %d", model->num_triangles);
+
+	renderer->triangle_count = model->num_triangles;
+    renderer->instance_count++;
+
+
+}
+
+
+void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
+{
+	ASSERT(renderer, "Renderer is null");
+	if(renderer->instance_count == 0 || renderer->current_model == NULL) return;
+
+	glCullFace(GL_BACK);
 	shader_on_id_use(&renderer->shaders, SHADER_INSTANCED);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "projection", renderer->projection);
+
+	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "view", renderer->view);
+
     
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->current_model->instance_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
-    glBindVertexArray(renderer->object_data.m_vao);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderer->instance_count);
+    glBindVertexArray(renderer->current_model->vao);
+	printf("Instance count every frame: %d\n", renderer->instance_count);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->triangle_count, renderer->instance_count);
     glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
     renderer->instance_count = 0;
 	renderer->models.model_count = 0;
 
 }
 void dyl_instanced_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
-void dyl_instanced_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
 //void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer, vec4 color);
 
 

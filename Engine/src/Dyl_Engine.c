@@ -7,6 +7,7 @@
 #include "cglm/types.h"
 #include "renderer/camera.h"
 #include "renderer_engine_interface.h"
+#include "utils/dyl_arena.h"
 #include <complex.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -52,7 +53,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 //	*engine->renderer = renderer_init((float)WIDTH, (float)HEIGHT, false);
 	
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
-	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
 
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
@@ -76,6 +76,19 @@ ENGINE_API void engine_initialize(Engine* engine)
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
 	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,0.5,5.0}, true,engine->window->width, engine->window->height );
 
+	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
+
+	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
+	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 10, true);
+	engine->model = model_init("assets/Obj/E-45-Aircraft/Aircraft.obj", &global_arena);
+
+	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, &engine->model);
+
+	engine->t_model = arena_push(&global_arena, sizeof(Model));
+	*engine->t_model = model_init("assets/Obj/teapot.obj", &global_arena);
+	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, engine->t_model);
+
+
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
 	#endif
@@ -84,10 +97,10 @@ ENGINE_API void engine_initialize(Engine* engine)
 //	glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
 //	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
 //	*engine->instanced_renderer = dyl_instanced_setup(5);
-//	memcpy(engine->instanced_renderer->projection, engine->projection, sizeof(mat4));
 	
 	glm_perspective(glm_rad(45.0f), (float)engine->window->width / (float)engine->window->height, 0.1f, 100.0f, engine->projection);
 
+	memcpy(engine->instanced_renderer->projection, engine->projection, sizeof(mat4));
 	engine->wireframe_mode = false;
 
 	
@@ -131,6 +144,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		}
 		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
 
+		dyl_instanced_renderer_set_view(engine->instanced_renderer, &engine->scene_camera->view);
+
 	
 		float dt = 1/144.0f;
 
@@ -162,12 +177,39 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
 			db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
+
 			db_flush(engine->batch_renderer); 
 		}
-		//dyl_instanced_push_rect(engine->instanced_renderer, (vec2){100,100}, (vec2){64,64}, 0.0);
+		// 2. FORCE RESET THE STATE
+		glBindVertexArray(0);  // This is the most important line
+		glUseProgram(0);       // Unset the batch shader
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+			
+//		dyl_instanced_push_rect(engine->instanced_renderer, (vec2){1.0,1.0}, (vec2){64,64}, 0.0);
 
 
 		//dyl_instanced_draw_rectangle(engine->instanced_renderer);
+		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
+
+						   (vec3){0.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
+		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
+						   (vec3){1.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
+		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
+						   (vec3){2.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
+		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
+						   (vec3){3.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
+
+		dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255} );
+
+
+
+
+
+
+
+		dyl_instanced_draw(engine->instanced_renderer);
 
 		frame_callback(engine);
 		window_end(engine->window);

@@ -13,12 +13,18 @@
 	Make renderer better and more compact
 		-Add rendering commands plz
 		-Clean up batch refactoring code
-
-#TODO LIST:	
 	Render through meshes ???
 	Render models
-		-Have the choice to swithc between instanced rendering or batch rendering when dealing with meshes (some meshes are static so maybe have them batched while
+
+#TODO LIST:	
+	Render models
+		-Have the choice to switch between instanced rendering or batch rendering when dealing with meshes (some meshes are static so maybe have them batched while
 		dynamic meshes should be instanced)
+		-Setup standard renderer for regular calls 
+		-Setup lighting
+		-Terrain rendering through meshes with batch renderer
+		-Grass renderering through terrain
+
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
 	Setup assets system
 	Refactor so our code has better taste

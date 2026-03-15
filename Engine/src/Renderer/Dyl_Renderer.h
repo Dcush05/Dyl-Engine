@@ -11,6 +11,7 @@
 #include "Shader.h"
 #include "../utils/dyl_base.h"
 #include "stb_image.h"
+#include "tinyobj_loader_c.h"
 
 #include FT_FREETYPE_H
 #define MAX_SHADERS 10
@@ -91,7 +92,7 @@ void texture_free(Texture* texture);
 	
 	
 
-
+#define RECT_VERTICE_SIZE 4 
 
 typedef struct
 {
@@ -127,7 +128,7 @@ typedef struct
 {
 	Vertex_Data vertices;
 	Mesh_Type type;
-	unsigned int texture_id;
+	Texture texture;
 	u32 indices[6]; //setting up rectangle for now
 	u32 m_vao;
 	u32 m_vbo;
@@ -142,18 +143,103 @@ void mesh_setup(Mesh* mesh, Mesh_Type type, size_t num_vertices);
 void mesh_initialize_render_data(Mesh* mesh);
 
 
-typedef struct
+//shapes / objects
+
+
+typedef enum
 {
-	mat4 model;
-}Model_Container;
+	TEXTURE_DIFFUSE = 0,
+	TEXTURE_ALPHA,
+	TEXTURE_SPECULAR,
+	TEXTURE_SPECULAR_HIGHLIGHT,
+	TEXTURE_AMBIENT,
+	TEXTURE_BUMP,
+	TEXTURE_DISPLACEMENT,
+	TEXTURE_TYPE_AMOUNT,
+}Model_Texture_Type;
+
+#define TEXTURE_CAPACITY 64
+
+
+typedef struct 
+{
+	//tinyobj_attrib_t attrib;
+//	tinyobj_shape_t* shapes;
+	Texture textures[TEXTURE_CAPACITY];
+	Mesh mesh;
+	Shader shader;
+	char filename[64];
+	Model_Texture_Type mtt;
+	size_t num_triangles;
+	size_t texture_count;
+	
+	GLuint vb;
+	GLuint vao;
+	GLuint instance_vbo;
+	
+
+
+
+}Model;
+
+
+
+Model model_init(const char* file_name, Arena* arena);
+
+
+typedef enum
+{
+	OBJECT_RECT = 0,
+	OBJECT_TRIANGLE,
+	OBJECT_CIRCLE,
+	OBJECT_CUBE,
+	OBJECT_MODEL,
+}Object_Type;
 
 
 typedef struct
 {
-	Model_Container* models_container;
+	mat4* models_container;
 	size_t model_count;
 	size_t capacity;
 }Model_Data;
+
+
+
+
+typedef struct
+{
+	Mesh obj_mesh;
+	Object_Type obj_type;
+	mat4 model;
+	
+
+}Object;
+
+
+Object obj_create(Object_Type type, Mesh_Type m_type, vec3 position, vec3 size, float rotate,vec4 color, Arena* arena);
+void obj_set_texture_2d(Object* obj, Texture tex);
+void obj_set_texture_3d(Object* obj, Texture tex);
+void obj_set_texture_model(Object* obj, Texture tex);
+
+
+
+
+typedef struct
+{
+	Object* objects;
+	size_t capacity;
+	size_t count;
+
+}Object_Data;
+
+
+
+void object_data_initialize(Object_Data* obj_data, size_t capacity, Arena* arena);
+void object_data_push(Object_Data* obj_data, Object obj);
+
+
+
 typedef enum
 {
 	MODE_RECT = 0,
@@ -210,28 +296,35 @@ typedef struct
 {
 	mat4 projection;
 	mat4 view;
-
+	Model* current_model;
 	shader_data shaders;
 	Mesh object_data;
 	Model_Data models;
-	Arena model_arena;
-	Arena vertex_arena;
+//	Arena model_arena;
+	//Arena vertex_arena;
+	Object_Data object;
+	bool is_3d;
+
 	u32 vbo;
 	u32 vao;
 	u32 instance_count;
 	size_t objects_size;
+	size_t triangle_count;
 
 
 
 }Dyl_Instanced_Renderer;
 
 
-Dyl_Instanced_Renderer dyl_instanced_setup(size_t objects_size);
+Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bool is_3d);
 
+
+void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* renderer, Model* model);
+void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* view);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
+void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec2 position, vec2 size, float rotate, vec4 color);
 void dyl_instanced_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
-void dyl_instanced_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
-void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer);
+void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer);
 
 
 

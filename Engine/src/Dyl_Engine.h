@@ -37,6 +37,8 @@ typedef struct Engine
 {
 
 	Entity_Manager manager;
+	Model model;
+	Model* t_model;
 	mat4 projection;
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;
