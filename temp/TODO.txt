@@ -24,11 +24,11 @@
 		-Setup lighting
 		-Terrain rendering through meshes with batch renderer
 		-Grass renderering through terrain
-
+	TEXT DEBUG SYSTEM(Doesnt have to be based on my imgui)
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
 	Setup assets system
 	Refactor so our code has better taste
-	Fix camera code so that it is window agnostic or  make an interface for the camera code
+	Fix camera code so that it is o.s agnostic or  make an interface for the camera code
 	Setup a scene handling system
 		different scenes
 		each scene can have a different screen??

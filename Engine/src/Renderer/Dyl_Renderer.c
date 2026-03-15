@@ -668,7 +668,8 @@ Model model_init(const char* file_name, Arena* arena)
 	}
 		face_offset += (size_t)attrib.face_num_verts[i];
 	}
-	model.vb = 0;
+	model.mesh.m_vbo = 0;
+
 
 	//Texture intialization code here
 	//
@@ -679,15 +680,14 @@ Model model_init(const char* file_name, Arena* arena)
 	//
 	//
 	//Opengl Commands
-	glGenVertexArrays(1, &model.vao);
-	glBindVertexArray(model.vao);
+	glGenVertexArrays(1, &model.mesh.m_vao);
+	glBindVertexArray(model.mesh.m_vao);
 
-	glGenBuffers(1, &model.vb);
-	glBindBuffer(GL_ARRAY_BUFFER, model.vb);
+	glGenBuffers(1, &model.mesh.m_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, model.mesh.m_vbo);
 	glBufferData(GL_ARRAY_BUFFER,
 			  model.mesh.vertices.vertex_count * sizeof(Vertex),
 			  model.mesh.vertices.vertices, GL_STATIC_DRAW);
-
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
@@ -985,7 +985,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	{
 		glActiveTexture(GL_TEXTURE0 + SLOT_TEXTURE2D);
 		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture.ID);
-
+		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 	    shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "u_texture", 0);
@@ -995,6 +995,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
 	}else if(renderer->current_mode == MODE_CUBEMAP){
 		glDepthMask(GL_FALSE);
+
+		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 
 
@@ -1006,13 +1008,26 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
 
-	}else{
+	}else if(renderer->current_mode == MODE_TERRAIN_MESH || renderer->current_mode == MODE_RECT){
+		glDisable(GL_CULL_FACE);
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
+					   "need_texture", 0);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+
+
+	}else if(renderer->current_mode == MODE_CUBE){
 	//	printf("wkekke\n");	
 		//TODO: temp
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+
+	//	glBindTexture(GL_TEXTURE_2D, 0);
 
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+
 	//	renderer->object_data.texture_id = 0;
 		
 	}
@@ -1024,6 +1039,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
 	//NOTE: Maybe use elements instead since we already have that setup
 	glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
+	//NOTE: switch between renderer->triangle_count * 3 when rendering triangles
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
     glBindVertexArray(0);
@@ -1041,7 +1057,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size, float rotate, vec4 color)
 {
 	ASSERT(renderer, "Renderer(Null)");
-	ASSERT(!renderer->is_3d, "Trying to draw rect when 3d");
+//	ASSERT(!renderer->is_3d, "Trying to draw rect when 3d");
 
 	if(renderer->object_data.vertices.vertex_count + 4 > renderer->object_data.vertices.capacity)
 	{
@@ -1162,6 +1178,10 @@ void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size, f
 
 }
 
+void db_triangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, float size, float rotate, vec4 color)
+{
+	
+}
 
 void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 texture_rect, vec2 position, vec2 size, float rotate, vec4 color)
 {
@@ -1285,6 +1305,133 @@ void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 textu
 	vertices_push(&renderer->object_data.vertices, v4);
 
 	renderer->quad_count++;
+
+}
+
+
+void db_terrain_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color)
+{
+	ASSERT(renderer, "Renderer(Null)");
+//	ASSERT(!renderer->is_3d, "Trying to draw rect when 3d");
+
+	if(renderer->object_data.vertices.vertex_count + 4 > renderer->object_data.vertices.capacity)
+	{
+		db_flush(renderer);
+	}
+	if (renderer->current_mode != MODE_TERRAIN_MESH) 
+	{ 
+		db_flush(renderer);
+		renderer->current_mode = MODE_TERRAIN_MESH;
+    }
+	
+
+	vec4 adjusted_color;
+	adjusted_color[0] = color[0]/255.0f;
+	adjusted_color[1] = color[1]/255.0f;
+	adjusted_color[2] = color[2]/255.0f;
+	adjusted_color[3] = color[3]/255.0f;
+
+	
+	float x1 = position[0];
+	float y1 = position[1];
+	float z1 = position[2];
+
+	float x2 = x1 + size[0];
+	float z2 = z1 + size[1];
+	//top left because of projection matrix
+
+	Vertex v1;
+
+    v1.position[0] = x1; v1.position[1] = y1; v1.position[2] = z1;
+
+
+	
+	v1.color[0] = adjusted_color[0];
+	v1.color[1] = adjusted_color[1];
+	v1.color[2] = adjusted_color[2];
+	v1.color[3] = adjusted_color[3];
+
+	v1.rotation = rotate;
+	v1.size[0] = size[0];
+	v1.size[1] = size[1];
+	v1.tex_coords[0] = 0.0f;
+	v1.tex_coords[1] = 0.0f;
+
+	//bottom right
+
+	Vertex v2;
+
+    v2.position[0] = x2; v2.position[1] = y1; v2.position[2] = z2;
+
+
+	
+	v2.color[0] = adjusted_color[0];
+	v2.color[1] = adjusted_color[1];
+	v2.color[2] = adjusted_color[2];
+	v2.color[3] = adjusted_color[3];
+
+
+	v2.rotation = rotate;
+	v2.size[0] = size[0];
+	v2.size[1] = size[1];
+	v2.tex_coords[0] = 1.0f;
+	v2.tex_coords[1] = 1.0f;
+
+
+
+	//top right
+	Vertex v3;
+
+    v3.position[0] = x2; v3.position[1] = y1; v3.position[2] = z1;
+
+
+	
+	v3.color[0] = adjusted_color[0];
+	v3.color[1] = adjusted_color[1];
+	v3.color[2] = adjusted_color[2];
+	v3.color[3] = adjusted_color[3];
+
+
+	v3.rotation = rotate;
+	v3.size[0] = size[0];
+	v3.size[1] = size[1];
+	v3.tex_coords[0] = 1.0f;
+	v3.tex_coords[1] = 0.0f;
+
+
+
+	Vertex v4;
+
+    v4.position[0] = x1; v4.position[1] = y1; v4.position[2] = z2;
+
+
+	
+	v4.color[0] = adjusted_color[0];
+	v4.color[1] = adjusted_color[1];
+	v4.color[2] = adjusted_color[2];
+	v4.color[3] = adjusted_color[3];
+
+
+	v4.rotation = rotate;
+	v4.size[0] = size[0];
+	v4.size[1] = size[1];
+	v4.tex_coords[0] = 0.0f;
+	v4.tex_coords[1] = 1.0f;
+
+
+
+
+
+
+
+	vertices_push(&renderer->object_data.vertices, v1);
+	vertices_push(&renderer->object_data.vertices, v3);
+	vertices_push(&renderer->object_data.vertices, v2);
+	vertices_push(&renderer->object_data.vertices, v4);
+
+	renderer->quad_count++;
+
+
 
 }
 
@@ -1740,7 +1887,7 @@ void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* rende
 {
 
 
-	glBindVertexArray(model->vao);
+	glBindVertexArray(model->mesh.m_vao);
 	glGenBuffers(1, &model->instance_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, model->instance_vbo);
 //	mat4 model_mat;
@@ -1853,8 +2000,7 @@ void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, ve
     glm_translate(*model_mat, (vec3){position[0], position[1], position[2]});
     glm_rotate(*model_mat, glm_rad(rotate), (vec3){0.0f, 0.0f, 1.0f});
     glm_scale(*model_mat, (vec3){size[0], size[1], 1.0f});
-	renderer->object_data.m_vao = model->vao;
-	printf("Model vao: %u", model->vao);
+	printf("Model vao: %u", model->mesh.m_vao);
 	fprintf(stderr, "Number of triangles being pushed: %d", model->num_triangles);
 
 	renderer->triangle_count = model->num_triangles;
@@ -1878,7 +2024,7 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
     
     glBindBuffer(GL_ARRAY_BUFFER, renderer->current_model->instance_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
-    glBindVertexArray(renderer->current_model->vao);
+    glBindVertexArray(renderer->current_model->mesh.m_vao);
 	printf("Instance count every frame: %d\n", renderer->instance_count);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->triangle_count, renderer->instance_count);
     glBindVertexArray(0);
@@ -1887,7 +2033,15 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	renderer->models.model_count = 0;
 
 }
-void dyl_instanced_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
+
+void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj)
+{
+	ASSERT(renderer && proj, "Renderer and/or proj is null");
+
+//	if(renderer->projection == *proj) return; NOTE: do osmething similar so we arent memcpying every frame for all set funcs
+	memcpy(&renderer->projection, proj, sizeof(mat4));
+
+}
 //void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer, vec4 color);
 
 

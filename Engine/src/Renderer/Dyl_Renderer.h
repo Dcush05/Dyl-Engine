@@ -172,14 +172,8 @@ typedef struct
 	Model_Texture_Type mtt;
 	size_t num_triangles;
 	size_t texture_count;
-	
-	GLuint vb;
-	GLuint vao;
 	GLuint instance_vbo;
 	
-
-
-
 }Model;
 
 
@@ -246,6 +240,7 @@ typedef enum
 	MODE_TEXTURE,
 	MODE_CUBE,
 	MODE_CUBE_TEXTURE,
+	MODE_TERRAIN_MESH, 
 	MODE_CUBEMAP
 }Renderer_Mode;
 
@@ -288,6 +283,9 @@ void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float 
 void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 texture_rect,vec3 position, vec3 size, float rotate, vec4 color);
 void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color);
 
+void db_terrain_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
+void db_textureed_terrain_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
+
 void db_flush(Dyl_Batch_Renderer* renderer);
 void db_destroy(Dyl_Batch_Renderer* renderer);
 
@@ -323,7 +321,7 @@ void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* rende
 void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* view);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
 void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec2 position, vec2 size, float rotate, vec4 color);
-void dyl_instanced_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
+void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj);
 void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer);
 
 

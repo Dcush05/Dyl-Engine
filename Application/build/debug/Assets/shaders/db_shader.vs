@@ -42,7 +42,7 @@ void main()
 
 		vec2 final_pos = vec2(rotated_x, rotated_y) + center;	
 
-		gl_Position = projection * vec4(position, 1.0);
+		gl_Position = projection * view * vec4(position, 1.0);
 
 	}else{
 		gl_Position = projection * view * vec4(position, 1.0);

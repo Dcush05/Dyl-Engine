@@ -35,9 +35,12 @@ typedef enum
 	COMP_COLLIDER		= 1 << 3,
 }Component_Flag;
 
+
+
 typedef struct
 {
 	Shape_Params* shape;
+	
 //	dyl_string* name;
 	vec4f* texture_rect;
 	vec4f* bounding_box;

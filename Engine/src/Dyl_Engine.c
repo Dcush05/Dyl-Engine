@@ -74,7 +74,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 		.face_paths[2] = "assets/top.jpg",. face_paths[3] = "assets/bottom.jpg" ,.face_paths[4] = "assets/front.jpg", .face_paths[5] = "assets/back.jpg"};
 	engine->sky_box_texture = texture_init(skybox_paths, TEXTURE_CUBE_MAP);
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,0.5,5.0}, true,engine->window->width, engine->window->height );
+	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,3.5,8.0}, true,engine->window->width, engine->window->height );
 
 	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
 
@@ -158,9 +158,9 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_DYNAMIC);	
 			static int frame_count;
 			frame_count += 3;
-			for(size_t i = 0; i < 50; ++i)
+			for(size_t i = 0; i < 5; ++i)
 			{
-				for(size_t j = 0; j < 50; ++j)
+				for(size_t j = 0; j < 5; ++j)
 				{
 					db_cube_draw(engine->batch_renderer, (vec3){i / 1.0, (j) / 1.0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
 
@@ -173,6 +173,9 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 						   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
 			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
 						   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+			db_rectangle_draw(engine->batch_renderer, (vec2){-1, 1.0}, (vec2){1.0, 1.0}, 0, (vec4){255,0,0,255});
+
+			db_terrain_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
 
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
@@ -180,36 +183,16 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 			db_flush(engine->batch_renderer); 
 		}
-		// 2. FORCE RESET THE STATE
-		glBindVertexArray(0);  // This is the most important line
-		glUseProgram(0);       // Unset the batch shader
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-			
+					
 //		dyl_instanced_push_rect(engine->instanced_renderer, (vec2){1.0,1.0}, (vec2){64,64}, 0.0);
 
 
 		//dyl_instanced_draw_rectangle(engine->instanced_renderer);
 		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
+						   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
+		dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
 
-						   (vec3){0.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
-		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
-						   (vec3){1.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
-		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
-						   (vec3){2.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
-		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
-						   (vec3){3.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255});
-
-		dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255} );
-
-
-
-
-
-
-
-		dyl_instanced_draw(engine->instanced_renderer);
+//		dyl_instanced_draw(engine->instanced_renderer);
 
 		frame_callback(engine);
 		window_end(engine->window);
