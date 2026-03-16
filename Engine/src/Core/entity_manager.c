@@ -12,15 +12,33 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Arena* arena)
 	ASSERT(entity_manager && arena, "Cannot pass null entity manager into func");
 
 	entity_manager->entity_count = 0;
-	entity_manager->shape = (Shape_Params*)arena_push(arena,MAX_ENTITY_COUNT * sizeof(Shape_Params));
-	entity_manager->texture_rect = (vec4f*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec4f));
-	entity_manager->color = (Color*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(Color));
-	entity_manager->size = (vec2f*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec2f));
-	entity_manager->position = (vec2f*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec2f));
-	entity_manager->type = (Entity_Type*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(Entity_Type));
-	entity_manager->id = (uint32_t*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(uint32_t));
-	memset(entity_manager->id, 0, sizeof(uint32_t) * MAX_ENTITY_COUNT);
+	entity_manager->shape = arena_push(arena,MAX_ENTITY_COUNT * sizeof(Shape_Params));
+	if(!entity_manager->shape)
+		return;
+	entity_manager->texture_rect = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec4f));
+	ASSERT(entity_manager->shape, "Entity shape data is null");
+	
+	entity_manager->color = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Color));
+	ASSERT(entity_manager->color, "Entity color data is null");
+	
+	entity_manager->size = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec2f));
+	ASSERT(entity_manager->size, "Entity size data is null");
+	
+	entity_manager->position = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec2f));
+	ASSERT(entity_manager->position, "Entity position data is null");
+	
+
+	entity_manager->type = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Entity_Type));
+	ASSERT(entity_manager->type, "Entity type data is null");
+	
+	
+	entity_manager->id = arena_push(arena, MAX_ENTITY_COUNT * sizeof(uint32_t));
+	ASSERT(entity_manager->id, "Entity id data is null");
+	
+//	memset(entity_manager->id, 0, sizeof(uint32_t) * MAX_ENTITY_COUNT);
 	entity_manager->component_flag = (uint32_t*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(uint32_t));
+
+	ASSERT(entity_manager->component_flag, "Entity component_flag data is null");
 	
 }
 

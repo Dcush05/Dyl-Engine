@@ -33,8 +33,11 @@ ENGINE_API void engine_initialize(Engine* engine)
 		dyl_profiler_init();
 		dyl_profiler_add("arena_alloc1");
 		dyl_profiler_add("window+renderer setup");
+		dyl_profiler_add("alloc1");
+		dyl_profiler_add("alloc2");
+		dyl_profiler_add("alloc3");
+		dyl_profiler_add("alloc4");
 		dyl_profiler_add("frame_callback");
-
 		dyl_profiler_add("programclose");
 
 	#endif
@@ -56,14 +59,19 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
+	dyl_profiler_start("alloc1");
 	engine->event = (Dyl_Event*)arena_push(&global_arena, sizeof(Dyl_Event));
 	dyl_event_initalize(engine->event);
+	dyl_profiler_end("alloc1");
+	dyl_profiler_print_func("alloc1");
+
 	dyl_profiler_add("entity_arena alloc + init");
-	entity_arena = arena_alloc(sizeof(Entity_Manager) * MAX_ENTITY_COUNT);
+	entity_arena = arena_alloc((sizeof(Entity_Manager) * MAX_ENTITY_COUNT) * 2);
+	entity_manager_initialize(&engine->manager, &entity_arena);
 	dyl_profiler_end("entity_arena alloc + init");
 	dyl_profiler_print_func("entity_arena alloc + init");
-	entity_manager_initialize(&engine->manager, &entity_arena);
 //	exit(EXIT_SUCCESS);
+	//
 	printf("hllo\n");
 	Texture_Path path;
 	path.path = "spritesheet.png";
@@ -73,25 +81,46 @@ ENGINE_API void engine_initialize(Engine* engine)
 	Texture_Path skybox_paths = (Texture_Path){.face_paths[0] = "assets/right.jpg",.face_paths[1] = "assets/left.jpg", 
 		.face_paths[2] = "assets/top.jpg",. face_paths[3] = "assets/bottom.jpg" ,.face_paths[4] = "assets/front.jpg", .face_paths[5] = "assets/back.jpg"};
 	engine->sky_box_texture = texture_init(skybox_paths, TEXTURE_CUBE_MAP);
+	
+
+	dyl_profiler_start("alloc2");
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
 	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,3.5,8.0}, true,engine->window->width, engine->window->height );
 
-	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
+	dyl_profiler_end("alloc2");
+	dyl_profiler_print_func("alloc2");
 
+
+	dyl_profiler_start("alloc3");
+	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
+	dyl_profiler_end("alloc3");
+
+	dyl_profiler_print_func("alloc3");
+
+
+
+	dyl_profiler_start("alloc4");
 	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
 	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 10, true);
-	engine->model = model_init("assets/Obj/E-45-Aircraft/Aircraft.obj", &global_arena);
 
+	dyl_profiler_end("alloc4");
+
+	dyl_profiler_print_func("alloc4");
+
+	engine->model = model_init("assets/Obj/E-45-Aircraft/Aircraft.obj", &global_arena);
 	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, &engine->model);
 
 	engine->t_model = arena_push(&global_arena, sizeof(Model));
-	*engine->t_model = model_init("assets/Obj/teapot.obj", &global_arena);
+	*engine->t_model = model_init("assets/Obj/Japanese_Maple/Japanese_Maple.obj", &global_arena);
 	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, engine->t_model);
+	
+
+//	engine->tree_model = arena_push(&global_arena, sizeof(Model));
+//	*engine->tree_model = model_init("assets/Obj/teapot.obj", &global_arena);
+//	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, engine->tree_model);
 
 
-	#if LOG_CONFIGURATION == DEBUG_LOG
-		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
-	#endif
+
 
 
 //	glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
@@ -102,6 +131,11 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	memcpy(engine->instanced_renderer->projection, engine->projection, sizeof(mat4));
 	engine->wireframe_mode = false;
+	#if LOG_CONFIGURATION == DEBUG_LOG
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
+	#endif
+
+
 
 	
 }
@@ -192,7 +226,9 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 						   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
 		dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
 
-//		dyl_instanced_draw(engine->instanced_renderer);
+//		dyl_instanced_push_model(engine->instanced_renderer, engine->tree_model,(vec3){5.0, 0, 4.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
+
+	    dyl_instanced_draw(engine->instanced_renderer);
 
 		frame_callback(engine);
 		window_end(engine->window);

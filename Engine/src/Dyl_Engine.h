@@ -28,7 +28,7 @@
 #endif
 
 
-#define GLOBAL_ARENA_START_SIZE (1280)
+#define GLOBAL_ARENA_START_SIZE (1024 * 1024)
 extern Arena global_arena;
 extern Arena entity_arena;
 
@@ -39,6 +39,8 @@ typedef struct Engine
 	Entity_Manager manager;
 	Model model;
 	Model* t_model;
+
+	//Model* tree_model;
 	mat4 projection;
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;

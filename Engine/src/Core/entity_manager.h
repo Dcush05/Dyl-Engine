@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 
-#define MAX_ENTITY_COUNT 512
+#define MAX_ENTITY_COUNT 1024
 #define INVALID_ENTITY 0xFFFFFFF
 #ifdef ENGINE_EXPORTS
 	#define ENGINE_ENTITY_API __declspec(dllexport)

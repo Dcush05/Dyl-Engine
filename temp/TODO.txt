@@ -25,6 +25,16 @@
 		-Terrain rendering through meshes with batch renderer
 		-Grass renderering through terrain
 	TEXT DEBUG SYSTEM(Doesnt have to be based on my imgui)
+		-FPS
+		-AVERAGE TIME BETWEEN FRAMES
+		-TRIANGLES SENT
+		-QUADS SENT
+		-TOTAL DRAW CALL COUNT
+		-TOTAL TEXTURES 
+		-TOTAL VERTICES
+		-TOTAL ARENA ALLOC SIZE
+		-TOTAL ARENA PUSH COUNT
+		
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
 	Setup assets system
 	Refactor so our code has better taste
