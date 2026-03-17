@@ -24,18 +24,27 @@
 		-Setup lighting
 		-Terrain rendering through meshes with batch renderer
 		-Grass renderering through terrain
+		-Billboarding for both batch and instanced renderer	- Billboard decals will be their own resource with a limited size to avoid rendering fat textures ( 256 x 256 )
 	TEXT DEBUG SYSTEM(Doesnt have to be based on my imgui)
+		-DRIVER DATA
+		-OPERATING SYSTEM
+		-WINDOW + EVENT HANDLING BACKEND
+		-TOTAL VERTICES
+		-TOTAL ARENA ALLOC SIZE
+		-TOTAL ARENA PUSH COUNT
 		-FPS
 		-AVERAGE TIME BETWEEN FRAMES
 		-TRIANGLES SENT
 		-QUADS SENT
 		-TOTAL DRAW CALL COUNT
 		-TOTAL TEXTURES 
-		-TOTAL VERTICES
-		-TOTAL ARENA ALLOC SIZE
-		-TOTAL ARENA PUSH COUNT
+		-CURRENT SELECTED ENTITY DATA
+
+	
+
 		
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
+	Optimized shader initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
 	Setup assets system
 	Refactor so our code has better taste
 	Fix camera code so that it is o.s agnostic or  make an interface for the camera code

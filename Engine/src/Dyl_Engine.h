@@ -28,7 +28,7 @@
 #endif
 
 
-#define GLOBAL_ARENA_START_SIZE (1024 * 1024)
+#define GLOBAL_ARENA_START_SIZE (1024)
 extern Arena global_arena;
 extern Arena entity_arena;
 
@@ -48,6 +48,7 @@ typedef struct Engine
 	Dyl_Event* event;
 	Camera* scene_camera;
 	Texture texture;
+	Texture billboard;
 	Texture sky_box_texture;
 	bool wireframe_mode;
 

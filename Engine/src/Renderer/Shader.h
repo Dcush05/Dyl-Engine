@@ -11,17 +11,17 @@
 
 typedef struct
 {
-	char* name;
+	Dyl_Str name;
 	GLuint uniform_type;
 	
 }Uniform_Cache;
 
 
-#define UNIFORM_CACHE_COUNT 1024
+#define UNIFORM_CACHE_COUNT 125
 
 typedef struct
 {
-	Uniform_Cache uniform_cache[1024];
+	Uniform_Cache uniform_cache[UNIFORM_CACHE_COUNT]; //arena allocate this at some point
 	size_t count;
 }Uniform_Cache_Data;
 
@@ -32,17 +32,20 @@ typedef struct
 {
 	
 	Uniform_Cache_Data cache;
-	const char* vertex_shader_path;
-	const char* fragment_shader_path;
+	Dyl_Str vertex_shader_path;
+	Dyl_Str fragment_shader_path;
+	Dyl_Str geometry_shader_path;
 	GLuint vertex_shader;
 	GLuint fragment_shader;
+	GLuint geometry_shader;
 	GLuint shader_program;
 	bool use;
 	size_t id;
 
 }Shader;
 
-Shader shader_init(const char* vertex_path, const char* fragment_path);
+
+Shader shader_init(const char* vertex_path, const char* fragment_path, const char* geometry_shader);
 
 void shader_create_program(Shader* shader);
 void use(Shader* shader);

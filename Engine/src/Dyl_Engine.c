@@ -81,6 +81,10 @@ ENGINE_API void engine_initialize(Engine* engine)
 	Texture_Path skybox_paths = (Texture_Path){.face_paths[0] = "assets/right.jpg",.face_paths[1] = "assets/left.jpg", 
 		.face_paths[2] = "assets/top.jpg",. face_paths[3] = "assets/bottom.jpg" ,.face_paths[4] = "assets/front.jpg", .face_paths[5] = "assets/back.jpg"};
 	engine->sky_box_texture = texture_init(skybox_paths, TEXTURE_CUBE_MAP);
+
+	Texture_Path opath;
+	opath.path = "Assets/Oshawott2.png";
+	engine->billboard = texture_init(opath, TEXTURE_2D);
 	
 
 	dyl_profiler_start("alloc2");
@@ -161,6 +165,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			if(dyl_event_window_dispatch(engine->event, DYL_SYS_QUIT))
 			{
 				engine->window->is_window_open = false;
+				engine_shutdown(engine);
 			}
 			if(dyl_event_key_press(engine->event, DYLKEY_E, DYL_KEY_PRESSED))
 			{
@@ -177,6 +182,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 		}
 		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
+
+		dyl_batch_renderer_set_camera_pos(engine->batch_renderer, &engine->scene_camera->camera_pos);
 
 		dyl_instanced_renderer_set_view(engine->instanced_renderer, &engine->scene_camera->view);
 
@@ -207,9 +214,11 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 						   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
 			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
 						   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-			db_rectangle_draw(engine->batch_renderer, (vec2){-1, 1.0}, (vec2){1.0, 1.0}, 0, (vec4){255,0,0,255});
+			db_rectangle_draw(engine->batch_renderer, (vec2){-1.0, 1.0}, (vec2){1.0, 1.0}, 0, (vec4){255,0,0,255});
 
-			db_terrain_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
+			db_billboard_draw(engine->batch_renderer, &engine->billboard, (vec4){0,0,32,32}, (vec3){-2.0, 1.0, 1.0}, (vec2){1.0,1.0}, 0.0f, (vec4){255,255,255,255});
+
+			db_plane_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
 
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
@@ -304,10 +313,8 @@ ENGINE_API void engine_shutdown(Engine* engine)
 	dyl_profiler_start("programclose");
 	window_destroy(engine->window);
 //	db_destroy(engine->batch_renderer);
-
 	arena_free(&global_arena);
 	arena_free(&entity_arena);
-//	nk_sdl_shutdown();
 	dyl_profiler_end("programclose");
 	dyl_profiler_print_func("programclose");
 	#if LOG_CONFIGURATION == DEBUG_LOG
@@ -315,6 +322,9 @@ ENGINE_API void engine_shutdown(Engine* engine)
 	#endif
 
 	dyl_profiler_free();
+	#ifdef USING_SDL
+		SDL_Quit();
+	#endif
 }
 
 

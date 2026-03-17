@@ -1,5 +1,6 @@
 #include "Shader.h"
 
+#include "../Core/dyl_debug.h"
 
 
 
@@ -52,23 +53,28 @@ static GLuint compile_shader(const char* source, GLenum type) {
     return shader;
 }
 
-Shader shader_init(const char* vertex_path, const char* fragment_path)
+Shader shader_init(const char* vertex_path, const char* fragment_path, const char* geometry_shader)
 {
 	Shader shader = (Shader){0};
-	shader.fragment_shader_path = fragment_path;
-	shader.vertex_shader_path = vertex_path;
+	shader.fragment_shader_path = DYL_STR_LIT(fragment_path);
+	shader.vertex_shader_path = DYL_STR_LIT(vertex_path);
+	if(geometry_shader == NULL)
+	{
+		shader.geometry_shader_path = DYL_STR_LIT("NULL");
+	}else{
+		shader.geometry_shader_path = DYL_STR_LIT(geometry_shader);
+	}
 	shader.use = false;
-	memset(shader.cache.uniform_cache, 0, sizeof(Uniform_Cache) * UNIFORM_CACHE_COUNT);
-	for(size_t i = 0; i < UNIFORM_CACHE_COUNT; ++i)
-		shader.cache.uniform_cache[i].name = malloc(sizeof(char) * UNIFORM_NAME_COUNT); //TODO: least obvious memory leak lol
 	shader.cache.count = 0;
+
 	return shader;
 }
 void shader_create_program(Shader* shader)
 {
 	//TODO: USE ARENAS IN OUR RENDERING CODE PLEEASEE or just better strings ngl
-	char* vertex_code = read_shader_source(shader->vertex_shader_path);
-	char* fragment_code = read_shader_source(shader->fragment_shader_path);
+	char* vertex_code = read_shader_source((const char*)shader->vertex_shader_path.string_data);
+	char* fragment_code = read_shader_source((const char*)shader->fragment_shader_path.string_data);
+	
 	if(!vertex_code || !fragment_code)
 	{
 		printf("Failed to load shader source files.\n");
@@ -76,8 +82,23 @@ void shader_create_program(Shader* shader)
 	}
 	shader->vertex_shader = compile_shader(vertex_code, GL_VERTEX_SHADER);
 	shader->fragment_shader = compile_shader(fragment_code, GL_FRAGMENT_SHADER);
+
 	shader->shader_program = glCreateProgram();
+
 	glAttachShader(shader->shader_program, shader->vertex_shader);
+	if(strcmp((const char*)shader->geometry_shader_path.string_data, "NULL") != 0 )
+	{
+		char* geometry_code = read_shader_source((const char*)shader->geometry_shader_path.string_data);
+		if(!geometry_code)
+		{
+			printf("Failed to load shader source files.\n");
+			return;
+		}
+		shader->geometry_shader = compile_shader(geometry_code, GL_GEOMETRY_SHADER);
+		glAttachShader(shader->shader_program,shader->geometry_shader);
+		free(geometry_code);
+	}
+
 	glAttachShader(shader->shader_program, shader->fragment_shader);
 	glLinkProgram(shader->shader_program);
 	int success;
@@ -90,6 +111,20 @@ void shader_create_program(Shader* shader)
 		return;
 
 	}
+
+	if(strcmp((const char*)shader->geometry_shader_path.string_data, "NULL") != 0 )
+	{
+			glGetShaderiv(shader->geometry_shader, GL_COMPILE_STATUS, &success);
+			if(!success)
+			{
+				char infolog[512];
+				glGetShaderInfoLog(shader->geometry_shader, 512, NULL, infolog);
+				fprintf(stderr,"Unable to initialize VERTEX shader: %s\n", infolog);
+				return;
+
+			}
+
+	}
 	glGetShaderiv(shader->fragment_shader, GL_COMPILE_STATUS, &success);
 	if(!success)
 	{
@@ -99,11 +134,11 @@ void shader_create_program(Shader* shader)
 		return;
 
 	}
-	glGetProgramiv(shader->shader_program, GL_COMPILE_STATUS, &success);
+	glGetProgramiv(shader->shader_program, GL_LINK_STATUS, &success);
 	if(!success)
 	{
 		char infolog[512];
-		glGetShaderInfoLog(shader->fragment_shader, 512, NULL, infolog);
+		glGetProgramInfoLog(shader->shader_program, 512, NULL, infolog);
 		fprintf(stderr,"Unable to initialize Shader program: %s\n", infolog);
 		return;
 
@@ -112,14 +147,22 @@ void shader_create_program(Shader* shader)
 	{
 		//DEBUG_LOG("LOG: Shader %s load success\n", shader->vertex_shader_path); 
 		//DEBUG_LOG("LOG: Shader %s load success\n", shader->fragment_shader_path);
-		fprintf(stderr, "LOG: Shader %s load success\n", shader->vertex_shader_path);
-		fprintf(stderr, "LOG: Shader %s load success\n", shader->fragment_shader_path);
+		//
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Shader %s load success", shader->vertex_shader_path.string_data);
+		if(strcmp((const char*)shader->geometry_shader_path.string_data, "NULL") != 0 )
+			DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Shader %s load success", shader->geometry_shader_path.string_data);
 
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Shader %s load success", shader->fragment_shader_path.string_data);
+	//	fprintf(stderr, "LOG: Shader %s load success\n", shader->vertex_shader_path.string_data);
+	//	fprintf(stderr, "LOG: Shader %s load success\n", shader->fragment_shader_path.string_data);
 
 
 	}
 	glDeleteShader(shader->vertex_shader);
 	glDeleteShader(shader->fragment_shader);
+	if(strcmp((const char*)shader->geometry_shader_path.string_data, "NULL") != 0 ) //NOTE:(dylan)this is slow find an alternative
+			glDeleteShader(shader->geometry_shader);
+	
 	free(vertex_code);
 	free(fragment_code);
 
@@ -139,7 +182,7 @@ GLuint get_uniform_location(Shader* shader, const char* name)
 	for(size_t i = 0; i < shader->cache.count; ++i)
 	{
 
-		if(strcmp(shader->cache.uniform_cache[i].name, 
+		if(strcmp((const char*)shader->cache.uniform_cache[i].name.string_data, 
 			name) == 0)
 		{
 			return shader->cache.uniform_cache[i].uniform_type;
@@ -150,7 +193,8 @@ GLuint get_uniform_location(Shader* shader, const char* name)
 
 	ASSERT(shader->cache.count <= UNIFORM_CACHE_COUNT, "allocated too many uniforms");
 	shader->cache.uniform_cache[shader->cache.count].uniform_type = glGetUniformLocation(shader->shader_program, name);
-	strcpy(shader->cache.uniform_cache[shader->cache.count].name, name);
+	//strcpy(shader->cache.uniform_cache[shader->cache.count].name.string_data, name);
+	shader->cache.uniform_cache[shader->cache.count].name = DYL_STR_LIT(name);
 	
 	GLuint uniform = shader->cache.uniform_cache[shader->cache.count].uniform_type;
 	shader->cache.count++;

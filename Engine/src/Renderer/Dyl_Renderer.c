@@ -28,8 +28,8 @@ void shader_initialize(shader_data* data)
 	data->curr_size = 0;
 	for(size_t i = 0; i < MAX_SHADERS; i++)
 	{
-		memset(&data->shaders[i], 0, sizeof(Shader));
-		memset(&data->type[i], SHADER_NIL, sizeof(shader_type));
+		data->shaders[i] = (Shader){0};
+		data->type[i] = SHADER_NIL;
 	}
 }
 void shader_add(shader_data* data, Shader* shader, size_t id, shader_type type)
@@ -819,9 +819,12 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 
 
 
-	Shader shader = shader_init("assets/shaders/db_Shader.vs", "assets/shaders/db_Shader.fs");
+	Shader shader = shader_init("assets/shaders/db_Shader.vs", "assets/shaders/db_Shader.fs", NULL);
 
 	shader_add(&renderer.shaders, &shader, SHADER_DYNAMIC, SHADER_HOT);
+
+	Shader billboard = shader_init("assets/shaders/db_billboard.vs", "assets/shaders/db_billboard.fs", "assets/shaders/db_billboard.gs");
+	shader_add(&renderer.shaders, &billboard, SHADER_BILLBOARD, SHADER_HOT);
 	shader_programs_create_type(&renderer.shaders, SHADER_HOT);
 
 	renderer.object_data.vertices.vertex_count = 0;
@@ -965,6 +968,13 @@ void dyl_batch_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view)
 
 }
 
+void dyl_batch_renderer_set_camera_pos(Dyl_Batch_Renderer* renderer, vec3* camera_pos)
+{
+	ASSERT(renderer, "Renderer(Null)");
+	memcpy(renderer->camera_pos, camera_pos, sizeof(vec3));
+
+}
+
 //hmmm maybe sort the vertices and render them that way
 
 void db_flush(Dyl_Batch_Renderer* renderer)
@@ -972,16 +982,35 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	if(renderer->object_data.vertices.vertex_count == 0)
 		return;
 //	printf("hello im dylan]we\n");
+	if(renderer->current_mode == MODE_BILLBOARD)
+	{
+		dyl_batch_renderer_set_shader_tag(renderer, SHADER_BILLBOARD);
+	}else{
+
+		dyl_batch_renderer_set_shader_tag(renderer, SHADER_DYNAMIC);
+	}
 
 	shader_on_id_use(&renderer->shaders, renderer->shader_tag);
+	if(renderer->shader_tag == SHADER_DYNAMIC)
+	{
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_3d", renderer->is_3d);//exclusive to the dynamic tagged shader
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "view", renderer->view);
 
-	shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
-	shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_3d", renderer->is_3d);
-	shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "view", renderer->view);
+
+	}else if(renderer->shader_tag == SHADER_BILLBOARD){
+
+		shader_on_id_set_vec3f(&renderer->shaders, renderer->shader_tag, "camera_pos", renderer->camera_pos);
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "view", renderer->view);
+
+
+	}
+
 
 //	shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "model", renderer->model);
 
-	if(renderer->current_mode == MODE_TEXTURE || renderer->current_mode == MODE_CUBE_TEXTURE)
+	if(renderer->current_mode == MODE_TEXTURE || renderer->current_mode == MODE_CUBE_TEXTURE) //TODO: Separate as this will lead to bugs when rendering 2d textures later
 	{
 		glActiveTexture(GL_TEXTURE0 + SLOT_TEXTURE2D);
 		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture.ID);
@@ -1030,6 +1059,13 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
 	//	renderer->object_data.texture_id = 0;
 		
+	}else if(renderer->current_mode == MODE_BILLBOARD){
+
+		glDisable(GL_CULL_FACE);
+		glActiveTexture(GL_TEXTURE0 + SLOT_TEXTURE2D);
+		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture.ID);
+	    shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "u_texture", 0);
+		
 	}
 	
 
@@ -1038,7 +1074,11 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	glBindVertexArray(renderer->vao);
 
 	//NOTE: Maybe use elements instead since we already have that setup
-	glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
+	if(renderer->current_mode == MODE_BILLBOARD)
+		glDrawArrays(GL_POINTS, 0, renderer->quad_count);
+		
+	else
+		glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
 	//NOTE: switch between renderer->triangle_count * 3 when rendering triangles
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
@@ -1309,7 +1349,8 @@ void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 textu
 }
 
 
-void db_terrain_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color)
+
+void db_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color)
 {
 	ASSERT(renderer, "Renderer(Null)");
 //	ASSERT(!renderer->is_3d, "Trying to draw rect when 3d");
@@ -1687,6 +1728,130 @@ void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
 
 }
 
+void db_billboard_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 texture_rect, vec3 position, vec2 size, float rotate, vec4 color)
+{
+	ASSERT(renderer, "Renderer is NULL\n");
+	ASSERT(texture, "Texture is NULL\n");
+
+	
+	
+	if(renderer->object_data.vertices.vertex_count + 6 > renderer->object_data.vertices.capacity)
+	{
+		db_flush(renderer);
+	}
+	if (/*renderer->object_data.texture.ID != texture->ID && */renderer->current_mode != MODE_BILLBOARD) {
+        db_flush(renderer);
+		renderer->current_mode = MODE_BILLBOARD;
+        renderer->object_data.texture = *texture;
+    }
+	vec4 adjusted_color;
+	adjusted_color[0] = color[0]/255.0f;
+	adjusted_color[1] = color[1]/255.0f;
+	adjusted_color[2] = color[2]/255.0f;
+	adjusted_color[3] = color[3]/255.0f;
+	vec4 texCoordsConversion;
+ 	texCoordsConversion[0] = (float)texture_rect[0] / texture->width;
+ 	texCoordsConversion[1] = (float)texture_rect[1] / texture->height;
+ 	texCoordsConversion[2] = (float)texture_rect[2] /texture->width;
+ 	texCoordsConversion[3] = (float)texture_rect[3] /texture->height;
+
+	
+	float x1 = position[0];
+	float y1 = position[1];
+	float z1 = position[2];
+
+	float x2 = x1 + size[0];
+	float y2 = y1 + size[1];
+	//top left
+
+	Vertex v1;
+
+    v1.position[0] = x1; v1.position[1] = y1; v1.position[2] = z1;
+
+
+	
+	v1.color[0] = adjusted_color[0];
+	v1.color[1] = adjusted_color[1];
+	v1.color[2] = adjusted_color[2];
+	v1.color[3] = adjusted_color[3];
+
+	v1.rotation = rotate;
+	v1.size[0] = size[0];
+	v1.size[1] = size[1];
+	v1.tex_coords[0] = texCoordsConversion[0]; 
+	v1.tex_coords[1] = texCoordsConversion[1];
+
+	Vertex v2;
+
+    v2.position[0] = x2; v2.position[1] = y1; v2.position[2] = z1;
+
+
+	
+	v2.color[0] = adjusted_color[0];
+	v2.color[1] = adjusted_color[1];
+	v2.color[2] = adjusted_color[2];
+	v2.color[3] = adjusted_color[3];
+
+
+	v2.rotation = rotate;
+	v2.size[0] = size[0];
+	v2.size[1] = size[1];
+	v2.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v2.tex_coords[1] = texCoordsConversion[1];
+
+
+
+
+	Vertex v3;
+
+    v3.position[0] = x2; v3.position[1] = y2; v3.position[2] = z1;
+
+
+	
+	v3.color[0] = adjusted_color[0];
+	v3.color[1] = adjusted_color[1];
+	v3.color[2] = adjusted_color[2];
+	v3.color[3] = adjusted_color[3];
+
+
+	v3.rotation = rotate;
+	v3.size[0] = size[0];
+	v3.size[1] = size[1];
+	v3.tex_coords[0] = texCoordsConversion[0] + texCoordsConversion[2];
+	v3.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+
+
+
+
+	Vertex v4;
+
+    v4.position[0] = x1; v4.position[1] = y2; v4.position[2] = z1;
+
+
+	
+	v4.color[0] = adjusted_color[0];
+	v4.color[1] = adjusted_color[1];
+	v4.color[2] = adjusted_color[2];
+	v4.color[3] = adjusted_color[3];
+
+
+	v4.rotation = rotate;
+	v4.size[0] = size[0];
+	v4.size[1] = size[1];
+	
+	v4.tex_coords[0] = texCoordsConversion[0];
+	v4.tex_coords[1] = texCoordsConversion[1] + texCoordsConversion[3];
+
+	vertices_push(&renderer->object_data.vertices, v1);
+//	vertices_push(&renderer->object_data.vertices, v2);
+//	vertices_push(&renderer->object_data.vertices, v3);
+//	vertices_push(&renderer->object_data.vertices, v4);
+
+	renderer->quad_count++;
+
+	//We only need to send the positions 
+}
 //FONT STUFF
 Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection)
 {
@@ -1774,7 +1939,7 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);     
-	new_font_renderer.font_shader = shader_init("assets/shaders/font_shader.vs", "assets/shaders/font_shader.fs");
+	new_font_renderer.font_shader = shader_init("assets/shaders/font_shader.vs", "assets/shaders/font_shader.fs", NULL);
 	shader_create_program(&new_font_renderer.font_shader);
 	return new_font_renderer;
 }
@@ -1795,8 +1960,7 @@ void db_destroy(Dyl_Batch_Renderer* renderer)
 Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bool is_3d)
 {
 	ASSERT(arena, "Arena passed is Null");
-	Dyl_Instanced_Renderer i_renderer;
-	memset(&i_renderer, 0, sizeof(Dyl_Instanced_Renderer));
+	Dyl_Instanced_Renderer i_renderer = (Dyl_Instanced_Renderer){0};
 	i_renderer.objects_size = objects_size;
 	i_renderer.is_3d = is_3d;
 	if(i_renderer.is_3d)
@@ -1814,7 +1978,7 @@ Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bo
 
 	i_renderer.instance_count = 0;
 	shader_initialize(&i_renderer.shaders);
-	Shader shader = shader_init("assets/shaders/instanced_Shader.vs", "assets/shaders/instanced_Shader.fs");
+	Shader shader = shader_init("assets/shaders/instanced_Shader.vs", "assets/shaders/instanced_Shader.fs", NULL);
 
 	shader_add(&i_renderer.shaders, &shader, SHADER_INSTANCED, SHADER_HOT);
 	shader_programs_create_type(&i_renderer.shaders, SHADER_HOT);
@@ -2001,7 +2165,7 @@ void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, ve
     glm_rotate(*model_mat, glm_rad(rotate), (vec3){0.0f, 0.0f, 1.0f});
     glm_scale(*model_mat, (vec3){size[0], size[1], 1.0f});
 	printf("Model vao: %u", model->mesh.m_vao);
-	fprintf(stderr, "Number of triangles being pushed: %d", model->num_triangles);
+	fprintf(stderr, "Number of triangles being pushed: %zu", model->num_triangles);
 
 	renderer->triangle_count = model->num_triangles;
     renderer->instance_count++;
