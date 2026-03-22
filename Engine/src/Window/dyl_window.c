@@ -18,6 +18,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 	window->is_window_open = true;
 	window->window_name = DYL_STR_LIT(window_name);
 	#ifdef USING_SDL	
+	
 		if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 			SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not initialize SDL: %s", SDL_GetError());
 			return;

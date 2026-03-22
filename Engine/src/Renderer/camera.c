@@ -4,6 +4,8 @@
 #include "SDL3/SDL_mouse.h"
 #include "cglm/vec3-ext.h"
 #include "cglm/vec3.h"
+#include <stdio.h>
+
 
 
 void camera_init(Camera* camera, SDL_Window* window,vec3 pos, bool relative_mouse, float window_width, float window_height)
@@ -16,8 +18,6 @@ void camera_init(Camera* camera, SDL_Window* window,vec3 pos, bool relative_mous
 	camera->camera_pos[2] = pos[2];
 	camera->camera_speed = 5;
 	camera->rel_mouse = relative_mouse;
-	memset(camera->camera_front, 0, sizeof(vec3)); //redundant
-	memset(camera->vel, 0, sizeof(vec3)); 
 	camera->camera_up[0] = 0.0f;
 	camera->camera_up[1] = 1.0f;
 	camera->camera_up[2] = 0.0f;
@@ -29,6 +29,8 @@ void camera_init(Camera* camera, SDL_Window* window,vec3 pos, bool relative_mous
 	glm_vec3_normalize(camera->camera_right);
 
 	camera->yaw = -90.0f;
+
+//	camera->yaw = -180.0f;
 	camera->pitch = 0.0f;
 	camera->lastx = window_width / 2.0;
 	camera->lasty = window_height / 2.0;
@@ -37,7 +39,9 @@ void camera_init(Camera* camera, SDL_Window* window,vec3 pos, bool relative_mous
 
 	glm_vec3_add(camera->camera_pos, camera->camera_front, camera->target);
 	glm_lookat(camera->camera_pos, camera->target, camera->camera_up, camera->view);
-	SDL_SetWindowRelativeMouseMode(window, relative_mouse);
+	camera->rel_mouse = relative_mouse;
+	SDL_SetWindowRelativeMouseMode(window, camera->rel_mouse);
+	
 	
 }
 
@@ -77,6 +81,13 @@ void camera_input(Camera* camera, SDL_Event* event)
 		case SDL_EVENT_MOUSE_MOTION:
 			if(camera->first_mouse)
 			{
+			/*	if(camera->rel_mouse)
+				{
+
+					camera->lastx = event->motion.xrel;
+					printf("MOUSE IS REL");
+				}
+				else*/
 				camera->lastx = event->motion.x;
 				camera->lasty = event->motion.y;
 				camera->first_mouse = false;
@@ -86,13 +97,22 @@ void camera_input(Camera* camera, SDL_Event* event)
 			camera->lastx = event->motion.x;
 			camera->lasty = event->motion.y;
 
+
+			printf("MOUSE POS: (%f, %f)\n", event->motion.xrel, event->motion.yrel);
+
 			xoffset *= camera->sense;
 			yoffset *= camera->sense;
 			camera->yaw += xoffset;
 			camera->pitch += yoffset;
 
 			if(camera->pitch > 89.0f) camera->pitch = 89.0f;
+			
 			if(camera->pitch < -89.0f) camera->pitch = -89.0f;
+		//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
+		//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
+		//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
+		//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
+
 			camera->yaw = fmodf(camera->yaw, 360.0f);
 			vec3 front;
 			front[0] = cosf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));

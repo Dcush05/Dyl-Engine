@@ -219,10 +219,12 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			db_billboard_draw(engine->batch_renderer, &engine->billboard, (vec4){0,0,32,32}, (vec3){-2.0, 1.0, 1.0}, (vec2){1.0,1.0}, 0.0f, (vec4){255,255,255,255});
 
 			db_plane_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
+		//	db_light_cube(engine->batch_renderer, (vec3){1.0, 6.0, -6.0}, (vec3){1.0, 1.0, 1.0}, (vec4){255,0,0,255}, (vec4){255,200,200,255}, 0.1f, 0.5f, LIGHTING_SPECULAR, engine->scene_camera->camera_pos);
 
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
 			db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
+			
 
 			db_flush(engine->batch_renderer); 
 		}

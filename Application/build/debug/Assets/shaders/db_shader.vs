@@ -12,6 +12,8 @@ uniform bool is_3d;
 out vec4 vertexColor;
 out vec2 a_tex_coords;
 out vec3 a_texture_dir;
+out vec3 frag_normals;
+out vec3 frag_pos;
 
 void main()
 {
@@ -48,9 +50,11 @@ void main()
 		gl_Position = projection * view * vec4(position, 1.0);
 	}
 
-
+	//NOTE: a prefix is for attributes when refactoring change it
 	vertexColor = color;
 	a_tex_coords = tex_coords.xy;
 	a_texture_dir = position;
+	frag_normals = normals;
+	frag_pos = position;
 	gl_Position = projection * view * vec4(position, 1.0);
 }

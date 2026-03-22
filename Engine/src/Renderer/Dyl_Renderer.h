@@ -241,10 +241,21 @@ typedef enum
 	MODE_TEXTURE,
 	MODE_CUBE,
 	MODE_CUBE_TEXTURE,
+	MODE_LIGHT_CUBE,
 	MODE_TERRAIN_MESH, 
 	MODE_CUBEMAP,
 	MODE_BILLBOARD
 }Renderer_Mode;
+
+
+typedef enum
+{
+	LIGHTING_NONE = 0,
+	LIGHTING_AMBIENT,
+	LIGHTING_DIFFUSE,
+	LIGHTING_SPECULAR,
+
+}Light_Type;
 
 typedef struct
 {
@@ -279,19 +290,23 @@ void dyl_batch_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj);
 void dyl_batch_renderer_set_view(Dyl_Batch_Renderer* renderer, mat4* view);
 void dyl_batch_renderer_set_camera_pos(Dyl_Batch_Renderer* renderer, vec3* camera_pos);
 void dyl_batch_renderer_set_shader_tag(Dyl_Batch_Renderer* renderer, shader_id shader_tag);
+
 void db_rectangle_draw(Dyl_Batch_Renderer* renderer, vec2 position, vec2 size
 					   ,float rotate, vec4 color);
 void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 texture_rect, vec2 position, vec2 size, float rotate, vec4 color);
 
 void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float rotate, vec4 color);
 void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 texture_rect,vec3 position, vec3 size, float rotate, vec4 color);
+
+
+void db_light_cube(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, vec4 obj_color, vec4 light_color, float ambient_strength, float specular_strength, Light_Type type, vec3 camera_pos); //TODO: (dylan)put the light data into a struct and then use a tagged enum to get specific lighting data
+
 void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color);
-
-
 
 void db_billboard_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 texture_rect, vec3 position, vec2 size, float rotate, vec4 color);
 
 void db_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
+
 void db_textured_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
 
 void db_flush(Dyl_Batch_Renderer* renderer);

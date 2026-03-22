@@ -1022,6 +1022,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 1);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 0);
 	}else if(renderer->current_mode == MODE_CUBEMAP){
 		glDepthMask(GL_FALSE);
 
@@ -1033,6 +1034,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->object_data.texture.ID);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 1);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 1);
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 0);
+
 
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
@@ -1043,6 +1046,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+
+
 
 
 	}else if(renderer->current_mode == MODE_CUBE){
@@ -1066,6 +1071,16 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture.ID);
 	    shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "u_texture", 0);
 		
+	}else if(renderer->current_mode == MODE_LIGHT_CUBE)
+	{
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
+					   "need_texture", 0);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 1);
+
+
 	}
 	
 
@@ -1512,6 +1527,16 @@ void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float 
         { {x2,y1,z1}, {x2,y2,z1}, {x2,y2,z2}, {x2,y1,z2} }, // right
         { {x1,y1,z2}, {x1,y2,z2}, {x1,y2,z1}, {x1,y1,z1} }, // left
     };
+	float normals[6][4][3] = {
+        { {0,0,1.0f}, {0,0,1.0f},{0,0,1.0f}, {0,0,1.0f}}, // front
+        { {0,0,-1.0f}, {0,0,-1.0f}, {0,0,-1.0f}, {0,0,-1.0f}}, // back
+        { {0.0f,1.0,0}, {0,1.0,0}, {0,1.0,0}, {0,1.0,0}}, // top
+        { {0.0f,-1.0f,0.0}, {0,-1.0f,0.0}, {0.0f,-1.0f,0.0}, {0.0,-1.0f,0.0}}, // bottom
+        { {1.0,0,0}, {1.0,0,0}, {1.0,0,0}, {1.0,0,0}}, // right
+        { {-1.0f, 0.0, 0.0}, {-1.0f, 0.0, 0.0}, {-1.0f,0.0, 0.0}, {-1.0,0.0 ,0.0}}, // left
+    };
+
+
 
     float uvs[4][2] = {
         {0.0f, 0.0f},
@@ -1546,6 +1571,11 @@ void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float 
 			v.tex_coords[0] = uvs[c][0];
 
 			v.tex_coords[1] = uvs[c][1];
+			v.normals[0] = normals[i][c][0];
+			v.normals[1] = normals[i][c][1];
+			v.normals[2] = normals[i][c][2];
+
+
 			vertices_push(&renderer->object_data.vertices, v);
 
 		}
@@ -1601,6 +1631,18 @@ void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 t
         { {x2,y1,z1}, {x2,y2,z1}, {x2,y2,z2}, {x2,y1,z2} }, // right
         { {x1,y1,z2}, {x1,y2,z2}, {x1,y2,z1}, {x1,y1,z1} }, // left
     };
+
+	float normals[6][4][3] = {
+        { {0,0,1.0f}, {0,0,1.0f},{0,0,1.0f}, {0,0,1.0f}}, // front
+        { {0,0,-1.0f}, {0,0,-1.0f}, {0,0,-1.0f}, {0,0,-1.0f}}, // back
+        { {0.0f,1.0,0}, {0,1.0,0}, {0,1.0,0}, {0,1.0,0}}, // top
+        { {0.0f,-1.0f,0.0}, {0,-1.0f,0.0}, {0.0f,-1.0f,0.0}, {0.0,-1.0f,0.0}}, // bottom
+        { {1.0,0,0}, {1.0,0,0}, {1.0,0,0}, {1.0,0,0}}, // right
+        { {-1.0f, 0.0, 0.0}, {-1.0f, 0.0, 0.0}, {-1.0f,0.0, 0.0}, {-1.0,0.0 ,0.0}}, // left
+    };
+
+
+
     float uvs[4][2] = {
 
         {texCoordsConversion[0], texCoordsConversion[1] + texCoordsConversion[3]},
@@ -1634,11 +1676,115 @@ void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 t
 			v.tex_coords[0] = uvs[c][0];
 
 			v.tex_coords[1] = uvs[c][1];
+
+			v.normals[0] = normals[i][c][0];
+			v.normals[1] = normals[i][c][1];
+			v.normals[2] = normals[i][c][2];
+
 			vertices_push(&renderer->object_data.vertices, v);
 
 		}
 		renderer->quad_count++;
 	}
+
+}
+
+
+void db_light_cube(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, vec4 obj_color, vec4 light_color, float ambient_strength, float specular_strength,Light_Type type, vec3 camera_pos)
+{
+	ASSERT(renderer, "Renderer(Null)");
+	ASSERT(renderer->is_3d, "Trying to draw rect when 3d");
+	if(renderer->object_data.vertices.vertex_count + 24 > renderer->object_data.vertices.capacity)
+	{
+		db_flush(renderer);
+	}
+
+	vec4 adjusted_color;
+	adjusted_color[0] = obj_color[0]/255.0f;
+	adjusted_color[1] = obj_color[1]/255.0f;
+	adjusted_color[2] = obj_color[2]/255.0f;
+	adjusted_color[3] = obj_color[3]/255.0f;
+
+	vec4 adjusted_light_color;
+	adjusted_light_color[0] = light_color[0]/255.0f;
+	adjusted_light_color[1] = light_color[1]/255.0f;
+	adjusted_light_color[2] = light_color[2]/255.0f;
+	adjusted_light_color[3] = light_color[3]/255.0f;
+
+
+
+	if (renderer->current_mode != MODE_LIGHT_CUBE) 
+	{ 
+
+		shader_on_id_use(&renderer->shaders, SHADER_DYNAMIC);
+		shader_on_id_set_vec4f(&renderer->shaders, SHADER_DYNAMIC, "light_color",adjusted_light_color);
+		shader_on_id_set_int(&renderer->shaders, SHADER_DYNAMIC, "light_type", type);
+		shader_on_id_set_float(&renderer->shaders, SHADER_DYNAMIC, "ambient_strength", ambient_strength);
+
+		shader_on_id_set_float(&renderer->shaders, SHADER_DYNAMIC, "specular_strength", specular_strength);
+		shader_on_id_set_vec3f(&renderer->shaders, SHADER_DYNAMIC, "light_pos", position);
+
+		shader_on_id_set_vec3f(&renderer->shaders, SHADER_DYNAMIC, "view_pos", camera_pos);
+
+		db_flush(renderer);
+		renderer->current_mode = MODE_LIGHT_CUBE;
+	
+    }
+
+	float x1 = position[0];
+	float y1 = position[1];
+	float z1 = position[2];
+
+	float x2 = position[0] + size[0];
+	float y2 = position[1] + size[1];
+	float z2 = position[2] + size[2];
+	float faces[6][4][3] = {
+        { {x1,y1,z1}, {x1,y2,z1}, {x2,y2,z1}, {x2,y1,z1} }, // front
+        { {x2,y1,z2}, {x2,y2,z2}, {x1,y2,z2}, {x1,y1,z2} }, // back
+        { {x1,y2,z1}, {x1,y2,z2}, {x2,y2,z2}, {x2,y2,z1} }, // top
+        { {x1,y1,z2}, {x1,y1,z1}, {x2,y1,z1}, {x2,y1,z2} }, // bottom
+        { {x2,y1,z1}, {x2,y2,z1}, {x2,y2,z2}, {x2,y1,z2} }, // right
+        { {x1,y1,z2}, {x1,y2,z2}, {x1,y2,z1}, {x1,y1,z1} }, // left
+    };
+
+    float uvs[4][2] = {
+        {0.0f, 0.0f},
+        {0.0f, 1.0f},
+        {1.0f, 0.0f},
+        {1.0f, 1.0f},
+    };
+
+    // push order per face: corner 0, 2, 1, 3
+    int push_order[4] = {0, 1, 2, 3};
+
+	for(size_t i = 0; i < 6; ++i)
+	{
+		for(size_t j = 0; j < 4; ++j)
+		{
+			int c = push_order[j];
+			Vertex v = {0};
+			v.size[0] = size[0];
+			v.size[1] = size[1];
+			v.size[2] = size[2];
+
+			v.color[0] = adjusted_color[0];
+			v.color[1] = adjusted_color[1];
+			v.color[2] = adjusted_color[2];
+			v.color[3] = adjusted_color[3];
+
+			v.position[0] = faces[i][c][0];
+			v.position[1] = faces[i][c][1];
+			v.position[2] = faces[i][c][2];
+
+			v.tex_coords[0] = uvs[c][0];
+
+			v.tex_coords[1] = uvs[c][1];
+			vertices_push(&renderer->object_data.vertices, v);
+
+		}
+		renderer->quad_count++;
+	}
+
 
 }
 
@@ -2185,7 +2331,6 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "view", renderer->view);
 
-    
     glBindBuffer(GL_ARRAY_BUFFER, renderer->current_model->instance_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
     glBindVertexArray(renderer->current_model->mesh.m_vao);
@@ -2207,9 +2352,6 @@ void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* pro
 
 }
 //void dyl_instanced_draw_rectangle(Dyl_Instanced_Renderer* renderer, vec4 color);
-
-
-
 
 
 
@@ -2264,6 +2406,7 @@ void render_text(Font_Renderer* renderer, const char* text, float x, float y, fl
     glBindTexture(GL_TEXTURE_2D, 0);
 	
 }
+
 void destroy_font_renderer(Font_Renderer* renderer)
 {
 	memset(&renderer->font_shader,0, sizeof(Shader));
