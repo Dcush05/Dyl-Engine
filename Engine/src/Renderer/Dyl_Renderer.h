@@ -422,7 +422,7 @@ typedef struct
 }Font_Renderer;
 
 Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection);
-void render_text(Font_Renderer* renderer, const char* text, float x, float y, float scale, vec3 color);
+void render_text(Font_Renderer* renderer, const u8* text, float x, float y, float scale, vec3 color);
 void destroy_font_renderer(Font_Renderer* renderer);
 
 #endif

@@ -1,4 +1,3 @@
-
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "Dyl_Renderer.h"
 #include "Shader.h"
@@ -1012,6 +1011,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
 	if(renderer->current_mode == MODE_TEXTURE || renderer->current_mode == MODE_CUBE_TEXTURE) //TODO: Separate as this will lead to bugs when rendering 2d textures later
 	{
+
+		glEnable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE0 + SLOT_TEXTURE2D);
 		glBindTexture(GL_TEXTURE_2D, renderer->object_data.texture.ID);
 		glEnable(GL_CULL_FACE);
@@ -1025,6 +1026,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 0);
 	}else if(renderer->current_mode == MODE_CUBEMAP){
 		glDepthMask(GL_FALSE);
+
+		glEnable(GL_DEPTH_TEST);
 
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
@@ -1042,6 +1045,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
 	}else if(renderer->current_mode == MODE_TERRAIN_MESH || renderer->current_mode == MODE_RECT){
 		glDisable(GL_CULL_FACE);
+
+		glEnable(GL_DEPTH_TEST);
 	//	glBindTexture(GL_TEXTURE_2D, 0);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
@@ -1053,6 +1058,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	}else if(renderer->current_mode == MODE_CUBE){
 	//	printf("wkekke\n");	
 		//TODO: temp
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 
@@ -1073,6 +1079,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		
 	}else if(renderer->current_mode == MODE_LIGHT_CUBE)
 	{
+
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
@@ -2025,7 +2033,7 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
 
-	for(unsigned char c = 0; c < MAX_CHARACTERS; ++c)
+	for(u8 c = 0; c < MAX_CHARACTERS; ++c)
 	{
 		if(FT_Load_Char(new_font_renderer.ft_face, c, FT_LOAD_RENDER))
 			{
@@ -2069,7 +2077,7 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 			};
 			if (c < MAX_CHARACTERS) 
 			{
-				new_font_renderer.characters[(unsigned char)c] = character;
+				new_font_renderer.characters[c] = character;
 			}
 		
 
@@ -2355,9 +2363,13 @@ void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* pro
 
 
 
-void render_text(Font_Renderer* renderer, const char* text, float x, float y, float scale, vec3 color)
+void render_text(Font_Renderer* renderer, const u8* text, float x, float y, float scale, vec3 color)
 {
-    use(&renderer->font_shader);
+
+	use(&renderer->font_shader);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+
     set_vec3f(&renderer->font_shader, "textColor", color);
     set_int(&renderer->font_shader, "text", 0);
     set_matrix4(&renderer->font_shader, "projection", renderer->projection);
@@ -2366,13 +2378,13 @@ void render_text(Font_Renderer* renderer, const char* text, float x, float y, fl
     //int ascent = renderer->ft_face->size->metrics.ascender >> 6;
     
 // Iterate through each character
-    for (const char* p = text; *p; ++p)
+    for (const u8* p = text; *p; ++p)
     {
-        unsigned char c = (unsigned char)*p;
+        u8 c = *p;
         character ch = renderer->characters[c];
 
         float xpos = x + ch.bearing[0] * scale;
-	float ypos = y + (renderer->ascent - ch.bearing[1]) * scale;
+		float ypos = y + (renderer->ascent - ch.bearing[1]) * scale;
 
         float w = ch.size[0] * scale;
         float h = ch.size[1] * scale;
@@ -2386,19 +2398,17 @@ void render_text(Font_Renderer* renderer, const char* text, float x, float y, fl
             { xpos + w, ypos,       1.0f, 1.0f },
             { xpos + w, ypos + h,   1.0f, 0.0f }
         };
-	printf( "characte texture iD: %d\n", ch.texture_id);
 
 
-        glBindTexture(GL_TEXTURE_2D, ch.texture_id);
+        glBindTexture(GL_TEXTURE_2D,  ch.texture_id);
 
-        // Update VBO
         glBindBuffer(GL_ARRAY_BUFFER, renderer->font_VBO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        // Draw quad
+
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // Advance cursors for next glyph (note: advance is in 1/64 pixels)
         x += (ch.advance >> 6) * scale;  // Bitshift by 6 to get pixels from 1/64 pixels
     }
 

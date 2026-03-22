@@ -1,3 +1,4 @@
+#include "Core/dyl_debug_render.h"
 #include "Core/dyl_profiler.h"
 #include "Core/entity_manager.h"
 #include "Events/dyl_events.h"
@@ -8,6 +9,7 @@
 #include "renderer/camera.h"
 #include "renderer_engine_interface.h"
 #include "utils/dyl_arena.h"
+#include "utils/dyl_str.h"
 #include <complex.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -126,8 +128,16 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 
 
+	mat4 twod_proj;
+	glm_ortho(0.0f, engine->window->width, engine->window->height, 0.0F, -1.0f, 1.0f, twod_proj);	
+	
+	
 
-//	glm_ortho(0.0f, WIDTH, HEIGHT, 0.0F, -1.0f, 1.0f, engine->projection);	
+	engine->font_renderer = arena_push(&global_arena, sizeof(Font_Renderer));
+	*engine->font_renderer = font_renderer_init("assets/Fonts/Datatype.ttf", 125, &twod_proj);
+	
+	engine->debug_text = arena_push(&global_arena, sizeof(Dyl_Debug_Text_Manager));
+	dyl_debug_text_manager_init(engine->debug_text, &global_arena);
 //	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
 //	*engine->instanced_renderer = dyl_instanced_setup(5);
 	
@@ -227,19 +237,38 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			
 
 			db_flush(engine->batch_renderer); 
+			dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
+									   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
+			dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
+
+			//		dyl_instanced_push_model(engine->instanced_renderer, engine->tree_model,(vec3){5.0, 0, 4.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
+
+				dyl_instanced_draw(engine->instanced_renderer);
+
+
 		}
 					
 //		dyl_instanced_push_rect(engine->instanced_renderer, (vec2){1.0,1.0}, (vec2){64,64}, 0.0);
 
 
 		//dyl_instanced_draw_rectangle(engine->instanced_renderer);
-		dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
-						   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
-		dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
+		
+		Dyl_Str txt1 = DYL_STR_LIT("test1");
+		dyl_debug_text_push(engine->debug_text, txt1.string_data);
+		Dyl_Str txt2 = DYL_STR_LIT("test2");
+		dyl_debug_text_push(engine->debug_text, txt2.string_data);
+		Dyl_Str txt3 = DYL_STR_LIT("test3");
+		dyl_debug_text_push(engine->debug_text, txt3.string_data);
+		Dyl_Str txt4 = DYL_STR_LIT("test4");
+		dyl_debug_text_push(engine->debug_text, txt4.string_data);
+		Dyl_Str txt5 = DYL_STR_LIT("test5");
+		dyl_debug_text_push(engine->debug_text, txt5.string_data);
 
-//		dyl_instanced_push_model(engine->instanced_renderer, engine->tree_model,(vec3){5.0, 0, 4.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
 
-	    dyl_instanced_draw(engine->instanced_renderer);
+		dyl_debug_text_render(engine->font_renderer, engine->debug_text);
+
+		
+
 
 		frame_callback(engine);
 		window_end(engine->window);

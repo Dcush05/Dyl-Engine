@@ -5,6 +5,7 @@ cmake_policy(SET CMP0009 NEW)
 # MY_SOURCES at CMakeLists.txt:28 (file)
 file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/*.c")
 set(OLD_GLOB
+  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_debug_render.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_profiler.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/entity_manager.c"
   "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Dyl_Engine.c"

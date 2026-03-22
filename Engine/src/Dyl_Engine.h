@@ -1,5 +1,6 @@
 #ifndef DYL_ENGINE_H
 #define DYL_ENGINE_H
+#include "Core/dyl_debug_render.h"
 #include "utils/dyl_base.h"
 #include "Core/entity_manager.h"
 #include "Renderer/Dyl_Renderer.h"
@@ -45,7 +46,9 @@ typedef struct Engine
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;
 	Dyl_Instanced_Renderer* instanced_renderer;
+	Font_Renderer* font_renderer;
 	Dyl_Event* event;
+	Dyl_Debug_Text_Manager* debug_text;
 	Camera* scene_camera;
 	Texture texture;
 	Texture billboard;
