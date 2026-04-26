@@ -26,7 +26,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE) # Link time optimization
 
 project(Dyl_Engine)
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
-add_compile_definitions(USING_SDL)
+#add_compile_definitions(USING_SDL)
 add_library("${CMAKE_PROJECT_NAME}" SHARED ${MY_SOURCES})
 
 
@@ -51,7 +51,6 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PRIVATE
 
 # Link SDL3 and other libraries
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../libs/SDL3.lib"
 	"${CMAKE_CURRENT_SOURCE_DIR}/../libs/freetype.lib"
 	"${CMAKE_CURRENT_SOURCE_DIR}/../libs/brotlicommon.lib"
 	"${CMAKE_CURRENT_SOURCE_DIR}/../libs/brotlidec.lib"

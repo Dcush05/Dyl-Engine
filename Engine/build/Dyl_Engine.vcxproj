@@ -98,12 +98,12 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <UseFullPaths>false</UseFullPaths>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR="Debug";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ENGINE_EXPORTS;CMAKE_INTDIR="Debug";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR=\"Debug\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;ENGINE_EXPORTS;CMAKE_INTDIR=\"Debug\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include\freetype;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -115,7 +115,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\SDL3.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -139,14 +139,14 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <UseFullPaths>false</UseFullPaths>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR="Release";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;CMAKE_INTDIR="Release";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR=\"Release\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;CMAKE_INTDIR=\"Release\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include\freetype;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -158,7 +158,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\SDL3.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -182,14 +182,14 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <UseFullPaths>false</UseFullPaths>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR="MinSizeRel";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;CMAKE_INTDIR="MinSizeRel";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR=\"MinSizeRel\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;CMAKE_INTDIR=\"MinSizeRel\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include\freetype;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -201,7 +201,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\SDL3.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -226,12 +226,12 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <UseFullPaths>false</UseFullPaths>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR="RelWithDebInfo";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;CMAKE_INTDIR="RelWithDebInfo";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;USING_SDL;CMAKE_INTDIR=\"RelWithDebInfo\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;ENGINE_EXPORTS;CMAKE_INTDIR=\"RelWithDebInfo\";Dyl_Engine_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\include\freetype;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -243,7 +243,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\SDL3.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\freetype.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlicommon.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\brotlidec.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\bz2.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\libpng16.lib;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\..\libs\zlib.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -324,6 +324,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\camera.c" />
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Window\dyl_window.c" />
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad.c" />
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad_wgl.c" />
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_arena.c" />
     <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_str.c" />
   </ItemGroup>

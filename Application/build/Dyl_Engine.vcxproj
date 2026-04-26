@@ -151,7 +151,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/Debug/Dyl_Engine.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/Debug/Dyl_Engine.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -224,7 +224,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/Release/Dyl_Engine.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/Release/Dyl_Engine.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -297,7 +297,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/MinSizeRel/Dyl_Engine.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/MinSizeRel/Dyl_Engine.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -369,7 +369,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImportLibrary>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/RelWithDebInfo/Dyl_Engine.lib</ImportLibrary>
       <ProgramDataBaseFile>C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Application/build/RelWithDebInfo/Dyl_Engine.pdb</ProgramDataBaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -433,7 +433,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\main.c" />
+    <ClCompile Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\entry_point.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\build\ZERO_CHECK.vcxproj">

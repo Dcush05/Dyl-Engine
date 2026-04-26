@@ -8,6 +8,7 @@ if(MSVC)
     add_compile_options(/arch:AVX2) # Ensure SIMD optimizations
     add_compile_options(/arch:DDEBUG)
     add_compile_options("$<$<CONFIG:Release>:/O2>")
+	add_compile_options(/SUBSYSTEM:CONSOLE)
 
 
 
@@ -19,7 +20,12 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE) # Link time optimization
 
 project(Dyl_Engine)
 
-add_executable(Dyl_Engine main.c)
+if(WIN32)
+	add_executable(Dyl_Engine WIN32 entry_point.c)
+else()
+	add_executable(Dyl_Engine main.c)
+endif()
+
 set(ENGINE_LIB_PATH "../../Engine/build/$<CONFIG>/Dyl_Engine")
 target_link_libraries(Dyl_Engine PRIVATE "${ENGINE_LIB_PATH}")
 target_include_directories(Dyl_Engine PRIVATE 

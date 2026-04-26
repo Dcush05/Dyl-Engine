@@ -4,11 +4,12 @@
 
 
 #include <stdbool.h>
-#ifdef USING_SDL
+#ifdef _WIN32
+	#include "../Window/dyl_window.h"	
+	typedef MSG Event_Handle;
+#else
 	#include <SDL3/SDL_events.h>
 	typedef SDL_Event Event_Handle;
-#else
-	typedef void* Event_Handle;
 #endif
 
 
@@ -74,6 +75,7 @@ void dyl_event_initalize(Dyl_Event* event);
 int dyl_event_poll(Dyl_Event* event);
 bool dyl_event_window_dispatch(Dyl_Event* event, Dyl_Event_State state);
 bool dyl_event_key_press(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state);
+void dyl_event_end(Dyl_Event* event);
 
 
 #endif

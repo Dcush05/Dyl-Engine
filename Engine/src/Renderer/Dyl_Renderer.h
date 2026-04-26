@@ -10,6 +10,7 @@
 #include <cglm/vec4.h>
 #include "Shader.h"
 #include "../utils/dyl_base.h"
+#include "noise.h"
 #include "stb_image.h"
 #include "tinyobj_loader_c.h"
 
@@ -265,14 +266,17 @@ typedef struct
 	shader_data shaders;
 //	Arena vertex_arena;
 //	Arena index_arena;
+	Arena str_arena;
 //	Vertex_Data vertex_data;
 	//Model_Data model_data;
 	Mesh object_data;
 	vec3 camera_pos;
 	
+	
 	u32 vbo;
 	u32 vao;
 	u32 ebo; //indices
+	
 	size_t indice_count;
 	size_t quad_count;
 	shader_id shader_tag;
@@ -305,9 +309,31 @@ void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
 
 void db_billboard_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 texture_rect, vec3 position, vec2 size, float rotate, vec4 color);
 
-void db_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
 
-void db_textured_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
+
+#define TERRAIN_RENDERING_FLAGS_NIL				0
+#define TERRAIN_RENDERING_FLAGS_FLAT			(1 << 1)
+#define TERRAIN_RENDERING_FLAGS_PERLIN			(1 << 2)
+#define TERRAIN_RENDERING_FLAGS_PROCEDURAL		(1 << 3)
+
+
+typedef struct
+{
+	vec4 color;
+	vec3 position;
+	vec2 size;
+	float max_height;
+	float rotate;
+	u32 plane_rendering_flags;
+
+}terrain_obj;
+
+
+
+void db_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float rotate, vec4 color);
+void db_textured_plane_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec3 position, vec2 size, float rotate, vec4 color);
+
+//void db_terrain_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float max_height, float rotate, vec4 color); //TODO: At some point implement this but this isnt a priority
 
 void db_flush(Dyl_Batch_Renderer* renderer);
 void db_destroy(Dyl_Batch_Renderer* renderer);
@@ -343,7 +369,7 @@ Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bo
 void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* renderer, Model* model);
 void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* view);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
-void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec2 position, vec2 size, float rotate, vec4 color);
+void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color);
 void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj);
 void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer);
 
@@ -364,6 +390,7 @@ typedef struct
 	u32 renderer_flags;
 	union
 	{
+	
 		Dyl_Batch_Renderer batch_renderer;
 		Dyl_Instanced_Renderer instanced_renderer;
 	};

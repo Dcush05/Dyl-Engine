@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\build\build\CMakeFiles\76a423ecec32ff46f4fc2f7e86b38b24\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{C50E4E50-0BDB-3D65-8DCA-7296903C72E7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

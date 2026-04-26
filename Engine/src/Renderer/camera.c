@@ -79,48 +79,53 @@ void camera_input(Camera* camera, SDL_Event* event)
 			}
 		break;
 		case SDL_EVENT_MOUSE_MOTION:
-			if(camera->first_mouse)
+			switch(event->button.button)
 			{
-			/*	if(camera->rel_mouse)
+				case SDL_BUTTON_LEFT:
+				if(camera->first_mouse)
 				{
+				/*	if(camera->rel_mouse)
+					{
 
-					camera->lastx = event->motion.xrel;
-					printf("MOUSE IS REL");
+						camera->lastx = event->motion.xrel;
+						printf("MOUSE IS REL");
+					}
+					else*/
+					camera->lastx = event->motion.x;
+					camera->lasty = event->motion.y;
+					camera->first_mouse = false;
 				}
-				else*/
+				float xoffset = event->motion.x - camera->lastx;
+				float yoffset = camera->lasty - event->motion.y;
 				camera->lastx = event->motion.x;
 				camera->lasty = event->motion.y;
-				camera->first_mouse = false;
+
+
+				printf("MOUSE POS: (%f, %f)\n", event->motion.xrel, event->motion.yrel);
+
+				xoffset *= camera->sense;
+				yoffset *= camera->sense;
+				camera->yaw += xoffset;
+				camera->pitch += yoffset;
+
+				if(camera->pitch > 89.0f) camera->pitch = 89.0f;
+				
+				if(camera->pitch < -89.0f) camera->pitch = -89.0f;
+			//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
+			//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
+			//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
+			//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
+
+				camera->yaw = fmodf(camera->yaw, 360.0f);
+				vec3 front;
+				front[0] = cosf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
+				front[1] = sinf(glm_rad(camera->pitch));
+				front[2] = sinf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
+				glm_vec3_normalize_to(front, camera->camera_front);
+				glm_cross(camera->camera_front, camera->camera_up, camera->camera_right);
+				glm_vec3_normalize(camera->camera_right);
+				break;
 			}
-			float xoffset = event->motion.x - camera->lastx;
-			float yoffset = camera->lasty - event->motion.y;
-			camera->lastx = event->motion.x;
-			camera->lasty = event->motion.y;
-
-
-			printf("MOUSE POS: (%f, %f)\n", event->motion.xrel, event->motion.yrel);
-
-			xoffset *= camera->sense;
-			yoffset *= camera->sense;
-			camera->yaw += xoffset;
-			camera->pitch += yoffset;
-
-			if(camera->pitch > 89.0f) camera->pitch = 89.0f;
-			
-			if(camera->pitch < -89.0f) camera->pitch = -89.0f;
-		//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
-		//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
-		//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
-		//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
-
-			camera->yaw = fmodf(camera->yaw, 360.0f);
-			vec3 front;
-			front[0] = cosf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
-			front[1] = sinf(glm_rad(camera->pitch));
-			front[2] = sinf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
-			glm_vec3_normalize_to(front, camera->camera_front);
-			glm_cross(camera->camera_front, camera->camera_up, camera->camera_right);
-			glm_vec3_normalize(camera->camera_right);
 		break;
 
 	}

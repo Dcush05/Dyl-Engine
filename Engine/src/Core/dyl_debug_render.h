@@ -27,11 +27,15 @@ typedef struct
 }Dyl_Debug_Text_Manager;
 
 
+extern Dyl_Debug_Text_Manager global_debug_text_manager;
+
+
 #define DEFAULT_DEBUG_TEXT_MAX 15
 
-void dyl_debug_text_manager_init(Dyl_Debug_Text_Manager* manager, Arena* arena);
-void dyl_debug_text_push(Dyl_Debug_Text_Manager* manager, u8* str);
-void dyl_debug_text_render(Font_Renderer* renderer ,Dyl_Debug_Text_Manager* manager);
+
+void dyl_debug_text_manager_init(Arena* arena);
+void dyl_debug_text_push(u8* str);
+void dyl_debug_text_render(Font_Renderer* renderer);
 
 
 #endif

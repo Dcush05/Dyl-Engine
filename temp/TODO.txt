@@ -46,6 +46,7 @@
 		
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
 	Optimized shader initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
+	FBX parser
 	Setup assets system
 	Refactor so our code has better taste
 	Fix camera code so that it is o.s agnostic or  make an interface for the camera code

@@ -1,3 +1,4 @@
+#include "noise.h"
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "Dyl_Renderer.h"
 #include "Shader.h"
@@ -11,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
+#include "../core/dyl_debug_render.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -460,6 +462,7 @@ void my_file_reader(
 }
 
 
+
 Model model_init(const char* file_name, Arena* arena)
 {
 	
@@ -671,13 +674,9 @@ Model model_init(const char* file_name, Arena* arena)
 
 
 	//Texture intialization code here
-	//
-	//
-	//
-	//
-	//
-	//
-	//
+	
+
+
 	//Opengl Commands
 	glGenVertexArrays(1, &model.mesh.m_vao);
 	glBindVertexArray(model.mesh.m_vao);
@@ -828,6 +827,9 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 
 	renderer.object_data.vertices.vertex_count = 0;
 	renderer.object_data.vertices.capacity = max_vertices;
+
+
+	perlin_init();
 
 
 	glGenVertexArrays(1, &renderer.vao);
@@ -1103,6 +1105,10 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	else
 		glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
 	//NOTE: switch between renderer->triangle_count * 3 when rendering triangles
+	
+
+
+	arena_reset(&renderer->str_arena);
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
     glBindVertexArray(0);
@@ -1498,6 +1504,8 @@ void db_plane_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec2 size, float
 
 
 }
+
+	
 
 void db_cube_draw(Dyl_Batch_Renderer* renderer, vec3 position, vec3 size, float rotate, vec4 color)
 {

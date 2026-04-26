@@ -9,7 +9,7 @@
 #include "Window/dyl_window.h"
 #include "Events/dyl_events.h"
 #include "Core/entity_manager.h"
-
+#include "Core/platform.h"
  
 
 #ifdef USING_SDL
@@ -17,8 +17,7 @@
 	#include <SDL3/SDL.h>
 	#include <SDL3/SDL_main.h>
 	#include <SDL3/SDL_video.h>
-
-#endif
+#endif  
  
 
 
@@ -29,14 +28,16 @@
 #endif
 
 
-#define GLOBAL_ARENA_START_SIZE (1024)
+#define GLOBAL_ARENA_START_SIZE (1024 * 1024)
 extern Arena global_arena;
 extern Arena entity_arena;
 
 
+
+
 typedef struct Engine
 {
-
+	Platform platform;
 	Entity_Manager manager;
 	Model model;
 	Model* t_model;
@@ -67,7 +68,7 @@ typedef void(*Frame_Call_Back)(Engine*);
 typedef void(*Event_Call_Back)(Engine*);
 
 
-
+ENGINE_API int engine_entry(int argc, char** argv);
 ENGINE_API void engine_initialize(Engine* engine);
 ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_callback, Frame_Call_Back frame_callback, Event_Call_Back event_callback);
 ENGINE_API void engine_shutdown(Engine* engine);

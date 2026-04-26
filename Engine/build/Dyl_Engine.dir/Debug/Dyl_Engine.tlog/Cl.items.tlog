@@ -8,5 +8,6 @@ C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Shader.c
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\camera.c;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\camera.obj
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\Window\dyl_window.c;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\dyl_window.obj
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad.c;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\glad.obj
+C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\glad_wgl.c;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\glad_wgl.obj
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_arena.c;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\dyl_arena.obj
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\src\utils\dyl_str.c;C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\dyl_str.obj

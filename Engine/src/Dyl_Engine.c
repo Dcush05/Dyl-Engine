@@ -50,7 +50,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	dyl_profiler_start("window+renderer setup");			
 	engine->window = (Dyl_Window*)arena_push(&global_arena, sizeof(Dyl_Window));
-	window_initialize(engine->window, "Engine", 500,250, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
+	window_initialize(engine->window, "Engine", 500,250, WIDTH, HEIGHT, SDL_WINDOW_OPENGL, true, &engine->platform);
 //	engine->renderer = (Renderer2D*)arena_push(&global_arena, sizeof(Renderer2D)); //set up
 
 	
@@ -91,7 +91,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	dyl_profiler_start("alloc2");
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,3.5,8.0}, true,engine->window->width, engine->window->height );
+	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,3.5,8.0}, false, engine->window->width, engine->window->height );
 
 	dyl_profiler_end("alloc2");
 	dyl_profiler_print_func("alloc2");
@@ -120,24 +120,15 @@ ENGINE_API void engine_initialize(Engine* engine)
 	*engine->t_model = model_init("assets/Obj/Japanese_Maple/Japanese_Maple.obj", &global_arena);
 	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, engine->t_model);
 	
-
-//	engine->tree_model = arena_push(&global_arena, sizeof(Model));
-//	*engine->tree_model = model_init("assets/Obj/teapot.obj", &global_arena);
-//	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, engine->tree_model);
-
-
-
-
 	mat4 twod_proj;
 	glm_ortho(0.0f, engine->window->width, engine->window->height, 0.0F, -1.0f, 1.0f, twod_proj);	
 	
 	
 
 	engine->font_renderer = arena_push(&global_arena, sizeof(Font_Renderer));
-	*engine->font_renderer = font_renderer_init("assets/Fonts/Datatype.ttf", 125, &twod_proj);
+	*engine->font_renderer = font_renderer_init("assets/Fonts/vt323.ttf", 75, &twod_proj);
 	
-	engine->debug_text = arena_push(&global_arena, sizeof(Dyl_Debug_Text_Manager));
-	dyl_debug_text_manager_init(engine->debug_text, &global_arena);
+	dyl_debug_text_manager_init(&global_arena);
 //	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
 //	*engine->instanced_renderer = dyl_instanced_setup(5);
 	
@@ -161,7 +152,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 {
 	ASSERT(frame_callback, "Please setup a frame call back function");
 
-//	entity_scene_callback(engine);	 i dont think we do this every frame....
+	entity_scene_callback(engine);	
 
 	while(engine->window->is_window_open)
 	{
@@ -184,11 +175,16 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			}else if(dyl_event_key_press(engine->event, DYLKEY_X, DYL_KEY_PRESSED))
 			{
 				engine_shutdown(engine);
+			}else if(dyl_event_key_press(engine->event, DYLKEY_H, DYL_KEY_PRESSED))
+			{
+				engine->window->enable_vsync = !engine->window->enable_vsync;
+				window_set_vsync(engine->window, engine->window->enable_vsync);	
 			}
 			if(event_callback)
 				event_callback(engine);
 
-			camera_input(engine->scene_camera, &engine->event->event);
+			//camera_input(engine->scene_camera, &engine->event->event);
+			dyl_event_end(engine->event);
 
 		}
 		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
@@ -229,43 +225,44 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			db_billboard_draw(engine->batch_renderer, &engine->billboard, (vec4){0,0,32,32}, (vec3){-2.0, 1.0, 1.0}, (vec2){1.0,1.0}, 0.0f, (vec4){255,255,255,255});
 
 			db_plane_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
-		//	db_light_cube(engine->batch_renderer, (vec3){1.0, 6.0, -6.0}, (vec3){1.0, 1.0, 1.0}, (vec4){255,0,0,255}, (vec4){255,200,200,255}, 0.1f, 0.5f, LIGHTING_SPECULAR, engine->scene_camera->camera_pos);
+
+			//	db_light_cube(engine->batch_renderer, (vec3){1.0, 6.0, -6.0}, (vec3){1.0, 1.0, 1.0}, (vec4){255,0,0,255}, (vec4){255,200,200,255}, 0.1f, 0.5f, LIGHTING_SPECULAR, engine->scene_camera->camera_pos);
 
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
 			db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
+			Dyl_Str vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Vertices (batch): %d/%d", engine->batch_renderer->object_data.vertices.vertex_count,
+												   engine->batch_renderer->object_data.vertices.capacity);
+
+			dyl_debug_text_push(vertices_sent_debug_txt.string_data);
+	
+
 			
 
 			db_flush(engine->batch_renderer); 
+			
+		}
 			dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
 									   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
 			dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
 
 			//		dyl_instanced_push_model(engine->instanced_renderer, engine->tree_model,(vec3){5.0, 0, 4.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
+			//
+			Dyl_Str instanced_vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Triangles (instanced): %d", engine->instanced_renderer->triangle_count);
 
-				dyl_instanced_draw(engine->instanced_renderer);
+			dyl_debug_text_push(instanced_vertices_sent_debug_txt.string_data);
+	
 
 
-		}
-					
+			dyl_instanced_draw(engine->instanced_renderer);
+
+				
 //		dyl_instanced_push_rect(engine->instanced_renderer, (vec2){1.0,1.0}, (vec2){64,64}, 0.0);
 
 
 		//dyl_instanced_draw_rectangle(engine->instanced_renderer);
 		
-		Dyl_Str txt1 = DYL_STR_LIT("test1");
-		dyl_debug_text_push(engine->debug_text, txt1.string_data);
-		Dyl_Str txt2 = DYL_STR_LIT("test2");
-		dyl_debug_text_push(engine->debug_text, txt2.string_data);
-		Dyl_Str txt3 = DYL_STR_LIT("test3");
-		dyl_debug_text_push(engine->debug_text, txt3.string_data);
-		Dyl_Str txt4 = DYL_STR_LIT("test4");
-		dyl_debug_text_push(engine->debug_text, txt4.string_data);
-		Dyl_Str txt5 = DYL_STR_LIT("test5");
-		dyl_debug_text_push(engine->debug_text, txt5.string_data);
-
-
-		dyl_debug_text_render(engine->font_renderer, engine->debug_text);
+		dyl_debug_text_render(engine->font_renderer);
 
 		
 
