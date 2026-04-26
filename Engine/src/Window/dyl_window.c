@@ -52,6 +52,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 	window->window_flags = window_flags;
 	window->is_window_open = true;
 	window->window_name = DYL_STR_LIT(window_name);
+	window->enable_vsync = enable_vsync;
 
 	#ifdef _WIN32
 		LPCTSTR CLASS_NAME = "Dyl Engine Window";
@@ -164,12 +165,12 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 		}	
 
 
-		const int major_min = 4, minor_min = 0;
+		const int major_min = 3, minor_min = 3;
 		const int contextAttribs[] = {
 		WGL_CONTEXT_MAJOR_VERSION_ARB, major_min,
 		WGL_CONTEXT_MINOR_VERSION_ARB, minor_min,
-		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-//		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+		WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 
+		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
 		0
 		};
 
@@ -187,6 +188,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 				ShowWindow(window->window_handle, platform->cmd_show);
 			}
 		#endif
+		wglSwapIntervalEXT(window->enable_vsync);
 
 		ShowWindow(window->window_handle, platform->cmd_show);
 
@@ -218,7 +220,9 @@ void window_set_vsync(Dyl_Window* window, bool enable_vsync)
 {
 	window->enable_vsync = enable_vsync;
 
-	#ifdef USING_SDL
+	#ifdef _WIN32
+		wglSwapIntervalEXT(window->enable_vsync);
+	#else
 		SDL_GL_SetSwapInterval(window->enable_vsync);
 	#endif
 }

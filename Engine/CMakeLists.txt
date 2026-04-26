@@ -26,6 +26,8 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE) # Link time optimization
 
 project(Dyl_Engine)
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+
+#add_compile_definitions(USING_NATIVE) //use this to switch native code on and off and then determine what os during preprocessor stage
 #add_compile_definitions(USING_SDL)
 add_library("${CMAKE_PROJECT_NAME}" SHARED ${MY_SOURCES})
 

@@ -1,4 +1,5 @@
 #include "dyl_events.h"
+#include <windowsx.h>
 #include <winuser.h>
 
 #ifdef _WIN32
@@ -77,6 +78,15 @@ void dyl_event_initalize(Dyl_Event* event)
 	key_pos++;
 	event->keys[key_pos].key_type = DYLKEY_Z;
 	key_pos++;
+	event->keys[key_pos].key_type = DYL_MOUSE_KEY_LBUTTON;
+	key_pos++;
+	event->keys[key_pos].key_type = DYL_MOUSE_KEY_RBUTTON;
+	key_pos++;
+	event->keys[key_pos].key_type = DYL_MOUSE_KEY_MBUTTON;
+	key_pos++;
+
+
+
 }
 int dyl_event_poll(Dyl_Event* event)
 {
@@ -92,7 +102,98 @@ int dyl_event_poll(Dyl_Event* event)
 uint8_t dyl_key_translate(Dyl_Key_Type type)
 {
 	#ifdef _WIN32
-		printf("No key\n");
+		switch(type)
+		{
+			case DYLKEY_A:
+				return 0x41;
+			break;
+			case DYLKEY_B:
+				return 0x42;
+			break;
+			case DYLKEY_C:
+				return 0x43;
+			break;
+			case DYLKEY_D:
+				return 0x44;
+			break;
+			case DYLKEY_E:
+				return 0x45;
+			break;
+			case DYLKEY_F:
+				return 0x46;
+			break;
+			case DYLKEY_G:
+				return 0x47;
+			break;
+			case DYLKEY_H:
+				return 0x48;
+			break;
+			case DYLKEY_I:
+				return 0x49;
+			break;
+			case DYLKEY_J:
+				return 0x4A;
+			break;
+			case DYLKEY_K:
+				return 0x4B;
+			break;
+			case DYLKEY_L:
+				return 0x4C;
+			break;
+			case DYLKEY_M:
+
+				return 0x4D;
+			break;
+			case DYLKEY_N:
+				return 0x4E;
+			break;
+			case DYLKEY_O:
+				return 0x4F;
+			break;
+			case DYLKEY_P:
+				return 0x50;
+			break;
+			case DYLKEY_Q:
+				return 0x51;
+			break;
+			case DYLKEY_R:
+				return 0x52;
+			break;
+			case DYLKEY_S:
+				return 0x53;
+			break;
+			case DYLKEY_T:
+				return 0x54;
+			break;
+			case DYLKEY_U:
+				return 0x55;
+			break;
+			case DYLKEY_V:
+				return 0x56;
+			break;
+			case DYLKEY_W:
+				return 0x57;
+			break;
+			case DYLKEY_X:
+				return 0x58;
+			break;
+			case DYLKEY_Y:
+				return 0x59;
+			break;
+			case DYLKEY_Z:
+				return 0x5A;
+			break;
+			case DYL_MOUSE_KEY_LBUTTON:
+				return VK_LBUTTON;
+			break;
+			case DYL_MOUSE_KEY_RBUTTON:
+				return VK_RBUTTON;
+			break;
+			case DYL_MOUSE_KEY_MBUTTON:
+				return VK_RBUTTON;
+			break;
+
+		}
 	
 	#elif USING_SDL
 		switch(type)
@@ -185,9 +286,22 @@ uint8_t dyl_event_state_translate(Dyl_Event_State state)
 	#ifdef _WIN32
 		switch(state)
 		{
+			case DYL_KEY_PRESSED:
+				return WM_KEYDOWN;
+			case DYL_KEY_RELEASED:
+				return WM_KEYUP;
+			case DYL_MOUSE_KEY_LPRESS:
+				return WM_LBUTTONDOWN;
+			case DYL_MOUSE_KEY_RPRESS:
+				return WM_RBUTTONDOWN;
+			case DYL_MOUSE_KEY_LRELEASED:
+				return WM_LBUTTONUP;
+			case DYL_MOUSE_KEY_RRELEASED:
+				return WM_RBUTTONUP;
+			case DYL_MOUSE_MOVEMENT:
+				return WM_MOUSEMOVE;
 			case DYL_SYS_QUIT:
 				return WM_QUIT;
-			break;
 		}
 
 	#else
@@ -195,12 +309,10 @@ uint8_t dyl_event_state_translate(Dyl_Event_State state)
 		{
 			case DYL_KEY_PRESSED:
 				return SDL_EVENT_KEY_DOWN;
-			break;
 			case DYL_KEY_RELEASED:
 				return SDL_EVENT_KEY_UP;
 			case DYL_SYS_QUIT: 
 				return SDL_EVENT_QUIT;
-			break;
 		}
 	#endif
 		
@@ -215,7 +327,8 @@ bool dyl_event_window_dispatch(Dyl_Event* event, Dyl_Event_State state) //NOTE:@
 	#ifdef _WIN32
 		if(event->event.message == dyl_event_state_translate(state))
 		{
-			is_pressed = true;
+			if(event->event.message == WM_QUIT)
+				is_pressed = true;
 		}
 	#else
 	if((uint8_t)event->event.type == dyl_event_state_translate(state))
@@ -228,14 +341,22 @@ bool dyl_event_window_dispatch(Dyl_Event* event, Dyl_Event_State state) //NOTE:@
 
 }
 
-
-
-bool dyl_event_key_press(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state)
+bool dyl_event_key_handle(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state)
 {
 	ASSERT(event, "Passing NULL event through func");
 
-	bool is_pressed = false;
+	bool is_active = false;
 	#ifdef _WIN32
+
+		if((uint8_t)event->event.message == dyl_event_state_translate(state))
+		{
+			if((uint8_t)event->event.wParam == dyl_key_translate(type))	
+			{
+				event->keys[type].key_state = state;
+				is_active = true;
+			//	printf("Key press has been initialized\n");
+			}
+		}
 		
 		 	
 	#elif USING_SDL
@@ -244,17 +365,64 @@ bool dyl_event_key_press(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State st
 			if((uint8_t)event->event.key.scancode == dyl_key_translate(type))	
 			{
 				event->keys[type].key_state = DYL_KEY_PRESSED;
-				is_pressed = true;
+				is_active = true;
 			}
 		}
 	#endif
-	return is_pressed;
+
+	event->keys[type].is_active = is_active;
+	return is_active;
 }
+
+bool dyl_event_mouse_movement(Dyl_Event* event)
+{
+	ASSERT(event, "Passing NULL event through func");
+
+	bool is_moved = false;
+	#ifdef _WIN32
+
+		if((uint8_t)event->event.message == dyl_event_state_translate(DYL_MOUSE_MOVEMENT))
+		{
+			printf("Mouse is moving muahah\n");
+			printf("Mouse is moving muahah\n");
+			printf("Mouse is moving muahah\n");
+			printf("Mouse is moving muahah\n");
+			u64 mouse_x = event->event.pt.x;
+			u64 mouse_y = event->event.pt.y;
+			/*LPPOINT pos;
+			GetCursorPos(pos);
+			wprintf(L"Get Cursor pos: %lld %lld", pos->x, pos->y);*/
+			event->mouse_pos = (vec2i){mouse_x, mouse_y};
+			is_moved = true;
+
+		}
+		
+		 	
+	#elif USING_SDL
+		/*if((uint8_t)event->event.type == dyl_event_state_translate(state))
+		{
+			if((uint8_t)event->event.key.scancode == dyl_key_translate(type))	
+			{
+				event->keys[type].key_state = DYL_KEY_PRESSED;
+				is_pressed = true;
+			}
+		}*/
+	#endif
+	return is_moved;
+}
+
+
+
 
 
 void dyl_event_end(Dyl_Event* event)
 {
 	#ifdef _WIN32
+		for(size_t i = 0; i < DYL_KEY_AMOUNT; ++i)
+		{
+		//	if(!event->keys[i].is_active)
+		//		event->keys[i].key_state = DYL_KEY_RELEASED;
+		}
 		TranslateMessage(&event->event);
 		DispatchMessage(&event->event);
 	#elif USING_SDL

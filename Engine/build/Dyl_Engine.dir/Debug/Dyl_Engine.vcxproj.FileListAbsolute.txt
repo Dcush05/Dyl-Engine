@@ -1,3 +1,2 @@
-C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Debug\SDL3.dll
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Debug\brotlicommon.dll
 C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\Dyl_Engi.4C6200F1.Up2Date

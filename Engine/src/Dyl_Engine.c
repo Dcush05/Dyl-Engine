@@ -9,6 +9,7 @@
 #include "renderer/camera.h"
 #include "renderer_engine_interface.h"
 #include "utils/dyl_arena.h"
+#include "utils/dyl_base.h"
 #include "utils/dyl_str.h"
 #include <complex.h>
 #include <stdarg.h>
@@ -91,7 +92,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	dyl_profiler_start("alloc2");
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, engine->window->window_handle,(vec3){0.5,3.5,8.0}, false, engine->window->width, engine->window->height );
+	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, false, engine->window->width, engine->window->height );
 
 	dyl_profiler_end("alloc2");
 	dyl_profiler_print_func("alloc2");
@@ -168,22 +169,27 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 				engine->window->is_window_open = false;
 				engine_shutdown(engine);
 			}
-			if(dyl_event_key_press(engine->event, DYLKEY_E, DYL_KEY_PRESSED))
+			if(dyl_event_key_handle(engine->event, DYLKEY_E, DYL_KEY_PRESSED))
 			{
 				printf("A Key has been pressed\n");
 				engine->wireframe_mode = !engine->wireframe_mode;
-			}else if(dyl_event_key_press(engine->event, DYLKEY_X, DYL_KEY_PRESSED))
+			}else if(dyl_event_key_handle(engine->event, DYLKEY_X, DYL_KEY_PRESSED))
 			{
 				engine_shutdown(engine);
-			}else if(dyl_event_key_press(engine->event, DYLKEY_H, DYL_KEY_PRESSED))
+			}else if(dyl_event_key_handle(engine->event, DYLKEY_H, DYL_KEY_PRESSED))
 			{
 				engine->window->enable_vsync = !engine->window->enable_vsync;
 				window_set_vsync(engine->window, engine->window->enable_vsync);	
 			}
+
+			if(dyl_event_mouse_movement(engine->event))
+			{
+				printf("Mouse position is: %d, %d\n", engine->event->mouse_pos.x, engine->event->mouse_pos.y);
+			}
 			if(event_callback)
 				event_callback(engine);
 
-			//camera_input(engine->scene_camera, &engine->event->event);
+			camera_input(engine->scene_camera, engine->event);
 			dyl_event_end(engine->event);
 
 		}

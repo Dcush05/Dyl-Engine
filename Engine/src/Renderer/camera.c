@@ -1,14 +1,11 @@
 #include "camera.h"
-#include "SDL3/SDL_events.h"
-#include "SDL3/SDL_keycode.h"
-#include "SDL3/SDL_mouse.h"
 #include "cglm/vec3-ext.h"
 #include "cglm/vec3.h"
 #include <stdio.h>
 
 
 
-void camera_init(Camera* camera, SDL_Window* window,vec3 pos, bool relative_mouse, float window_width, float window_height)
+void camera_init(Camera* camera, vec3 pos, bool relative_mouse, float window_width, float window_height)
 {
 	assert(camera);
 	memset(camera, 0, sizeof(Camera));
@@ -40,18 +37,82 @@ void camera_init(Camera* camera, SDL_Window* window,vec3 pos, bool relative_mous
 	glm_vec3_add(camera->camera_pos, camera->camera_front, camera->target);
 	glm_lookat(camera->camera_pos, camera->target, camera->camera_up, camera->view);
 	camera->rel_mouse = relative_mouse;
-	SDL_SetWindowRelativeMouseMode(window, camera->rel_mouse);
+//	SDL_SetWindowRelativeMouseMode(window, camera->rel_mouse);
 	
 	
 }
 
-void camera_input(Camera* camera, SDL_Event* event)
+
+
+
+void camera_input(Camera* camera, Dyl_Event* event)
 {
 	assert(camera && event);
 	vec3 temp;
+
+	bool pressed = false;
+
+
+/*	if(dyl_event_key_handle(event, DYLKEY_W, DYL_KEY_PRESSED))
+	{
+		pressed = true;
+	}else if(dyl_event_key_handle(event, DYLKEY_A, DYL_KEY_PRESSED)){
+		pressed = true;
+	}else if(dyl_event_key_handle(event, DYLKEY_S, DYL_KEY_PRESSED)){
+		pressed = true;
+	}else if(dyl_event_key_handle(event, DYLKEY_D, DYL_KEY_PRESSED)){
+		pressed = true;
+	}*/
+    if(dyl_event_key_handle(event, DYLKEY_W, DYL_KEY_PRESSED)) camera->move_forward = true;
+    if(dyl_event_key_handle(event, DYLKEY_S, DYL_KEY_PRESSED)) camera->move_backward = true;
+    if(dyl_event_key_handle(event, DYLKEY_A, DYL_KEY_PRESSED)) camera->move_left = true;
+    if(dyl_event_key_handle(event, DYLKEY_D, DYL_KEY_PRESSED)) camera->move_right = true;
+
+    if(dyl_event_key_handle(event, DYLKEY_W, DYL_KEY_RELEASED)) camera->move_forward = false;
+    if(dyl_event_key_handle(event, DYLKEY_S, DYL_KEY_RELEASED)) camera->move_backward = false;
+    if(dyl_event_key_handle(event, DYLKEY_A, DYL_KEY_RELEASED)) camera->move_left = false;
+    if(dyl_event_key_handle(event, DYLKEY_D, DYL_KEY_RELEASED)) camera->move_right = false;
+
+/*	if(dyl_event_mouse_movement(event))
+	{
+	//	if(dyl_event_key_handle(event, DYL_MOUSE_KEY_LBUTTON,  DYL_MOUSE_KEY_LPRESS))
+	//	{
+			camera->lastx = event->mouse_pos.x;
+			camera->lasty = event->mouse_pos.x;
+				float xoffset = event->mouse_pos.x - camera->lastx;
+				float yoffset = camera->lasty - event->mouse_pos.y;
+				camera->lastx = event->mouse_pos.x;
+				camera->lasty = event->mouse_pos.y;
+
+				xoffset *= camera->sense;
+				yoffset *= camera->sense;
+				camera->yaw += xoffset;
+				camera->pitch += yoffset;
+
+				if(camera->pitch > 89.0f) camera->pitch = 89.0f;
+				
+				if(camera->pitch < -89.0f) camera->pitch = -89.0f;
+			//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
+			//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
+			//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
+			//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
+
+				camera->yaw = fmodf(camera->yaw, 360.0f);
+				vec3 front;
+				front[0] = cosf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
+				front[1] = sinf(glm_rad(camera->pitch));
+				front[2] = sinf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
+				glm_vec3_normalize_to(front, camera->camera_front);
+				glm_cross(camera->camera_front, camera->camera_up, camera->camera_right);
+				glm_vec3_normalize(camera->camera_right);
+
+	//	}
+	}*/
+
+
 	
 	
-	switch(event->type)
+/*	switch(event->event.type)
 	{
 		case SDL_EVENT_KEY_DOWN:
 
@@ -84,13 +145,13 @@ void camera_input(Camera* camera, SDL_Event* event)
 				case SDL_BUTTON_LEFT:
 				if(camera->first_mouse)
 				{
-				/*	if(camera->rel_mouse)
-					{
+				//	if(camera->rel_mouse)
+				//	{
 
-						camera->lastx = event->motion.xrel;
-						printf("MOUSE IS REL");
-					}
-					else*/
+				//		camera->lastx = event->motion.xrel;
+				//		printf("MOUSE IS REL");
+				//	}
+					else
 					camera->lastx = event->motion.x;
 					camera->lasty = event->motion.y;
 					camera->first_mouse = false;
@@ -111,10 +172,6 @@ void camera_input(Camera* camera, SDL_Event* event)
 				if(camera->pitch > 89.0f) camera->pitch = 89.0f;
 				
 				if(camera->pitch < -89.0f) camera->pitch = -89.0f;
-			//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
-			//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
-			//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
-			//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
 
 				camera->yaw = fmodf(camera->yaw, 360.0f);
 				vec3 front;
@@ -128,7 +185,7 @@ void camera_input(Camera* camera, SDL_Event* event)
 			}
 		break;
 
-	}
+	}*/
 }
 
 void camera_update(Camera* camera, float dt)
@@ -139,12 +196,16 @@ void camera_update(Camera* camera, float dt)
 	camera->vel[2] = 0.0f;
 	if(camera->move_forward)
 		glm_vec3_add(camera->vel, camera->camera_front, camera->vel);
+
 	if(camera->move_backward)
 		glm_vec3_sub(camera->vel, camera->camera_front, camera->vel);
+
 	if(camera->move_left)
 		glm_vec3_sub(camera->vel, camera->camera_right, camera->vel);
+
 	if(camera->move_right)
 		glm_vec3_add(camera->vel, camera->camera_right, camera->vel);
+
 	if(camera->move_up)
 		glm_vec3_add(camera->vel, camera->camera_up,camera->vel);
 

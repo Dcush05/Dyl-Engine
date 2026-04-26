@@ -2,7 +2,7 @@
 #define CAMERA_H
 #include <cglm/cglm.h>
 #include <assert.h>
-#include <SDL3/SDL_events.h>
+#include "../events/dyl_events.h"
 typedef struct
 {
 	mat4 view;
@@ -31,7 +31,7 @@ typedef struct
 
 }Camera;
 
-void camera_init(Camera* camera, SDL_Window* window, vec3 pos, bool relative_mouse, float window_width, float window_height);
-void camera_input(Camera* camera, SDL_Event* event);
+void camera_init(Camera* camera, vec3 pos, bool relative_mouse, float window_width, float window_height);
+void camera_input(Camera* camera, Dyl_Event* event);
 void camera_update(Camera* camera, float dt); //dt??
 #endif
