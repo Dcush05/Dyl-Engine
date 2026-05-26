@@ -465,26 +465,31 @@ void my_file_reader(
 
 
 
-Model model_init(const char* file_name, Arena* arena)
+
+#define MAX_PATH_COUNT 2046
+
+Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 {
 	
 	Model model = {0};
 
-	strncpy(model.filename, file_name, sizeof(model.filename) - 1);
-	model.filename[sizeof(model.filename) - 1] = '\0';
+//	strncpy(model.filename, file_name, sizeof(model.filename) - 1);
+//	model.filename[sizeof(model.filename) - 1] = '\0';
+	model.filename = DYL_STR_LIT(file_name);
 	tinyobj_attrib_t attrib;
 	tinyobj_shape_t* shapes;
 	size_t num_shapes = 0;
 	tinyobj_material_t* materials = NULL;
 	size_t num_materials = 0;
 
-	int check = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials, model.filename, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
+	int check = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials, (char*)model.filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
 
 	if(check != TINYOBJ_SUCCESS)
 	{
 		fprintf(stderr, "Error loading OBJ\n");
 		return (Model){0};
 	}
+	model.num_materials = num_materials;
 
 	
 	float bmin[3], bmax[3];
@@ -514,7 +519,7 @@ Model model_init(const char* file_name, Arena* arena)
 
 
 
-	memset(model.textures, 0, sizeof(Texture) * TEXTURE_CAPACITY);
+	memset(&model.texture_manager, 0, sizeof(Model_Texture_Manager));
 	/*for(size_t i = 0; i < TEXTURE_AMOUNT; ++i)
 	{
 		model.textures[i].ID = 0;
@@ -666,6 +671,7 @@ Model model_init(const char* file_name, Arena* arena)
 		  }
 
 		  vertices_push(&model.mesh.vertices, vert);
+		  
 
 
 		}
@@ -674,10 +680,147 @@ Model model_init(const char* file_name, Arena* arena)
 	}
 	model.mesh.m_vbo = 0;
 
-
 	//Texture intialization code here
 	
+	for(size_t i = 0; i < num_materials; ++i)
+	{
+		if(materials[i].diffuse_texname)
+		{
+			//push texture
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].diffuse_texname );
 
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_DIFFUSE;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+		}
+		if(materials[i].alpha_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].alpha_texname);
+
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_ALPHA;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+
+		}
+		if(materials[i].ambient_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].ambient_texname);
+
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_AMBIENT;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+
+		}
+		if(materials[i].displacement_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].displacement_texname );
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_DISPLACEMENT;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+
+		}
+		if(materials[i].bump_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].bump_texname );
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_BUMP;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+
+		}
+		if(materials[i].specular_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].specular_texname );
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+		}
+
+		
+		if(materials[i].specular_highlight_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model.texture_manager.model_textures[j].text.ID == 0)
+				{
+					model.texture_manager.model_textures[j].text.ID = j + 1;
+					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].specular_highlight_texname );
+					model.texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
+					Texture_Path path;
+					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model.texture_manager.texture_count++;
+					break;
+				}
+			}
+
+		}
+
+	}
+	
+	//Tinyobj deinitialization
+	tinyobj_attrib_free(&attrib);
+	tinyobj_shapes_free(shapes, num_shapes);
+	tinyobj_materials_free(materials, num_materials);
 
 	//Opengl Commands
 	glGenVertexArrays(1, &model.mesh.m_vao);
@@ -691,15 +834,16 @@ Model model_init(const char* file_name, Arena* arena)
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	glBindVertexArray(0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 //	glEnableVertexAttribArray(1);	
 //	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normals));
-//	glEnableVertexAttribArray(3);
-//	glVertexAttribPointer(3,2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
-//	glBindBuffer(GL_ARRAY_BUFFER, 0);
-//	glBindVertexArray(0);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
 
 
@@ -2346,13 +2490,59 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	glCullFace(GL_BACK);
 	shader_on_id_use(&renderer->shaders, SHADER_INSTANCED);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "projection", renderer->projection);
-
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "view", renderer->view);
+
+	int texture_unit = 0;
+	//conditional to check if the model even has textures/materials
+	if(renderer->current_model->num_materials > 0)
+	{
+		shader_on_id_set_int(&renderer->shaders,SHADER_INSTANCED, "has_texture", true);
+		for(size_t i = 0; i < renderer->current_model->texture_manager.texture_count; ++i)
+		{
+			
+			glActiveTexture(GL_TEXTURE0 + texture_unit);
+			texture_bind(&renderer->current_model->texture_manager.model_textures[i].text);
+			switch(renderer->current_model->texture_manager.model_textures[i].texture_type)
+			{
+				case TEXTURE_DIFFUSE:
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse", texture_unit);
+				break;
+				case TEXTURE_SPECULAR:
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular", texture_unit);
+				break;
+				case TEXTURE_AMBIENT:
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "ambient", texture_unit);
+				break;
+				case TEXTURE_ALPHA:
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "alpha", texture_unit);
+				break;
+				case TEXTURE_BUMP:
+				//	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump", texture_unit);
+				break;
+				case TEXTURE_DISPLACEMENT:
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "displacement", texture_unit);
+				break;
+				case TEXTURE_SPECULAR_HIGHLIGHT:
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_highlight", texture_unit);
+				break;
+
+			}
+		}
+
+	}else{
+
+		shader_on_id_set_int(&renderer->shaders,SHADER_INSTANCED, "has_texture", false);
+
+	}
+	
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->current_model->instance_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
     glBindVertexArray(renderer->current_model->mesh.m_vao);
 	printf("Instance count every frame: %d\n", renderer->instance_count);
+
+
+
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->triangle_count, renderer->instance_count);
     glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);

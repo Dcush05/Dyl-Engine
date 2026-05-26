@@ -1,5 +1,3 @@
-
-
 #include "dyl_window.h"
 
 #ifdef USING_SDL

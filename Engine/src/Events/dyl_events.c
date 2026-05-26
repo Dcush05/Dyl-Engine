@@ -1,9 +1,5 @@
 #include "dyl_events.h"
-#include <minwindef.h>
 #include <stdbool.h>
-#include <windef.h>
-#include <windowsx.h>
-#include <winuser.h>
 
 
 //TODO: FIX MOUSE INPUT
@@ -20,12 +16,14 @@
 		ClipCursor(&rect);
 		SetCapture(hwnd);
 	}
+
 	void restore_mouse()
 	{
 		ShowCursor(true);
 		ClipCursor(NULL);
 		ReleaseCapture();
 	}
+
 	LRESULT CALLBACK WindowProc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
 	{
 		switch(u_msg)

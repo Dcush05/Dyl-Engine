@@ -161,26 +161,43 @@ typedef enum
 }Model_Texture_Type;
 
 #define TEXTURE_CAPACITY 64
+typedef struct
+{
+	
+	Texture text;
+	Dyl_Str file_path;
+	Model_Texture_Type texture_type;
+
+}Model_Texture;
+
+
+typedef struct
+{
+
+	Model_Texture model_textures[TEXTURE_CAPACITY];
+	size_t texture_count;
+}Model_Texture_Manager;
 
 
 typedef struct 
 {
 	//tinyobj_attrib_t attrib;
 //	tinyobj_shape_t* shapes;
-	Texture textures[TEXTURE_CAPACITY];
+	Model_Texture_Manager texture_manager;
 	Mesh mesh;
 	Shader shader;
-	char filename[64];
+	Dyl_Str filename;
 	Model_Texture_Type mtt;
 	size_t num_triangles;
-	size_t texture_count;
+	size_t num_materials;
 	GLuint instance_vbo;
 	
 }Model;
 
 
 
-Model model_init(const char* file_name, Arena* arena);
+
+Model model_init(const char* file_name, const char* rel_path, Arena* arena);
 
 
 typedef enum

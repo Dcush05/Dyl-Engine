@@ -109,11 +109,11 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	dyl_profiler_print_func("alloc4");
 
-	engine->model = model_init("assets/Obj/E-45-Aircraft/Aircraft.obj", &global_arena);
+	engine->model = model_init("assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft", &global_arena);
 	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, &engine->model);
 
 	engine->t_model = arena_push(&global_arena, sizeof(Model));
-	*engine->t_model = model_init("assets/Obj/Japanese_Maple/Japanese_Maple.obj", &global_arena);
+	*engine->t_model = model_init("assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple", &global_arena);
 	dyl_instanced_renderer_initialize_mod_and_vbo(engine->instanced_renderer, engine->t_model);
 	
 	mat4 twod_proj;

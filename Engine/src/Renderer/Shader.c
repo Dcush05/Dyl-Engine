@@ -207,7 +207,7 @@ void set_int(Shader *shader, const char* name, int value)
 
 	ASSERT(shader, "Uninitialized shader!\n");
 	GLuint uniform = get_uniform_location(shader, name);
-	ASSERT(uniform != -1, "Unable to find uniform for int");
+	ASSERT(uniform != -1, "Unable to find uniform %s for int", name);
 	glUniform1i(uniform, value);
 }
 void set_float(Shader* shader, const char* name, float value) 
