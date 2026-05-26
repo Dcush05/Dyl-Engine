@@ -2,6 +2,7 @@
 #include "cglm/vec3-ext.h"
 #include "cglm/vec3.h"
 #include <stdio.h>
+#include <winuser.h>
 
 
 
@@ -37,7 +38,10 @@ void camera_init(Camera* camera, vec3 pos, bool relative_mouse, float window_wid
 	glm_vec3_add(camera->camera_pos, camera->camera_front, camera->target);
 	glm_lookat(camera->camera_pos, camera->target, camera->camera_up, camera->view);
 	camera->rel_mouse = relative_mouse;
-//	SDL_SetWindowRelativeMouseMode(window, camera->rel_mouse);
+
+
+	//NOTE:	experimenting with mouse input
+	//	SDL_SetWindowRelativeMouseMode(window, camera->rel_mouse);
 	
 	
 }
@@ -73,41 +77,43 @@ void camera_input(Camera* camera, Dyl_Event* event)
     if(dyl_event_key_handle(event, DYLKEY_A, DYL_KEY_RELEASED)) camera->move_left = false;
     if(dyl_event_key_handle(event, DYLKEY_D, DYL_KEY_RELEASED)) camera->move_right = false;
 
-/*	if(dyl_event_mouse_movement(event))
+	if(dyl_event_mouse_movement(event))
 	{
+		fprintf(stderr, "Mouse is moving meow meow\n");
 	//	if(dyl_event_key_handle(event, DYL_MOUSE_KEY_LBUTTON,  DYL_MOUSE_KEY_LPRESS))
 	//	{
-			camera->lastx = event->mouse_pos.x;
-			camera->lasty = event->mouse_pos.x;
-				float xoffset = event->mouse_pos.x - camera->lastx;
-				float yoffset = camera->lasty - event->mouse_pos.y;
-				camera->lastx = event->mouse_pos.x;
-				camera->lasty = event->mouse_pos.y;
+		printf("KEY HAS BEEN PRESSED YAY!\n");
+		//camera->lastx = event->mouse_pos.x;
+		//camera->lasty = event->mouse_pos.x;
+		float xoffset = event->mouse_pos.x - camera->lastx;
+		float yoffset = camera->lasty - event->mouse_pos.y;
+		camera->lastx = event->mouse_pos.x;
+		camera->lasty = event->mouse_pos.y;
 
-				xoffset *= camera->sense;
-				yoffset *= camera->sense;
-				camera->yaw += xoffset;
-				camera->pitch += yoffset;
+		xoffset *= camera->sense;
+		yoffset *= camera->sense;
+		camera->yaw += xoffset;
+		camera->pitch += yoffset;
 
-				if(camera->pitch > 89.0f) camera->pitch = 89.0f;
-				
-				if(camera->pitch < -89.0f) camera->pitch = -89.0f;
-			//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
-			//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
-			//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
-			//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
+		if(camera->pitch > 89.0f) camera->pitch = 89.0f;
+		
+		if(camera->pitch < -89.0f) camera->pitch = -89.0f;
+	//	if(camera->pitch > 50.0f) camera->pitch = 50.0f;
+	//	if(camera->pitch < -50.0f) camera->pitch = -50.0f;
+	//	if(camera->pitch > 179.0f) camera->pitch = 179.0f;
+	//	if(camera->pitch < -179.0f) camera->pitch = -179.0f;
 
-				camera->yaw = fmodf(camera->yaw, 360.0f);
-				vec3 front;
-				front[0] = cosf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
-				front[1] = sinf(glm_rad(camera->pitch));
-				front[2] = sinf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
-				glm_vec3_normalize_to(front, camera->camera_front);
-				glm_cross(camera->camera_front, camera->camera_up, camera->camera_right);
-				glm_vec3_normalize(camera->camera_right);
+		camera->yaw = fmodf(camera->yaw, 360.0f);
+		vec3 front;
+		front[0] = cosf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
+		front[1] = sinf(glm_rad(camera->pitch));
+		front[2] = sinf(glm_rad(camera->yaw)) * cosf(glm_rad(camera->pitch));
+		glm_vec3_normalize_to(front, camera->camera_front);
+		glm_cross(camera->camera_front, camera->camera_up, camera->camera_right);
+		glm_vec3_normalize(camera->camera_right);
 
 	//	}
-	}*/
+	}
 
 
 	

@@ -2,10 +2,10 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\build\x64\Debug\ZERO_CHECK</FullPath>
+      <FullPath>C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Application\build\x64\Debug\ZERO_CHECK</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Users\dcush\OneDrive\Desktop\Coding\C\Dyl-Engine\Application\build\Debug\Dyl_Engine.exe</FullPath>
+      <FullPath>C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Application\build\Debug\Dyl_Engine.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

@@ -3,23 +3,23 @@
 cmake_policy(SET CMP0009 NEW)
 
 # MY_SOURCES at CMakeLists.txt:28 (file)
-file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/*.c")
+file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/*.c")
 set(OLD_GLOB
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_debug_render.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_profiler.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/entity_manager.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Dyl_Engine.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Events/dyl_events.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Dyl_Renderer.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Shader.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/camera.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/Window/dyl_window.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/glad.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/glad_wgl.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/utils/dyl_arena.c"
-  "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/src/utils/dyl_str.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_debug_render.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_profiler.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/entity_manager.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Dyl_Engine.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Events/dyl_events.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Dyl_Renderer.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Shader.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/camera.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Window/dyl_window.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/glad.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/glad_wgl.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/utils/dyl_arena.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/utils/dyl_str.c"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
-  file(TOUCH_NOCREATE "C:/Users/dcush/OneDrive/Desktop/Coding/C/Dyl-Engine/Engine/build/CMakeFiles/cmake.verify_globs")
+  file(TOUCH_NOCREATE "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/build/CMakeFiles/cmake.verify_globs")
 endif()

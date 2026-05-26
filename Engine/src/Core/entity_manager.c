@@ -27,17 +27,14 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Arena* arena)
 	entity_manager->position = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec2f));
 	ASSERT(entity_manager->position, "Entity position data is null");
 	
-
 	entity_manager->type = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Entity_Type));
 	ASSERT(entity_manager->type, "Entity type data is null");
-	
 	
 	entity_manager->id = arena_push(arena, MAX_ENTITY_COUNT * sizeof(uint32_t));
 	ASSERT(entity_manager->id, "Entity id data is null");
 	
 //	memset(entity_manager->id, 0, sizeof(uint32_t) * MAX_ENTITY_COUNT);
 	entity_manager->component_flag = (uint32_t*)arena_push(arena, MAX_ENTITY_COUNT * sizeof(uint32_t));
-
 	ASSERT(entity_manager->component_flag, "Entity component_flag data is null");
 	
 }

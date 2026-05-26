@@ -1,8 +1,31 @@
 #include "dyl_events.h"
+#include <minwindef.h>
+#include <stdbool.h>
+#include <windef.h>
 #include <windowsx.h>
 #include <winuser.h>
 
+
+//TODO: FIX MOUSE INPUT
+
+
 #ifdef _WIN32
+
+	void hide_and_confine_mouse(HWND hwnd)
+	{
+		ShowCursor(true);
+		RECT rect;
+		GetClientRect(hwnd, &rect);
+		MapWindowPoints(hwnd, NULL, (POINT*)&rect, 2);
+		ClipCursor(&rect);
+		SetCapture(hwnd);
+	}
+	void restore_mouse()
+	{
+		ShowCursor(true);
+		ClipCursor(NULL);
+		ReleaseCapture();
+	}
 	LRESULT CALLBACK WindowProc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
 	{
 		switch(u_msg)
@@ -10,6 +33,19 @@
 			case WM_CLOSE:
 				PostQuitMessage(0);
 			break;
+			case WM_ACTIVATE:
+			//	if(LOWORD(w_param) == WA_INACTIVE)
+			//		restore_mouse();
+		//		else
+		//			hide_and_confine_mouse(hwnd);	
+			break;
+			case WM_LBUTTONDOWN:
+		//		SetCapture(hwnd);
+			break;
+			case WM_LBUTTONUP:
+		//		ReleaseCapture();
+			break;
+
 			default:
 				return DefWindowProc(hwnd, u_msg, w_param, l_param);
 				
@@ -383,10 +419,6 @@ bool dyl_event_mouse_movement(Dyl_Event* event)
 
 		if((uint8_t)event->event.message == dyl_event_state_translate(DYL_MOUSE_MOVEMENT))
 		{
-			printf("Mouse is moving muahah\n");
-			printf("Mouse is moving muahah\n");
-			printf("Mouse is moving muahah\n");
-			printf("Mouse is moving muahah\n");
 			u64 mouse_x = event->event.pt.x;
 			u64 mouse_y = event->event.pt.y;
 			/*LPPOINT pos;

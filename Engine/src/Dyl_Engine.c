@@ -12,6 +12,7 @@
 #include "utils/dyl_base.h"
 #include "utils/dyl_str.h"
 #include <complex.h>
+#include <processthreadsapi.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -52,11 +53,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_profiler_start("window+renderer setup");			
 	engine->window = (Dyl_Window*)arena_push(&global_arena, sizeof(Dyl_Window));
 	window_initialize(engine->window, "Engine", 500,250, WIDTH, HEIGHT, SDL_WINDOW_OPENGL, true, &engine->platform);
-//	engine->renderer = (Renderer2D*)arena_push(&global_arena, sizeof(Renderer2D)); //set up
-
-	
-	
-//	*engine->renderer = renderer_init((float)WIDTH, (float)HEIGHT, false);
 	
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
 
@@ -73,8 +69,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 	entity_manager_initialize(&engine->manager, &entity_arena);
 	dyl_profiler_end("entity_arena alloc + init");
 	dyl_profiler_print_func("entity_arena alloc + init");
-//	exit(EXIT_SUCCESS);
-	//
+
 	printf("hllo\n");
 	Texture_Path path;
 	path.path = "spritesheet.png";
@@ -130,8 +125,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 	*engine->font_renderer = font_renderer_init("assets/Fonts/vt323.ttf", 75, &twod_proj);
 	
 	dyl_debug_text_manager_init(&global_arena);
-//	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
-//	*engine->instanced_renderer = dyl_instanced_setup(5);
 	
 	glm_perspective(glm_rad(45.0f), (float)engine->window->width / (float)engine->window->height, 0.1f, 100.0f, engine->projection);
 
@@ -140,9 +133,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
 	#endif
-
-
-
 	
 }
 
@@ -358,6 +348,8 @@ ENGINE_API void engine_shutdown(Engine* engine)
 	dyl_profiler_free();
 	#ifdef USING_SDL
 		SDL_Quit();
+	#else
+		ExitProcess(0);
 	#endif
 }
 

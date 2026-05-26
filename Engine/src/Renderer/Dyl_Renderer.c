@@ -38,6 +38,8 @@ void shader_add(shader_data* data, Shader* shader, size_t id, shader_type type)
 	assert(data && shader);
 	if(data->curr_size >= MAX_SHADERS)
 		return;
+	//NOTE: you dont need to loop for this you can just append based on length
+	
 	for(size_t i = 0; i < MAX_SHADERS; ++i)
 	{
 		
