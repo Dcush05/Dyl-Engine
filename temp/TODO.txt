@@ -16,7 +16,7 @@
 	Render through meshes ???
 	Render models
 		-Setup lighting(only for batch rendering tho)
-#TODO LIST:	
+
 	Render models
 		-Have the choice to switch between instanced rendering or batch rendering when dealing with meshes (some meshes are static so maybe have them batched while
 		dynamic meshes should be instanced)
@@ -26,7 +26,10 @@
 		-Textured models
 		-Billboarding for both batch and instanced renderer	- Billboard decals will be their own resource with a limited size to avoid rendering fat textures ( 256 x 256 )
 
-	TEXT DEBUG SYSTEM(Doesnt have to be based on my imgui)
+
+
+#TODO LIST:	
+		TEXT DEBUG SYSTEM(Doesnt have to be based on my imgui)
 		-DRIVER DATA
 		-OPERATING SYSTEM
 		-WINDOW + EVENT HANDLING BACKEND

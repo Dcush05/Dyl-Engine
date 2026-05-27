@@ -222,7 +222,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 			db_plane_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
 
-			//	db_light_cube(engine->batch_renderer, (vec3){1.0, 6.0, -6.0}, (vec3){1.0, 1.0, 1.0}, (vec4){255,0,0,255}, (vec4){255,200,200,255}, 0.1f, 0.5f, LIGHTING_SPECULAR, engine->scene_camera->camera_pos);
+			db_light_cube(engine->batch_renderer, (vec3){1.0, 6.0,-6.0}, (vec3){1.0, 1.0, 1.0}, (vec4){255,0,0,255}, (vec4){255,200,200,255}, 0.1f, 0.5f, LIGHTING_SPECULAR, engine->scene_camera->camera_pos);
 
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
@@ -238,6 +238,9 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			db_flush(engine->batch_renderer); 
 			
 		}
+
+			dyl_instanced_renderer_set_camera_pos(engine->instanced_renderer, &engine->scene_camera->camera_pos);
+			model_set_light_data(&engine->model, (vec3){1.0, 6.0, -6.0}, 0.1f, 0.5f);
 			dyl_instanced_push_model(engine->instanced_renderer, &engine->model,
 									   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
 			dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );

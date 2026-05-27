@@ -181,12 +181,21 @@ typedef struct
 
 typedef struct 
 {
+	vec3 light_pos;
+	float diffuse_strength;
+	float specular_strength;
+}model_light_data;
+
+
+typedef struct 
+{
 	//tinyobj_attrib_t attrib;
 //	tinyobj_shape_t* shapes;
 	Model_Texture_Manager texture_manager;
 	Mesh mesh;
 	Shader shader;
 	Dyl_Str filename;
+	model_light_data light_data;
 	Model_Texture_Type mtt;
 	size_t num_triangles;
 	size_t num_materials;
@@ -198,6 +207,7 @@ typedef struct
 
 
 Model model_init(const char* file_name, const char* rel_path, Arena* arena);
+void model_set_light_data(Model* model, vec3 pos, float diffuse, float specular);
 
 
 typedef enum
@@ -367,8 +377,10 @@ typedef struct
 //	Arena model_arena;
 	//Arena vertex_arena;
 	Object_Data object;
+	vec3 camera_pos;
 	bool is_3d;
-
+	bool lighting_enabled; //NOTE: Perhaps we use flags for settings 
+ 
 	u32 vbo;
 	u32 vao;
 	u32 instance_count;
@@ -385,6 +397,7 @@ Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bo
 
 void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* renderer, Model* model);
 void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* view);
+void dyl_instanced_renderer_set_camera_pos(Dyl_Instanced_Renderer* renderer, vec3* camera_pos);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
 void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color);
 void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj);

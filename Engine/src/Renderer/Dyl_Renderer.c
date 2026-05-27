@@ -442,7 +442,7 @@ void my_file_reader(
     fclose(file);
     
     // Debug: print first few lines of the file
-    printf("First 200 characters of file:\n");
+   /* printf("First 200 characters of file:\n");
     for (int i = 0; i < len && i < 200; i++) {
         if (data[i] == '\n') {
             printf("\\n");
@@ -453,7 +453,7 @@ void my_file_reader(
         } else {
             printf("[%02x]", (unsigned char)data[i]);
         }
-    }
+    }*/
     printf("\n");
     
     *out_buf = data;
@@ -834,26 +834,38 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-//	glBindVertexArray(0);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-//	glEnableVertexAttribArray(1);	
-//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normals));
+	glEnableVertexAttribArray(1);	
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normals));
+
+
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
+
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 
-
-
-
-
-
 	return model;
 
 }
+
+
+
+void model_set_light_data(Model* model, vec3 light_pos, float diffuse, float specular)
+{
+	model->light_data.light_pos[0] = light_pos[0];
+	model->light_data.light_pos[1] = light_pos[1];
+	model->light_data.light_pos[2] = light_pos[2];
+	model->light_data.diffuse_strength = diffuse;
+	model->light_data.specular_strength = specular;
+
+}
+
 Object obj_create(Object_Type type, Mesh_Type m_type,vec3 position, vec3 size, float rotate,vec4 color, Arena* arena)
 {
 	Object obj = {0};
@@ -2481,7 +2493,18 @@ void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, ve
 
 }
 
+void dyl_instanced_set_lighting(Dyl_Instanced_Renderer* renderer, bool enabled)
+{ 
+	ASSERT(renderer, "Renderer is null");
+	renderer->lighting_enabled = enabled; 
+}
 
+void dyl_instanced_renderer_set_camera_pos(Dyl_Instanced_Renderer* renderer, vec3* camera_pos)
+{
+	renderer->camera_pos[0] = *camera_pos[0];
+	renderer->camera_pos[1] = *camera_pos[1];
+	renderer->camera_pos[2] = *camera_pos[2];
+}
 void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 {
 	ASSERT(renderer, "Renderer is null");
@@ -2492,8 +2515,16 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "projection", renderer->projection);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "view", renderer->view);
 
+	shader_on_id_set_vec3f(&renderer->shaders, SHADER_INSTANCED, "camera_pos", renderer->camera_pos);
+
 	int texture_unit = 0;
 	//conditional to check if the model even has textures/materials
+	if(renderer->lighting_enabled)
+	{
+		shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse_strength", renderer->current_model->light_data.diffuse_strength);
+		shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_strength", renderer->current_model->light_data.specular_strength);
+		shader_on_id_set_vec3f(&renderer->shaders, SHADER_INSTANCED, "light_pos", renderer->current_model->light_data.light_pos);
+	}
 	if(renderer->current_model->num_materials > 0)
 	{
 		shader_on_id_set_int(&renderer->shaders,SHADER_INSTANCED, "has_texture", true);
@@ -2514,10 +2545,11 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "ambient", texture_unit);
 				break;
 				case TEXTURE_ALPHA:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "alpha", texture_unit);
+					//BUG:(Dylan) -> This probably happens to other textures, but at a certain point it seems like it simply doesnt find the uniform and causes the program to crash.... is it because of the amount of textures we are allocating per unit?
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "alpha", texture_unit); 
 				break;
 				case TEXTURE_BUMP:
-				//	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump", texture_unit);
+					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump", texture_unit);
 				break;
 				case TEXTURE_DISPLACEMENT:
 					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "displacement", texture_unit);
