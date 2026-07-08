@@ -58,6 +58,9 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Rendere
 	
 	entity_manager->component_flag = arena_push(arena, MAX_ENTITY_COUNT * sizeof(u32));
 	ASSERT(entity_manager->component_flag, "Entity component_flag data is null");
+
+	entity_manager->selected_entity_id = -1;	
+
 	
 }
 
@@ -160,14 +163,15 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 
 }
 
-void entity_set_model_selection_from_id(Entity_Manager* manager, entity_id id, bool selected)
+void entity_set_model_selection_from_id(Entity_Manager* manager, entity_id id)
 {
 	if(!(manager->component_flag[id] & COMP_MODEL) && (manager->type[id] == ENTITY_ACTOR))
 	{
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Entity has invalid flags to attach model");
 		return;
 	}
-	model_set_selected_model(manager->model[id], selected);
+	//model_set_selected_model(manager->model[id], selected);
+	manager->selected_entity_id = manager->id[id];
 }
 
 ENGINE_ENTITY_API void entity_set_texture2d_from_id(Entity_Manager* manager, entity_id id, const char* path)
@@ -271,11 +275,13 @@ ENGINE_ENTITY_API void entity_manager_render(Entity_Manager* entity_manager)
 			if(entity_manager->component_flag[idx] & COMP_MODEL)
 			{
 				Model* model = entity_manager->model[idx];
+
+				bool is_selected = (entity_manager->selected_entity_id == (s32)entity_manager->id[idx]);
 				
 				dyl_instanced_push_model(entity_manager->instanced_renderer, model, (vec3){entity_manager->position[idx].x,
 				entity_manager->position[idx].y, entity_manager->position[idx].z},(vec3){entity_manager->size[idx].x, 
 							 entity_manager->size[idx].y, entity_manager->size[idx].z}, 0.0, (vec4){entity_manager->color[idx].r,
-							 entity_manager->color[idx].g, entity_manager->color[idx].b, entity_manager->color[idx].a});
+							 entity_manager->color[idx].g, entity_manager->color[idx].b, entity_manager->color[idx].a}, is_selected);
 
 				//printf("Model should be rendering here muahaha");
 
@@ -289,6 +295,8 @@ ENGINE_ENTITY_API void entity_manager_render(Entity_Manager* entity_manager)
 	
 
 	db_flush(entity_manager->batch_renderer);	
+
+	//entity_manager->selected_entity_id = -1;
 
 //	entity_manager->instanced_renderer->instance_count = 0;
 //	entity_manager->instanced_renderer->batch_start_idx = 0;

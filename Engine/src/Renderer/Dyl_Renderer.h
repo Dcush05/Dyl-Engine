@@ -395,6 +395,7 @@ typedef struct
 
 	u64 batch_start_idx;
 //	u64 selected_object; //NOTE: This is for the editor, so that we can outline selected objects
+	s32 selected_entity_id;
 	size_t objects_size;
 	size_t triangle_count;
 
@@ -412,7 +413,7 @@ void dyl_instanced_renderer_set_camera_pos(Dyl_Instanced_Renderer* renderer, vec
 
 void dyl_instanced_renderer_current_set_selected_model(Dyl_Instanced_Renderer* renderer, bool selected);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
-void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec3 size, float rotate, vec4 color);
+void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec3 size, float rotate, vec4 colori, bool selected);
 void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj);
 void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer);
 void dyl_instanced_draw_outline(Dyl_Instanced_Renderer* renderer);

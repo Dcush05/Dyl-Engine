@@ -83,12 +83,15 @@ void dyl_debug_entity_select(Arena* arena ,Entity_Manager* entity_manager, Dyl_E
 	if(global_debug_text_manager.current_selected >= 0 && global_debug_text_manager.current_selected != entity_manager->entity_count)
 	{
 		global_debug_text_manager.selected_entity = entity_get_from_id(entity_manager, global_debug_text_manager.current_selected);
+
 		if(*global_debug_text_manager.selected_entity.entity_ref.component_flag & COMP_MODEL)
 		{
 			//NOTE: Set last selected entity to false so it resets	
 			//
-		//	entity_set_model_selection_from_id(entity_manager, last_selected_entity, false);
-		    entity_set_model_selection_from_id(entity_manager, global_debug_text_manager.current_selected, true);
+			//entity_set_model_selection_from_id(entity_manager, last_selected_entity, false);
+		    //entity_set_model_selection_from_id(entity_manager, global_debug_text_manager.current_selected, true);
+			//entity_manager->selected_entity_id = *global_debug_text_manager.selected_entity.entity_ref.id;
+			entity_set_model_selection_from_id(entity_manager, global_debug_text_manager.current_selected);
 		}
 
 

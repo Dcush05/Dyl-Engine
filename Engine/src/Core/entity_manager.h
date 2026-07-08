@@ -64,6 +64,7 @@ typedef struct
 	entity_id* id;
 	Arena* arena;
 	int entity_count;
+	s32 selected_entity_id;
 
 	
 }Entity_Manager;
@@ -85,7 +86,7 @@ int entity_initialize(Entity_Manager* manager, u32 component_flag, Entity_Type t
 Entity_View* get_all_entities_of_type(Entity_Manager* entity_manager, Entity_Type type);
 Entity_View entity_get_from_type(Entity_Manager* manager, Entity_Type type); //gets the first type in the array
 void entity_update_from_view(Entity entity, float dt);
-void entity_set_model_selection_from_id(Entity_Manager* manager, entity_id id, bool selected);
+void entity_set_model_selection_from_id(Entity_Manager* manager, entity_id id);
 
 ENGINE_ENTITY_API void entity_manager_render(Entity_Manager* entity_manager);
 ENGINE_ENTITY_API void entity_render_from_view(Dyl_Renderer* renderer, Entity entity);

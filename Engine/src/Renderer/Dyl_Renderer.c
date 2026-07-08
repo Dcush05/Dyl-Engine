@@ -2300,6 +2300,7 @@ Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bo
 	Dyl_Instanced_Renderer i_renderer = (Dyl_Instanced_Renderer){0};
 	i_renderer.objects_size = objects_size;
 	i_renderer.is_3d = is_3d;
+	i_renderer.selected_entity_id = 0;
 	if(i_renderer.is_3d)
 	{
 		glEnable(GL_DEPTH_TEST);
@@ -2489,7 +2490,7 @@ void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, ve
 
 }
 
-void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color)
+void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color, bool is_selected)
 {
 	ASSERT(renderer, "Renderer is null");
 	ASSERT(model, "Model is null");
@@ -2521,6 +2522,12 @@ void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, ve
     glm_scale(*model_mat, (vec3){size[0], size[1], 1.0f});
 	printf("Model vao: %u", model->mesh.m_vao);
 	fprintf(stderr, "Number of triangles being pushed: %zu", model->num_triangles);
+
+
+	if(is_selected)
+	{
+		renderer->selected_entity_id = (s32)renderer->instance_count;
+	}
 
 	renderer->triangle_count = 0;
     renderer->instance_count++;
@@ -2610,26 +2617,22 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
     glBindVertexArray(renderer->current_model->mesh.m_vao);
 	printf("Instance count every frame: %d\n", renderer->instance_count);
-	/*if(renderer->current_model->is_selected)
-	{
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
-	}*/
-	if(renderer->current_model->is_selected)
+	if(renderer->selected_entity_id >= 0 && renderer->selected_entity_id < (s32)renderer->instance_count)
 	{
 		glEnable(GL_STENCIL_TEST);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
-	}
 
-	
+
+	}
+		
 	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	//glStencilMask(0xFF);
 
 
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, renderer->instance_count);
 
-	if(renderer->current_model->is_selected)
+	if(renderer->selected_entity_id >= 0 && renderer->selected_entity_id < (s32)renderer->instance_count)
 	{
 
 		glStencilFunc(GL_NOTEQUAL, 1, 0xff);
@@ -2646,12 +2649,14 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 		shader_on_id_set_mat4(&renderer->shaders, SHADER_STENCIL, "projection", renderer->projection);
 		shader_on_id_set_mat4(&renderer->shaders, SHADER_STENCIL, "view", renderer->view);
 
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, 1);
+		glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, 1, renderer->selected_entity_id);
 		glStencilMask(0xFF);
 
 		glDepthFunc(GL_LESS);
 		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 0, 0xff);
+
+		glDisable(GL_STENCIL_TEST);
 
 
 
@@ -2666,7 +2671,7 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 //	}*/
 	//
 
-
+	renderer->selected_entity_id = -1;
     glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
     renderer->instance_count = 0;

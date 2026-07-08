@@ -57,8 +57,9 @@
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
 	Editor Ui implementation
 	Refactor so our code has better taste
-	Optimized shader initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
+	Optimized shader/ASSET initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
 	Make shaders more module for the game dev, have it so that they are able to tag their own shaders to the renderer with no friction.
+	MULTITHREADING!!
 	FBX parser
 	Setup assets system
 	Setup a scene handling system
