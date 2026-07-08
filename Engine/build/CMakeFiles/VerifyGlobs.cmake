@@ -8,6 +8,7 @@ set(OLD_GLOB
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_debug_render.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_profiler.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/entity_manager.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/platform.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Dyl_Engine.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Events/dyl_events.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Renderer/Dyl_Renderer.c"

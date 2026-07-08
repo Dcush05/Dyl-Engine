@@ -5,6 +5,9 @@
 #include "cglm/types.h"
 #include "../utils/dyl_str.h"
 #include "../Renderer/Dyl_Renderer.h"
+#include "entity_manager.h"
+
+
 typedef struct
 {
 
@@ -14,13 +17,13 @@ typedef struct
 
 }Dyl_Debug_Text;
 
-
-
-
-
 typedef struct
 {
 	Dyl_Debug_Text* all_text;
+	Arena formatted_str_arena;
+	Dyl_Debug_Text selected_entity_text;
+	Entity_View selected_entity;
+	s32 current_selected;
 	size_d count;
 	size_t capacity;
 
@@ -36,6 +39,11 @@ extern Dyl_Debug_Text_Manager global_debug_text_manager;
 void dyl_debug_text_manager_init(Arena* arena);
 void dyl_debug_text_push(u8* str);
 void dyl_debug_text_render(Font_Renderer* renderer);
+
+
+
+void dyl_debug_entity_select(Arena* arena ,Entity_Manager* entity_manager, Dyl_Event* event);
+void dyl_debug_entity_render(Font_Renderer* renderer);
 
 
 #endif

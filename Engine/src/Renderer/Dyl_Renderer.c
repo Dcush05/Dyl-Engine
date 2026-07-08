@@ -22,7 +22,6 @@
 
 //SHADER STUFF
 
-
 void shader_initialize(shader_data* data)
 {
 	assert(data);
@@ -199,21 +198,23 @@ Texture texture_init(Texture_Path path, Texture_Type type)
 	Texture texture = (Texture){0};
 	if(type == TEXTURE_2D)
 	{
-		if(!path_exists(path.path))
+		if(!path_exists((char*)path.path.string_data))
 		{
-			fprintf(stderr, "Path %s doesnt exist\n", path.path);
+			fprintf(stderr, "Path %s doesnt exist\n", path.path.string_data);
 			return(Texture){0};
 		}
 		texture.texture_path.path = path.path;
 	}else{
 		for(size_t i = 0; i < MAX_CUBE_MAP_FACES; ++i)
 		{
-			if(!path_exists(path.face_paths[i]))
+			if(!path_exists((char*)path.face_paths[i].string_data))
 			{
-				fprintf(stderr, "Path %s doesnt exist\n", path.path);
+				fprintf(stderr, "Path %s doesnt exist\n", path.path.string_data);
 				return(Texture){0};
 			}
-			strcpy(texture.texture_path.face_paths[i], path.face_paths[i]);
+			//strcpy((char*)texture.texture_path.face_paths[i].string_data, (char*)path.face_paths[i].string_data);
+			texture.texture_path.face_paths[i] = path.face_paths[i];
+
 		
 		}
 	}
@@ -243,7 +244,7 @@ void generate(Texture *texture)
 		glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		texture->data = stbi_load(texture->texture_path.path, &texture->width, &texture->height, &texture->nrChannels, 0);	
+		texture->data = stbi_load((char*)texture->texture_path.path.string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
 		ASSERT(texture->data, "Unable to load texture(Null)");
 		GLenum format = GL_RGB;
         if (texture->nrChannels == 4)
@@ -267,7 +268,7 @@ void generate(Texture *texture)
 
 		for(size_t i = 0; i < MAX_CUBE_MAP_FACES; ++i)
 		{
-			texture->data = stbi_load(texture->texture_path.face_paths[i], &texture->width, &texture->height, &texture->nrChannels, 0);	
+			texture->data = stbi_load((char*)texture->texture_path.face_paths[i].string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
 			ASSERT(texture->data, "Unable to load texture(Null)");
 			GLenum format = GL_RGB;
 			if (texture->nrChannels == 4)
@@ -481,6 +482,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 	size_t num_shapes = 0;
 	tinyobj_material_t* materials = NULL;
 	size_t num_materials = 0;
+	model.is_selected = false;
 
 	int check = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials, (char*)model.filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
 
@@ -696,7 +698,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_DIFFUSE;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -714,7 +716,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_ALPHA;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -733,7 +735,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_AMBIENT;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -751,7 +753,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].displacement_texname );
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_DISPLACEMENT;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -769,7 +771,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].bump_texname );
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_BUMP;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -787,7 +789,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].specular_texname );
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -806,7 +808,7 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].specular_highlight_texname );
 					model.texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
 					Texture_Path path;
-					path.path = (char*)model.texture_manager.model_textures[j].file_path.string_data;
+					path.path = model.texture_manager.model_textures[j].file_path;
 					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
 					model.texture_manager.texture_count++;
 					break;
@@ -854,7 +856,13 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 
 }
 
-
+void model_set_selected_model(Model* model, bool selected)
+{
+	ASSERT(model, "Model(Null)");
+	if(!model)
+		return;
+	model->is_selected = selected;
+}
 
 void model_set_light_data(Model* model, vec3 light_pos, float diffuse, float specular)
 {
@@ -1269,13 +1277,21 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	arena_reset(&renderer->str_arena);
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
+	glUseProgram(0);
+//	renderer->object_data.texture_id = 0;
+
+//	glDisable(GL_CULL_FACE);
+    glDepthMask(GL_TRUE);
+
+
+	glDisable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+
     glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glUseProgram(0);
-	glCullFace(GL_BACK);
-//	renderer->object_data.texture_id = 0;
-	glDepthMask(GL_TRUE);
-	
+
+
 
 	//arena_reset(&renderer->batch_arena);
 	
@@ -2248,6 +2264,7 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 		
 
 		}
+	new_font_renderer.line_height = (new_font_renderer.ft_face->size->metrics.height >> 6);
 	FT_Done_Face(new_font_renderer.ft_face);
 	FT_Done_FreeType(new_font_renderer.ft_lib);
 	glGenVertexArrays(1, &new_font_renderer.font_VAO);
@@ -2299,10 +2316,19 @@ Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bo
 	i_renderer.instance_count = 0;
 	shader_initialize(&i_renderer.shaders);
 	Shader shader = shader_init("assets/shaders/instanced_Shader.vs", "assets/shaders/instanced_Shader.fs", NULL);
-
+	//FIX: Have it so that we are only caching hot shaders, and not cold shaders so that we aren't caching every shader which could alleviate the memory usage
+	//when it comes to future endeavors in our renderer.
 	shader_add(&i_renderer.shaders, &shader, SHADER_INSTANCED, SHADER_HOT);
 	shader_programs_create_type(&i_renderer.shaders, SHADER_HOT);
+	Shader outline_shader = shader_init("assets/shaders/outline_Shader.vs", "assets/shaders/outline_Shader.fs", NULL);
+	shader_add(&i_renderer.shaders, &outline_shader, SHADER_STENCIL, SHADER_HOT);
+	shader_programs_create_type(&i_renderer.shaders, SHADER_HOT);
+
 	i_renderer.current_model = NULL;
+
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 /*	mesh_setup(&i_renderer.object_data, MESH_DYNAMIC, 6);
 
 	vertices_push(&i_renderer.object_data.vertices, 
@@ -2367,6 +2393,9 @@ void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* vie
 	memcpy(renderer->view, view, sizeof(mat4));
 
 }
+
+
+
 void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* renderer, Model* model)
 {
 
@@ -2378,6 +2407,9 @@ void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* rende
 //	glm_translate(model_mat, (vec3){model->mesh.vertices.vertices[0].position[0],model->mesh.vertices.vertices[0].position[1], model->mesh.vertices.vertices[0].position[2]} );
 
     glBufferData(GL_ARRAY_BUFFER, renderer->models.capacity * sizeof(mat4), NULL, GL_DYNAMIC_DRAW);
+	//NOTE: @UNSAFE @HACK
+	renderer->loaded_model_count++;
+	model->id = renderer->loaded_model_count;
 
 
 
@@ -2460,10 +2492,13 @@ void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, ve
 void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color)
 {
 	ASSERT(renderer, "Renderer is null");
-	ASSERT(renderer, "Model is null");
+	ASSERT(model, "Model is null");
+	
 
 	if(renderer->current_model != NULL && renderer->current_model != model)
 	{
+		
+		//renderer->current_model = model;
 		dyl_instanced_draw(renderer);
 	}
 
@@ -2487,7 +2522,7 @@ void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, ve
 	printf("Model vao: %u", model->mesh.m_vao);
 	fprintf(stderr, "Number of triangles being pushed: %zu", model->num_triangles);
 
-	renderer->triangle_count = model->num_triangles;
+	renderer->triangle_count = 0;
     renderer->instance_count++;
 
 
@@ -2510,7 +2545,8 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	ASSERT(renderer, "Renderer is null");
 	if(renderer->instance_count == 0 || renderer->current_model == NULL) return;
 
-	glCullFace(GL_BACK);
+
+	//glCullFace(GL_BACK);
 	shader_on_id_use(&renderer->shaders, SHADER_INSTANCED);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "projection", renderer->projection);
 	shader_on_id_set_mat4(&renderer->shaders, SHADER_INSTANCED, "view", renderer->view);
@@ -2525,6 +2561,8 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_strength", renderer->current_model->light_data.specular_strength);
 		shader_on_id_set_vec3f(&renderer->shaders, SHADER_INSTANCED, "light_pos", renderer->current_model->light_data.light_pos);
 	}
+
+	
 	if(renderer->current_model->num_materials > 0)
 	{
 		shader_on_id_set_int(&renderer->shaders,SHADER_INSTANCED, "has_texture", true);
@@ -2572,14 +2610,97 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
     glBindVertexArray(renderer->current_model->mesh.m_vao);
 	printf("Instance count every frame: %d\n", renderer->instance_count);
+	/*if(renderer->current_model->is_selected)
+	{
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+	}*/
+	if(renderer->current_model->is_selected)
+	{
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+	}
+
+	
+	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	//glStencilMask(0xFF);
+
+
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, renderer->instance_count);
+
+	if(renderer->current_model->is_selected)
+	{
+
+		glStencilFunc(GL_NOTEQUAL, 1, 0xff);
+		glStencilMask(0x00);
+
+
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_ALWAYS);
+		glDepthMask(GL_TRUE);
+
+
+		shader_on_id_use(&renderer->shaders, SHADER_STENCIL);
+		shader_on_id_set_float(&renderer->shaders, SHADER_STENCIL, "outline", 1.0f);
+		shader_on_id_set_mat4(&renderer->shaders, SHADER_STENCIL, "projection", renderer->projection);
+		shader_on_id_set_mat4(&renderer->shaders, SHADER_STENCIL, "view", renderer->view);
+
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, 1);
+		glStencilMask(0xFF);
+
+		glDepthFunc(GL_LESS);
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xff);
 
 
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->triangle_count, renderer->instance_count);
+	
+	}/*else {
+//		glStencilMask(0xFF);
+//		glStencilFunc(GL_ALWAYS, 0, 0xff);
+//		glEnable(GL_DEPTH_TEST);
+
+
+
+//	}*/
+	//
+
+
     glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
     renderer->instance_count = 0;
+    renderer->triangle_count += renderer->current_model->num_triangles;
+	//renderer->current_model = NULL;
+
 	renderer->models.model_count = 0;
+	glDepthMask(GL_TRUE);
+	glDisable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+
+
+
+}
+
+
+//NOTE:(Dylan)This is a hotfix will make better later
+
+
+void dyl_instanced_draw_outline(Dyl_Instanced_Renderer* renderer)
+{
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+    glDisable(GL_DEPTH_TEST);
+	shader_on_id_use(&renderer->shaders, SHADER_STENCIL);
+	glBindVertexArray(renderer->current_model->mesh.m_vao);
+	texture_bind(&renderer->current_model->texture_manager.model_textures[0].text);
+
+	float scale = 1.1;
+
+	
+
+
 
 }
 
@@ -2610,10 +2731,20 @@ void render_text(Font_Renderer* renderer, const u8* text, float x, float y, floa
     //int ascent = renderer->ft_face->size->metrics.ascender >> 6;
     
 // Iterate through each character
+//	float xpos = x;
+//	float ypos = y;
+	float start_x = x;
+	//NOTE: Account fo rnew for font rendering
     for (const u8* p = text; *p; ++p)
     {
         u8 c = *p;
         character ch = renderer->characters[c];
+		if(c == '\n')
+		{
+			x = start_x;
+			y += renderer->line_height * scale;
+			continue;
+		}
 
         float xpos = x + ch.bearing[0] * scale;
 		float ypos = y + (renderer->ascent - ch.bearing[1]) * scale;
@@ -2646,6 +2777,10 @@ void render_text(Font_Renderer* renderer, const u8* text, float x, float y, floa
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+
+
 	
 }
 

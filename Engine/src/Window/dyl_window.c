@@ -1,4 +1,5 @@
 #include "dyl_window.h"
+#include <profileapi.h>
 
 #ifdef USING_SDL
 #include <SDL3/SDL.h>
@@ -42,6 +43,7 @@
 
 void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y, u32 width, u32 height, unsigned long long window_flags, bool enable_vsync, Platform* platform)
 {
+	
 	ASSERT(window, "Window pointer is NULL");
 	window->x = x;
 	window->y = y;
@@ -225,9 +227,12 @@ void window_set_vsync(Dyl_Window* window, bool enable_vsync)
 	#endif
 }
 
+
 void window_start(Dyl_Window* window)
 {
 	#ifdef _WIN32
+
+//		QueryPerformanceCounter(window->start_time);
 		wglMakeCurrent(window->device_context, window->gl_context);
 	#else
 		SDL_GL_MakeCurrent(window->window_handle, window->gl_context);
@@ -237,9 +242,10 @@ void window_start(Dyl_Window* window)
 	//glViewport(0,0,window->width, window->height);
 
 	glClearColor(0.0,0.0,0.0,1.0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 }
 
@@ -247,6 +253,11 @@ void window_end(Dyl_Window* window)
 {
 	
 	#ifdef _WIN32
+
+	//	QueryPerformanceCounter(window->end_time);
+	//	window->elasped_time = window->start_time - window->end_time;
+	//	window->fps = window->elasped_time / window->frequency;
+
 		SwapBuffers(window->device_context);
 	#else
 		SDL_GL_SwapWindow(window->window_handle);

@@ -33,6 +33,7 @@ typedef enum
 	SHADER_DYNAMIC,
 	SHADER_BILLBOARD,
 	SHADER_INSTANCED,
+	SHADER_STENCIL,
 }shader_id;
 
 typedef struct
@@ -69,8 +70,8 @@ typedef enum
 #define MAX_CUBE_MAP_PATH_LEN 256
 typedef union{
 
-		char* path;
-	    char face_paths[MAX_CUBE_MAP_FACES][MAX_CUBE_MAP_PATH_LEN];
+		Dyl_Str path;
+	    Dyl_Str face_paths[MAX_CUBE_MAP_FACES];
 }Texture_Path;
 
 typedef struct
@@ -196,7 +197,10 @@ typedef struct
 	Shader shader;
 	Dyl_Str filename;
 	model_light_data light_data;
+	bool is_selected; //NOTE: This is for the editor, so that we can outline selected objects
 	Model_Texture_Type mtt;
+	u64 id;
+	bool has_texture;
 	size_t num_triangles;
 	size_t num_materials;
 	GLuint instance_vbo;
@@ -208,6 +212,7 @@ typedef struct
 
 Model model_init(const char* file_name, const char* rel_path, Arena* arena);
 void model_set_light_data(Model* model, vec3 pos, float diffuse, float specular);
+void model_set_selected_model(Model* model, bool selected);
 
 
 typedef enum
@@ -384,6 +389,12 @@ typedef struct
 	u32 vbo;
 	u32 vao;
 	u32 instance_count;
+	u64 loaded_model_count;
+
+	u64 active_batch_count;
+
+	u64 batch_start_idx;
+//	u64 selected_object; //NOTE: This is for the editor, so that we can outline selected objects
 	size_t objects_size;
 	size_t triangle_count;
 
@@ -398,10 +409,13 @@ Dyl_Instanced_Renderer dyl_instanced_setup(Arena* arena, size_t objects_size, bo
 void dyl_instanced_renderer_initialize_mod_and_vbo(Dyl_Instanced_Renderer* renderer, Model* model);
 void dyl_instanced_renderer_set_view(Dyl_Instanced_Renderer* renderer, mat4* view);
 void dyl_instanced_renderer_set_camera_pos(Dyl_Instanced_Renderer* renderer, vec3* camera_pos);
+
+void dyl_instanced_renderer_current_set_selected_model(Dyl_Instanced_Renderer* renderer, bool selected);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
-void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color);
+void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec3 size, float rotate, vec4 color);
 void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj);
 void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer);
+void dyl_instanced_draw_outline(Dyl_Instanced_Renderer* renderer);
 
 
 
@@ -474,6 +488,7 @@ typedef struct
 	character characters[MAX_CHARACTERS];
 	mat4 projection;
 	int ascent;
+	f32 line_height;
 		
 
 }Font_Renderer;

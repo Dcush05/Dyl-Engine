@@ -110,7 +110,11 @@ void dyl_event_initalize(Dyl_Event* event)
 	key_pos++;
 	event->keys[key_pos].key_type = DYLKEY_Y;
 	key_pos++;
-	event->keys[key_pos].key_type = DYLKEY_Z;
+	event->keys[key_pos].key_type = DYLKEY_TAB;
+	key_pos++;
+	event->keys[key_pos].key_type = DYLKEY_LSHIFT;
+	key_pos++;
+	event->keys[key_pos].key_type = DYLKEY_LCTRL;
 	key_pos++;
 	event->keys[key_pos].key_type = DYL_MOUSE_KEY_LBUTTON;
 	key_pos++;
@@ -217,6 +221,13 @@ uint8_t dyl_key_translate(Dyl_Key_Type type)
 			case DYLKEY_Z:
 				return 0x5A;
 			break;
+			case DYLKEY_TAB:
+				return 0x09;
+			break;
+			case DYLKEY_LSHIFT:
+				return 0x10;
+			break;
+
 			case DYL_MOUSE_KEY_LBUTTON:
 				return VK_LBUTTON;
 			break;
@@ -375,7 +386,7 @@ bool dyl_event_window_dispatch(Dyl_Event* event, Dyl_Event_State state) //NOTE:@
 
 }
 
-bool dyl_event_key_handle(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state)
+__declspec(dllexport) bool dyl_event_key_handle(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state)
 {
 	ASSERT(event, "Passing NULL event through func");
 

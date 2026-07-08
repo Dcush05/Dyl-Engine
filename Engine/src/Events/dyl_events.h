@@ -43,7 +43,9 @@ typedef enum
 	DYLKEY_X,
 	DYLKEY_Y,
 	DYLKEY_Z,
-
+	DYLKEY_TAB,
+	DYLKEY_LSHIFT,
+	DYLKEY_LCTRL,
 	DYL_MOUSE_KEY_LBUTTON,
 	DYL_MOUSE_KEY_RBUTTON,
 	DYL_MOUSE_KEY_MBUTTON,
@@ -87,7 +89,7 @@ typedef struct
 void dyl_event_initalize(Dyl_Event* event);
 int dyl_event_poll(Dyl_Event* event);
 bool dyl_event_window_dispatch(Dyl_Event* event, Dyl_Event_State state);
-bool dyl_event_key_handle(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state);
+__declspec(dllexport) bool dyl_event_key_handle(Dyl_Event* event, Dyl_Key_Type type, Dyl_Event_State state);
 uint8_t dyl_event_state_translate(Dyl_Event_State state);
 bool dyl_event_mouse_movement(Dyl_Event* event);
 void dyl_event_end(Dyl_Event* event);

@@ -58,6 +58,7 @@ void main()
 	}
 	//NOTE: We must be able to handle lighting as well when there is no textures involved
 
+
 	FragColor = vec4(model_color, 1.0);
 	
 }

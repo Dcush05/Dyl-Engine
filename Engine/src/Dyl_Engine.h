@@ -47,6 +47,7 @@ typedef struct Engine
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;
 	Dyl_Instanced_Renderer* instanced_renderer;
+	Dyl_Instanced_Renderer* test_instanced_renderer;
 	Font_Renderer* font_renderer;
 	Dyl_Event* event;
 	Dyl_Debug_Text_Manager* debug_text;
@@ -54,7 +55,11 @@ typedef struct Engine
 	Texture texture;
 	Texture billboard;
 	Texture sky_box_texture;
+	u64 frequency;
+	f32 fps;
+	f32 delta_time;
 	bool wireframe_mode;
+
 
 	
 }Engine;
