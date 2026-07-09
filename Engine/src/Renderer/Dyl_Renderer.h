@@ -130,9 +130,9 @@ typedef enum
 typedef struct
 {
 	Vertex_Data vertices;
-	Mesh_Type type;
 	Texture texture;
 	u32 indices[6]; //setting up rectangle for now
+	Mesh_Type type;
 	u32 m_vao;
 	u32 m_vbo;
 	bool has_texture;
@@ -190,22 +190,23 @@ typedef struct
 
 typedef struct 
 {
-	tinyobj_attrib_t attrib;
-	tinyobj_shape_t* shapes;
-	tinyobj_material_t* materials;
-	char* rel_path;
+	
 	Model_Texture_Manager texture_manager;
+	tinyobj_attrib_t attrib;
 	Mesh mesh;
 	Shader shader;
 	Dyl_Str filename;
 	model_light_data light_data;
-	bool is_selected; //NOTE: This is for the editor, so that we can outline selected objects
-	Model_Texture_Type mtt;
+	tinyobj_shape_t* shapes;
+	tinyobj_material_t* materials;
+	char* rel_path;
 	u64 id;
-	bool has_texture;
-	size_t num_triangles;
-	size_t num_materials;
+	size_d num_triangles;
+	size_d num_materials;
 	GLuint instance_vbo;
+	Model_Texture_Type mtt;
+	bool is_selected; //NOTE: This is for the editor, so that we can outline selected objects
+	bool has_texture;
 	
 }Model;
 
@@ -242,8 +243,8 @@ typedef enum
 typedef struct
 {
 	mat4* models_container;
-	size_t model_count;
-	size_t capacity;
+	size_d model_count;
+	size_d capacity;
 }Model_Data;
 
 
@@ -252,8 +253,8 @@ typedef struct
 typedef struct
 {
 	Mesh obj_mesh;
-	Object_Type obj_type;
 	mat4 model;
+	Object_Type obj_type;
 	
 
 }Object;
@@ -307,24 +308,21 @@ typedef enum
 typedef struct
 {
 
+	shader_data shaders;
+	Mesh object_data;
 	mat4 projection;
 	mat4 view;
-	shader_data shaders;
 //	Arena vertex_arena;
 //	Arena index_arena;
 	Arena str_arena;
 //	Vertex_Data vertex_data;
 	//Model_Data model_data;
-	Mesh object_data;
+	size_d indice_count;
+	size_d quad_count;
 	vec3 camera_pos;
-	
-	
 	u32 vbo;
 	u32 vao;
 	u32 ebo; //indices
-	
-	size_t indice_count;
-	size_t quad_count;
 	shader_id shader_tag;
 	Renderer_Mode current_mode;
 	bool is_3d;
@@ -387,34 +385,38 @@ void db_destroy(Dyl_Batch_Renderer* renderer);
 
 typedef struct
 {
+
+	shader_data shaders;
 	mat4 projection;
 	mat4 view;
-	Model* current_model;
-	shader_data shaders;
 	Mesh object_data;
 	Model_Data models;
-//	Arena model_arena;
-	//Arena vertex_arena;
+
 	Object_Data object;
-	vec3 camera_pos;
-	bool is_3d;
-	bool lighting_enabled; //NOTE: Perhaps we use flags for settings 
- 
-	u32 vbo;
-	u32 vao;
-	u32 instance_count;
+	Model* current_model;
+
 	u64 loaded_model_count;
 
 	u64 active_batch_count;
 
 	u64 batch_start_idx;
-	GLuint query_id;
 
 	GLuint64 time_elasped;
+
+	size_t objects_size;
+
+	size_t triangle_count;
+//	Arena model_arena;
+	//Arena vertex_arena;
+	vec3 camera_pos;
+	u32 vbo;
+	u32 vao;
+	u32 instance_count;
+	u32 query_id;
 //	u64 selected_object; //NOTE: This is for the editor, so that we can outline selected objects
 	s32 selected_entity_id;
-	size_t objects_size;
-	size_t triangle_count;
+	bool is_3d;
+	bool lighting_enabled; //NOTE: Perhaps we use flags for settings 
 
 
 
@@ -448,14 +450,15 @@ typedef enum
 
 typedef struct
 {
-	int temp;
-	u32 renderer_flags;
 	union
 	{
 	
 		Dyl_Batch_Renderer batch_renderer;
 		Dyl_Instanced_Renderer instanced_renderer;
 	};
+
+	int temp;
+	u32 renderer_flags;
 
 }Dyl_Renderer;
 
@@ -488,23 +491,24 @@ typedef struct
 #define MAX_CHARACTERS 128
 typedef struct
 {
-	unsigned int texture_id;
 	ivec2 size;
 	ivec2 bearing;
+	unsigned int texture_id;
 	unsigned int advance;
 }character;
 
 typedef struct
 {
+
+	Shader font_shader;
+	character characters[MAX_CHARACTERS];
+	mat4 projection;
 	FT_Library ft_lib;
 	FT_Face ft_face;
 	char* path;
 	unsigned int font_VAO;
 	unsigned int font_VBO;
-	Shader font_shader;
 	unsigned int texture;
-	character characters[MAX_CHARACTERS];
-	mat4 projection;
 	int ascent;
 	f32 line_height;
 		

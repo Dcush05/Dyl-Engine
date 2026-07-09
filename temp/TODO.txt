@@ -9,6 +9,7 @@
 	Shader hot reloading
 	FIX INSTANCED RENDERER NOT RENDERING AFTER 2 ENTITIES
 	BETTER OPERATING SYSTEMS ABSTRACTIONS for window and event handling
+	MULTITHREADING!!
 
 #STARTED(Started meaning that the scaffolding is setup but not fully implemented):
 	Setup entity system and be able to interface with the system in the editor
@@ -45,6 +46,8 @@
 		-TOTAL DRAW CALL COUNT
 		-TOTAL TEXTURES 
 		-CURRENT SELECTED ENTITY DATA
+	Optimized shader/ASSET initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
+	Make shaders more module for the game dev, have it so that they are able to tag their own shaders to the renderer with no friction.
 
 
 	
@@ -53,18 +56,15 @@
 
 
 #TODO LIST:	
-		
-	
 	Lower memory usage(make better use of arena allocators)
 	Editor Ui implementation
 	Refactor so our code has better taste
-	Optimized shader/ASSET initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
-	Make shaders more module for the game dev, have it so that they are able to tag their own shaders to the renderer with no friction.
-	MULTITHREADING!!
 	FBX parser
 	Setup assets system
 	Setup a scene handling system
 		different scenes
 		each scene can have a different screen??
 	Configuration file for window settings
+	Better profiler to save and view stats
+	SIMDIFY
 

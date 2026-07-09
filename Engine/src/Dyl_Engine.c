@@ -82,11 +82,11 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_profiler_end("event_initialization");
 	dyl_profiler_print_func("event_initialization");
 
-	Texture_Path path;
+/*	Texture_Path path;
 	path.path = DYL_STR_LIT("spritesheet.png");
 	printf("%s", path.path.string_data);
 	engine->texture = texture_init(path, TEXTURE_2D);
-	
+	*/
 
 /*	Texture_Path opath;
 	opath.path = "Assets/Oshawott2.png";

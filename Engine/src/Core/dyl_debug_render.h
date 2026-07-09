@@ -19,13 +19,13 @@ typedef struct
 
 typedef struct
 {
-	Dyl_Debug_Text* all_text;
 	Arena formatted_str_arena;
 	Dyl_Debug_Text selected_entity_text;
 	Entity_View selected_entity;
-	s32 current_selected;
+	Dyl_Debug_Text* all_text;
 	size_d count;
-	size_t capacity;
+	size_d capacity;
+	s32 current_selected;
 
 }Dyl_Debug_Text_Manager;
 

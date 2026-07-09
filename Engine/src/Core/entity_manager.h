@@ -47,10 +47,11 @@ typedef enum
 
 typedef struct
 {
+
+	void* model_memory_blocks[MAX_ENTITY_COUNT]; // Dedicated memory page for each entity's assets
 	Dyl_Batch_Renderer* batch_renderer;
 	Dyl_Instanced_Renderer* instanced_renderer;
 	Model** model;
-	void* model_memory_blocks[MAX_ENTITY_COUNT]; // Dedicated memory page for each entity's assets
 	Texture* texture;
 	Shape_Params* shape;
 	Dyl_Str* name;
@@ -63,7 +64,7 @@ typedef struct
 	u32* component_flag;
 	entity_id* id;
 	Arena* arena;
-	int entity_count;
+	s32 entity_count;
 	s32 selected_entity_id;
 
 	

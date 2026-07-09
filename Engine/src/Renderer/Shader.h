@@ -22,7 +22,7 @@ typedef struct
 typedef struct
 {
 	Uniform_Cache uniform_cache[UNIFORM_CACHE_COUNT]; //arena allocate this at some point
-	size_t count;
+	size_d count;
 }Uniform_Cache_Data;
 
 
@@ -35,12 +35,12 @@ typedef struct
 	Dyl_Str vertex_shader_path;
 	Dyl_Str fragment_shader_path;
 	Dyl_Str geometry_shader_path;
+	size_d id;
 	GLuint vertex_shader;
 	GLuint fragment_shader;
 	GLuint geometry_shader;
 	GLuint shader_program;
 	bool use;
-	size_t id;
 
 }Shader;
 

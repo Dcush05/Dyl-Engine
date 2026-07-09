@@ -37,13 +37,13 @@ extern Arena entity_arena;
 
 typedef struct Engine
 {
-	Platform platform;
 	Entity_Manager manager;
-	Model model;
-	Model* t_model;
+	//Model model;
+	mat4 projection;
+	Platform platform;
+//	Model* t_model;
 
 	//Model* tree_model;
-	mat4 projection;
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;
 	Dyl_Instanced_Renderer* instanced_renderer;
@@ -52,9 +52,9 @@ typedef struct Engine
 	Dyl_Event* event;
 	Dyl_Debug_Text_Manager* debug_text;
 	Camera* scene_camera;
-	Texture texture;
-	Texture billboard;
-	Texture sky_box_texture;
+//	Texture texture;
+	//Texture billboard;
+	//Texture sky_box_texture;
 	u64 frequency;
 	f32 fps;
 	f32 delta_time;
