@@ -41,14 +41,12 @@ ENGINE_API void engine_initialize(Engine* engine)
 		dyl_profiler_init();
 		dyl_profiler_add("arena_alloc1");
 		dyl_profiler_add("window+renderer setup");
-		dyl_profiler_add("alloc1");
-		dyl_profiler_add("alloc2");
-		dyl_profiler_add("alloc3");
-		dyl_profiler_add("alloc4");
+		dyl_profiler_add("event_initialization");
 		dyl_profiler_add("frame_callback");
 		dyl_profiler_add("programclose");
 
 	#endif
+	dyl_thread_pool_init(8);
 	dyl_profiler_start("arena_alloc1");			
 	global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE * sizeof(Engine));	
 	dyl_profiler_end("arena_alloc1");			
@@ -59,54 +57,39 @@ ENGINE_API void engine_initialize(Engine* engine)
 	window_initialize(engine->window, "Engine", 500,250, WIDTH, HEIGHT, SDL_WINDOW_OPENGL, true, &engine->platform);
 	
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
+	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
+	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
+	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, false, engine->window->width, engine->window->height );
+	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
+	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 100, true);
+
+
+
+
 
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
-	dyl_profiler_start("alloc1");
+
+
+
+
+
+	dyl_profiler_start("event_initialization");
 	engine->event = (Dyl_Event*)arena_push(&global_arena, sizeof(Dyl_Event));
 	dyl_event_initalize(engine->event);
-	dyl_profiler_end("alloc1");
-	dyl_profiler_print_func("alloc1");
+	dyl_profiler_end("event_initialization");
+	dyl_profiler_print_func("event_initialization");
 
 	Texture_Path path;
 	path.path = DYL_STR_LIT("spritesheet.png");
 	printf("%s", path.path.string_data);
 	engine->texture = texture_init(path, TEXTURE_2D);
 	
-	/*Texture_Path skybox_paths = (Texture_Path){.face_paths[0] = DYL_STR_LIT("assets/right.jpg"),.face_paths[1] = DYL_STR_LIT("assets/left.jpg"), 
-		.face_paths[2] = DYL_STR_LIT("assets/top.jpg"),. face_paths[3] = DYL_STR_LIT("assets/bottom.jpg") ,.face_paths[4] = DYL_STR_LIT("assets/front.jpg"), .face_paths[5] = DYL_STR_LIT("assets/back.jpg")};
-
-	engine->sky_box_texture = texture_init(skybox_paths, TEXTURE_CUBE_MAP);*/
 
 /*	Texture_Path opath;
 	opath.path = "Assets/Oshawott2.png";
 	engine->billboard = texture_init(opath, TEXTURE_2D);*/
 	
-
-	dyl_profiler_start("alloc2");
-	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, false, engine->window->width, engine->window->height );
-
-	dyl_profiler_end("alloc2");
-	dyl_profiler_print_func("alloc2");
-
-
-	dyl_profiler_start("alloc3");
-	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
-	dyl_profiler_end("alloc3");
-
-	dyl_profiler_print_func("alloc3");
-
-
-
-	dyl_profiler_start("alloc4");
-	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
-	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 10, true);
-
-	dyl_profiler_end("alloc4");
-
-	dyl_profiler_print_func("alloc4");
-
 	dyl_profiler_add("entity_arena alloc + init");
 
 	entity_arena = arena_alloc((sizeof(Entity_Manager) * MAX_ENTITY_COUNT) * 9000);
@@ -117,16 +100,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 
 
-/*	engine->test_instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
-	*engine->test_instanced_renderer = dyl_instanced_setup(&global_arena, 10, true);*/
-
-/*	engine->model = model_init("assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft", &global_arena);
-	dyl_instanced_renderer_initialize_mod_and_vbo(engine->test_instanced_renderer, &engine->model);
-
-	engine->t_model = arena_push(&global_arena, sizeof(Model));
-	*engine->t_model = model_init("assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple", &global_arena);
-	dyl_instanced_renderer_initialize_mod_and_vbo(engine->test_instanced_renderer, engine->t_model);*/
-	
 	mat4 twod_proj;
 	glm_ortho(0.0f, engine->window->width, engine->window->height, 0.0F, -1.0f, 1.0f, twod_proj);	
 	
@@ -138,9 +111,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_debug_text_manager_init(&global_arena);
 	
 	glm_perspective(glm_rad(45.0f), (float)engine->window->width / (float)engine->window->height, 0.1f, 100.0f, engine->projection);
-
-//	memcpy(engine->test_instanced_renderer->projection, engine->projection, sizeof(mat4));
-
 	memcpy(engine->instanced_renderer->projection, engine->projection, sizeof(mat4));
 	engine->wireframe_mode = false;
 
@@ -152,6 +122,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 	#endif
 	engine->fps = 0.0f;
 	engine->delta_time = 0.0f;
+	engine->gpu_time = 0.0f;
 
 
 
@@ -227,6 +198,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 	    dyl_instanced_renderer_set_view(engine->manager.instanced_renderer, &engine->scene_camera->view);
 
+	    dyl_instanced_renderer_set_camera_pos(engine->manager.instanced_renderer, &engine->scene_camera->camera_pos);
+
 	    //dyl_instanced_renderer_set_view(engine->test_instanced_renderer, &engine->scene_camera->view);
 
 
@@ -237,58 +210,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		window_start(engine->window);
 
 		dyl_profiler_start("frame_callback");
-		/*if(1)
-		{
-			dyl_batch_renderer_set_shader_tag(engine->batch_renderer, SHADER_DYNAMIC);	
-			static int frame_count;
-			frame_count += 3;
-			for(size_t i = 0; i < 5; ++i)
-			{
-				for(size_t j = 0; j < 5; ++j)
-				{
-					db_cube_draw(engine->batch_renderer, (vec3){i / 1.0, (j) / 1.0,-0.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,0,255,255});
-
-				}
-			}
-
-			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
-						   ,(vec3){-0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
-						   ,(vec3){0.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-			db_cube_texture_draw(engine->batch_renderer, &engine->texture, (vec4){0,0,32,32}
-						   ,(vec3){1.5,0,1.0}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-			db_rectangle_draw(engine->batch_renderer, (vec2){-1.0, 1.0}, (vec2){1.0, 1.0}, 0, (vec4){255,0,0,255});
-
-			db_billboard_draw(engine->batch_renderer, &engine->billboard, (vec4){0,0,32,32}, (vec3){-2.0, 1.0, 1.0}, (vec2){1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-
-			db_plane_draw(engine->batch_renderer, (vec3){-16, 0.0, -16.0}, (vec2){32,32}, 0.0, (vec4){128,128,128,255});
-
-			db_light_cube(engine->batch_renderer, (vec3){1.0, 6.0,-6.0}, (vec3){1.0, 1.0, 1.0}, (vec4){255,0,0,255}, (vec4){255,200,200,255}, 0.1f, 0.5f, LIGHTING_SPECULAR, engine->scene_camera->camera_pos);
-
-			
-			
-
-			db_flush(engine->batch_renderer); 
-			
-		}*/
 			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
 			glPolygonMode(GL_FRONT_AND_BACK, mode);
-
-		/*	db_sky_box_draw(engine->batch_renderer, &engine->sky_box_texture, (vec4){255,255,255,255});
-
-			db_flush(engine->batch_renderer); */
-
-
-			
-
-			//dyl_instanced_renderer_set_camera_pos(engine->manager.instanced_renderer, &engine->scene_camera->camera_pos);
-		//	model_set_light_data(&engine->model, (vec3){1.0, 6.0, -6.0}, 0.1f, 0.5f);
-		//	dyl_instanced_push_model(engine->manager.instanced_renderer, &engine->model,
-		//							   (vec3){0.5, 0.5, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255});
-		/*	dyl_instanced_push_model(engine->instanced_renderer, engine->t_model,(vec3){4.5, 0, 3.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );*/
-
-			//		dyl_instanced_push_model(engine->instanced_renderer, engine->tree_model,(vec3){5.0, 0, 4.5}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255, 255} );
-			//
 
 			dyl_debug_text_push(engine->platform.os_str.string_data);
 			dyl_debug_text_push(engine->platform.window_event_str.string_data);
@@ -304,24 +227,14 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			dyl_debug_text_push(vertices_sent_debug_txt.string_data);
 			Dyl_Str instanced_vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Triangles (instanced): %d", engine->instanced_renderer->triangle_count);
 			dyl_debug_text_push(instanced_vertices_sent_debug_txt.string_data);
+			engine->gpu_time = (float)engine->instanced_renderer->time_elasped / 1000000000;
+
+
+			Dyl_Str gpu_time_txt = dyl_str_lit_fmt(&global_arena, "GPU Time(instanced): %f", engine->gpu_time);
+			dyl_debug_text_push(gpu_time_txt.string_data);
+
 
 			entity_manager_render(&engine->manager);
-
-
-
-	
-		//	dyl_instanced_push_model(engine->test_instanced_renderer, &engine->model, (vec3){0.5f, 0.5f, 0.5f}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-
-		//	dyl_instanced_push_model(engine->test_instanced_renderer, engine->t_model, (vec3){0.5f, 0.5f, 0.5f}, (vec3){1.0,1.0,1.0}, 0.0f, (vec4){255,255,255,255});
-
-		//  dyl_instanced_draw(engine->test_instanced_renderer);
-
-
-				
-//		dyl_instanced_push_rect(engine->instanced_renderer, (vec2){1.0,1.0}, (vec2){64,64}, 0.0);
-
-
-		//dyl_instanced_draw_rectangle(engine->instanced_renderer);
 		
 			dyl_debug_text_render(engine->font_renderer);
 			dyl_debug_entity_render(engine->font_renderer);
@@ -360,7 +273,6 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 //-------RENDERER ENGINE INTERFACE API IMPLEMENTATION-------
 ENGINE_RENDERER_API void _draw_shape2D(Dyl_Batch_Renderer* renderer, Shape_Primitive_Type type, Shape_Params params)
 {
-	//printf("Param data: %f, %f, %f, %f", params.position.x, params.position.y, params.size.x, params.size.y);
 	
 	switch(type)
 	{

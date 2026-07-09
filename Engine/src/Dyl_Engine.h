@@ -58,6 +58,7 @@ typedef struct Engine
 	u64 frequency;
 	f32 fps;
 	f32 delta_time;
+	f32 gpu_time;
 	bool wireframe_mode;
 
 

@@ -1,14 +1,18 @@
 #include "Shader.h"
-
+#include "../Core/platform.h"
 #include "../Core/dyl_debug.h"
+typedef struct
+{
+	const char* source;
+	const char* filepath;
+}Shader_Source_Args;
 
 
-
-static char* read_shader_source(const char* filepath) {
-    FILE* file = fopen(filepath, "r");
+static void read_shader_source(Shader_Source_Args* args) {
+    FILE* file = fopen(args->filepath, "r");
     if (!file) {
-        printf("Failed to open shader file: %s\n", filepath);
-        return NULL;
+        printf("Failed to open shader file: %s\n", args->filepath);
+        return;
     }
     fseek(file, 0, SEEK_END);
     long length = ftell(file);
@@ -17,12 +21,12 @@ static char* read_shader_source(const char* filepath) {
     if (!buffer) {
         printf("Failed to allocate memory for shader file.\n");
         fclose(file);
-        return NULL;
+        return;
     }
     fread(buffer, 1, length, file);
     buffer[length] = '\0';
     fclose(file);
-    return buffer;
+	args->source = buffer;
 }
 static GLuint compile_shader(const char* source, GLenum type) {
 	 if (!source) {
@@ -69,34 +73,58 @@ Shader shader_init(const char* vertex_path, const char* fragment_path, const cha
 
 	return shader;
 }
+
+
+
 void shader_create_program(Shader* shader)
 {
 	//TODO: USE ARENAS IN OUR RENDERING CODE PLEEASEE or just better strings ngl
-	char* vertex_code = read_shader_source((const char*)shader->vertex_shader_path.string_data);
-	char* fragment_code = read_shader_source((const char*)shader->fragment_shader_path.string_data);
+//	char* vertex_code = NULL;
+	Shader_Source_Args vertex_args;
+	vertex_args.filepath = (char*)shader->vertex_shader_path.string_data;
+
+	Shader_Source_Args fragment_args;	
+	fragment_args.filepath = (char*)shader->fragment_shader_path.string_data;
+	if(1)
+	{
+		dyl_thread_pool_add("Shader i/o");
+		dyl_thread_pool_task_add("Shader i/o", (void*)read_shader_source, &vertex_args);
+		dyl_thread_pool_task_add("Shader i/o", (void*)read_shader_source, &fragment_args);
+		dyl_thread_pool_spin();
+
+	}else{
+		read_shader_source(&vertex_args);
+		read_shader_source(&fragment_args);
+	}
 	
-	if(!vertex_code || !fragment_code)
+
+	//read_shader_source((const char*)shader->fragment_shader_path.string_data);
+	
+	if(!vertex_args.source || !fragment_args.source)
 	{
 		printf("Failed to load shader source files.\n");
 		return;
 	}
-	shader->vertex_shader = compile_shader(vertex_code, GL_VERTEX_SHADER);
-	shader->fragment_shader = compile_shader(fragment_code, GL_FRAGMENT_SHADER);
+	shader->vertex_shader = compile_shader(vertex_args.source, GL_VERTEX_SHADER);
+	shader->fragment_shader = compile_shader(fragment_args.source, GL_FRAGMENT_SHADER);
 
 	shader->shader_program = glCreateProgram();
 
 	glAttachShader(shader->shader_program, shader->vertex_shader);
+
+	Shader_Source_Args geometry_args;
 	if(strcmp((const char*)shader->geometry_shader_path.string_data, "NULL") != 0 )
 	{
-		char* geometry_code = read_shader_source((const char*)shader->geometry_shader_path.string_data);
-		if(!geometry_code)
+		geometry_args.filepath = (char*)shader->geometry_shader_path.string_data;
+		read_shader_source(&geometry_args);
+		if(!geometry_args.source)
 		{
 			printf("Failed to load shader source files.\n");
 			return;
 		}
-		shader->geometry_shader = compile_shader(geometry_code, GL_GEOMETRY_SHADER);
+		shader->geometry_shader = compile_shader(geometry_args.source, GL_GEOMETRY_SHADER);
 		glAttachShader(shader->shader_program,shader->geometry_shader);
-		free(geometry_code);
+		//free(geometry_code);
 	}
 
 	glAttachShader(shader->shader_program, shader->fragment_shader);
@@ -163,8 +191,8 @@ void shader_create_program(Shader* shader)
 	if(strcmp((const char*)shader->geometry_shader_path.string_data, "NULL") != 0 ) //NOTE:(dylan)this is slow find an alternative
 			glDeleteShader(shader->geometry_shader);
 	
-	free(vertex_code);
-	free(fragment_code);
+//	free(vertex_code);
+//	free(fragment_code);
 
 }
 void use(Shader* shader)

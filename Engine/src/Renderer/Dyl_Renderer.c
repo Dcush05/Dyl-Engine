@@ -133,7 +133,7 @@ void shader_on_id_set_bool(shader_data* data, size_t id, const char* name, bool 
 }
 void shader_on_id_set_vec3f(shader_data* data, size_t id, const char* name, vec3 value)
 {
- 	assert(data);
+assert(data);
 	for(size_t i = 0; i < data->curr_size; ++i)
 	{
 		if(data->shaders[i].id == id)
@@ -965,7 +965,7 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 	const size_t vertices_per_unit = renderer.is_3d ? 24 : 4;
 	const size_t indices_per_unit = renderer.is_3d ? 36 : 6;
 //	size_t faces = renderer.is_3d ? 6 : 36;
-	renderer.indice_count =(max_vertices / vertices_per_unit) * indices_per_unit;
+	renderer.indice_count = (max_vertices / vertices_per_unit) * indices_per_unit;
 
 	
 
@@ -976,12 +976,7 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 	renderer.object_data.vertices.vertices = arena_push(arena, sizeof(Vertex) * max_vertices);
 	renderer.quad_count = 0;
 
-
-
-
 	shader_initialize(&renderer.shaders);
-
-
 
 	Shader shader = shader_init("assets/shaders/db_Shader.vs", "assets/shaders/db_Shader.fs", NULL);
 
@@ -989,7 +984,15 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 
 	Shader billboard = shader_init("assets/shaders/db_billboard.vs", "assets/shaders/db_billboard.fs", "assets/shaders/db_billboard.gs");
 	shader_add(&renderer.shaders, &billboard, SHADER_BILLBOARD, SHADER_HOT);
+	//TODO: LEARN HOW TO DO THIS SYNCHRONOSLY GPU SIDE WITHOUT RELYING ON THREAD POOL COE
 	shader_programs_create_type(&renderer.shaders, SHADER_HOT);
+	
+
+	/*dyl_thread_pool_add("Shader_Compilation");
+	dyl_thread_pool_task_add("Shader_Compilation", (void*)shader_create_program, &shader);
+	dyl_thread_pool_task_add("Shader_Compilation", (void*)shader_create_program, &billboard);
+	dyl_thread_pool_spin();*/
+	
 
 	renderer.object_data.vertices.vertex_count = 0;
 	renderer.object_data.vertices.capacity = max_vertices;
@@ -2458,36 +2461,6 @@ void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, ve
 
     renderer->instance_count++;
 
-
-
-
-
-/*	renderer->object_data.indices[0] = 0;
-	renderer->object_data.indices[1] = 1;
-	renderer->object_data.indices[2] = 2;
-	renderer->object_data.indices[3] = 2;
-	renderer->object_data.indices[4] = 3;
-	renderer->object_data.indices[5] = 0;*/
-
-	
-	//NOTE(dylan): WE need to create setup mesh functions before this gets messy for every instanced object thank you.
-	//Perhaps refer to old mesh code from past renderers.
-/*	if(renderer->object_data.type == MESH_DYNAMIC)
-	{
-
-
-		//glEnableVertexAttribArray(2);
-		//glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
-		//glVertexAttribPointer(2,2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-		//glVertexAttribDivisor(2,1);
-		//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}*/
-
-					
-
-	//only caring about position for now	
-
-
 }
 
 void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec2 size, float rotate, vec4 color, bool is_selected)
@@ -2629,8 +2602,18 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	//glStencilMask(0xFF);
 
+	glGenQueries(1, &renderer->query_id);
+
+	glBeginQuery(GL_TIME_ELAPSED, renderer->query_id);
+
 
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, renderer->instance_count);
+
+
+
+	glEndQuery(GL_TIME_ELAPSED);
+
+	glGetQueryObjectui64v(renderer->query_id, GL_QUERY_RESULT, &renderer->time_elasped);
 
 	if(renderer->selected_entity_id >= 0 && renderer->selected_entity_id < (s32)renderer->instance_count)
 	{

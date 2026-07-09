@@ -394,6 +394,9 @@ typedef struct
 	u64 active_batch_count;
 
 	u64 batch_start_idx;
+	GLuint query_id;
+
+	GLuint64 time_elasped;
 //	u64 selected_object; //NOTE: This is for the editor, so that we can outline selected objects
 	s32 selected_entity_id;
 	size_t objects_size;

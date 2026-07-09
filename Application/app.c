@@ -1,8 +1,8 @@
 #include "Dyl_Engine.h"
 //Entity_View view;
 entity_id entity;
-
 entity_id new_entity;
+entity_id tree_entity;
 vec3f entity_pos;
 void entity_scene_initializer(Engine* engine)
 {
@@ -24,6 +24,11 @@ void entity_scene_initializer(Engine* engine)
 
 	new_entity = entity_actor_create(&engine->manager, (vec3f){0.5, 0.5, 8.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
 	entity_set_model_from_id(&engine->manager, new_entity, "assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft");
+
+	new_entity = entity_actor_create(&engine->manager, (vec3f){0.5, 0.5, 0.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
+	entity_set_model_from_id(&engine->manager, new_entity, "assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple");
+
+
 
 
 
