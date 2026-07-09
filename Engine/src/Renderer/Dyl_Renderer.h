@@ -190,8 +190,10 @@ typedef struct
 
 typedef struct 
 {
-	//tinyobj_attrib_t attrib;
-//	tinyobj_shape_t* shapes;
+	tinyobj_attrib_t attrib;
+	tinyobj_shape_t* shapes;
+	tinyobj_material_t* materials;
+	char* rel_path;
 	Model_Texture_Manager texture_manager;
 	Mesh mesh;
 	Shader shader;
@@ -209,8 +211,20 @@ typedef struct
 
 
 
+//NOTE:Possibly change names of functions to make more sense for thier functionality
+typedef struct 
+{
+	Model* model;
+	const char* file_name;
+	const char* rel_path;
+	Arena* arena;
 
-Model model_init(const char* file_name, const char* rel_path, Arena* arena);
+}Model_Init_Args;
+
+
+void model_init(Model_Init_Args* args);
+
+void model_setup(Model* model, Arena* arena);
 void model_set_light_data(Model* model, vec3 pos, float diffuse, float specular);
 void model_set_selected_model(Model* model, bool selected);
 

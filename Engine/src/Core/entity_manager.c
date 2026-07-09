@@ -1,6 +1,7 @@
 #include "entity_manager.h"
 #include "cglm/types.h"
 #include "dyl_debug.h"
+#include "platform.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -152,15 +153,62 @@ ENGINE_ENTITY_API entity_id entity_sky_box_create(Entity_Manager* entity_manager
 ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, const char* path, const char* rel_path)
 {
 	ASSERT(manager, "Passing invalid manager");
+	ASSERT(manager->model[id] != NULL, "Entity model slot is NULL! Allocate the model before setting its path.");
 	if(!(manager->component_flag[id] & COMP_MODEL) && (manager->type[id] == ENTITY_ACTOR))
 	{
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Entity has invalid flags to attach model");
 		return;
 	}
 
-	*manager->model[id] = model_init(path, rel_path, manager->arena);
-	dyl_instanced_renderer_initialize_mod_and_vbo(manager->instanced_renderer, manager->model[id]);
+//	Temp_Arena scratch = temp_arena_scratch_get(NULL, 0, sizeof(Model_Init_Args) * 200);
+	//
+	Model_Init_Args* args = arena_push(manager->arena, sizeof(Model_Init_Args));
+	args->model = manager->model[id];
+	//	args->model = &(Model){0};
+	args->file_name = path;
+	args->rel_path = rel_path;
+	args->arena = manager->arena;
 
+
+
+
+	args->model = manager->model[id];
+//	args->model = &(Model){0};
+	args->file_name = path;
+	args->rel_path = rel_path;
+	args->arena = manager->arena;
+
+
+	Dyl_Str thread_name = dyl_str_lit_fmt(manager->arena, "Model: %d", id);
+	dyl_thread_pool_add((char*)thread_name.string_data);
+	dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)model_init, args);
+
+//	model_init(args);
+
+
+
+//	*manager->model[id] = *args->model;
+	//model_setup(manager->model[id], manager->arena);
+	//temp_arena_scratch_end(scratch);
+	//dyl_instanced_renderer_initialize_mod_and_vbo(manager->instanced_renderer, manager->model[id]);
+
+}
+
+
+void entity_initialize_all_models(Entity_Manager* manager)
+{
+	dyl_thread_pool_spin();
+	for(size_t i = 0; i < manager->entity_count; ++i)
+	{
+		if((manager->component_flag[i] & COMP_MODEL) && (manager->type[i] == ENTITY_ACTOR))
+		{
+
+			model_setup(manager->model[i], manager->arena);
+			dyl_instanced_renderer_initialize_mod_and_vbo(manager->instanced_renderer, manager->model[i]);
+
+		}
+
+	}
 }
 
 void entity_set_model_selection_from_id(Entity_Manager* manager, entity_id id)

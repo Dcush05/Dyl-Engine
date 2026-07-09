@@ -1,4 +1,5 @@
 #include "platform.h"
+#include <handleapi.h>
 #include <processthreadsapi.h>
 #include <profileapi.h>
 #include <stddef.h>
@@ -127,15 +128,21 @@ void dyl_thread_pool_init(u64 thread_count)
 
 void dyl_thread_pool_add(const char* thread_name)
 {
+	bool found_slot = false;
 	for(size_t idx = 0; idx < dyl_global_thread_pool.count; ++idx)
 	{
 		if(!dyl_global_thread_pool.threads[idx].is_active)
 		{
+			found_slot = true;
 			dyl_global_thread_pool.threads[idx] = dyl_thread_create(thread_name);
+			dyl_global_thread_pool.threads[idx].is_active = true;
 			dyl_global_thread_pool.in_use++;
 			break;
 		}
 	}
+	if (!found_slot)
+		printf("dyl_thread_pool_add: NO FREE SLOT for '%s' — pool exhausted\n", thread_name);
+
 }
 
 
@@ -143,10 +150,9 @@ void dyl_thread_pool_task_add(const char* thread_name, void(*func)(void*), void*
 {
 	for(size_t idx = 0; idx < dyl_global_thread_pool.count; ++idx)
 	{
-		if(strcmp((char*)dyl_global_thread_pool.threads->thread_name.string_data, thread_name) == 0)
+		if(strcmp((char*)dyl_global_thread_pool.threads[idx].thread_name.string_data, thread_name) == 0)
 		{
 			dyl_thread_add_task(&dyl_global_thread_pool.threads[idx], func, args);
-			dyl_global_thread_pool.threads[idx].is_active = true;
 			//dyl_global_thread_pool.in_use++;
 			break;
 		}
@@ -169,11 +175,21 @@ void dyl_thread_pool_spin()
 		if(dyl_global_thread_pool.threads[idx].is_active == true)
 		{
 			dyl_thread_spin(&dyl_global_thread_pool.threads[idx]);	
+		//	dyl_global_thread_pool.threads[idx].is_active = false;
 			dyl_global_thread_pool.in_use--;
 		}
 		
 	}
 
 	dyl_thread_pool_sync();
+	for(size_t idx = 0; idx < dyl_global_thread_pool.count; ++idx)
+	{
+		if(dyl_global_thread_pool.threads[idx].is_active == true)
+		{
+			CloseHandle(dyl_global_thread_pool.threads[idx].thread);
+			dyl_global_thread_pool.threads[idx].thread = NULL;
+			dyl_global_thread_pool.threads[idx].is_active = false;
+		}
+	}
 }
 

@@ -42,6 +42,8 @@ ENGINE_API void engine_initialize(Engine* engine)
 		dyl_profiler_add("arena_alloc1");
 		dyl_profiler_add("window+renderer setup");
 		dyl_profiler_add("event_initialization");
+
+		dyl_profiler_add("scene_initialization");
 		dyl_profiler_add("frame_callback");
 		dyl_profiler_add("programclose");
 
@@ -136,9 +138,15 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 {
 	ASSERT(frame_callback, "Please setup a frame call back function");
 
+	dyl_profiler_add("scene_initialization");
 
 	entity_scene_callback(engine);	
+	dyl_profiler_end("scene_initialization");
 
+
+	entity_initialize_all_models(&engine->manager);
+
+	dyl_profiler_print_func("scene_initialization");
 	#ifdef _WIN32
 		LARGE_INTEGER start;
 		LARGE_INTEGER end;

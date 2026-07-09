@@ -232,7 +232,7 @@ void generate(Texture *texture)
 	glGenTextures(1, &texture->ID);
 	
 	GLenum type = (texture->texture_type & TEXTURE_2D) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-	printf("%d", type);
+//	printf("%d", type);
     glBindTexture(type, texture->ID); 
      // set the texture wrapping parameters
 	if(type == GL_TEXTURE_2D)
@@ -469,29 +469,27 @@ void my_file_reader(
 
 #define MAX_PATH_COUNT 2046
 
-Model model_init(const char* file_name, const char* rel_path, Arena* arena)
+void model_init(Model_Init_Args* args)
 {
 	
-	Model model = {0};
 
 //	strncpy(model.filename, file_name, sizeof(model.filename) - 1);
 //	model.filename[sizeof(model.filename) - 1] = '\0';
-	model.filename = DYL_STR_LIT(file_name);
-	tinyobj_attrib_t attrib;
-	tinyobj_shape_t* shapes;
+	args->model->filename = DYL_STR_LIT(args->file_name);
+	args->model->rel_path = (char*)args->rel_path;
 	size_t num_shapes = 0;
-	tinyobj_material_t* materials = NULL;
+	args->model->materials = NULL;
 	size_t num_materials = 0;
-	model.is_selected = false;
+	args->model->is_selected = false;
 
-	int check = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials, &num_materials, (char*)model.filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
+	int check = tinyobj_parse_obj(&args->model->attrib, &args->model->shapes, &num_shapes, &args->model->materials, &num_materials, (char*)args->model->filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
 
 	if(check != TINYOBJ_SUCCESS)
 	{
 		fprintf(stderr, "Error loading OBJ\n");
-		return (Model){0};
+		return;
 	}
-	model.num_materials = num_materials;
+	args->model->num_materials = num_materials;
 
 	
 	float bmin[3], bmax[3];
@@ -511,26 +509,29 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 	size_t face_offset = 0;
 
 
-	model.num_triangles = attrib.num_face_num_verts;
+	args->model->num_triangles = args->model->attrib.num_face_num_verts;
 	size_t stride = sizeof(Vertex) / sizeof(float);
 
 	//float* vertex_buffer = (float*)malloc(OBJ_SIZE * num_triangles * 3);
 	//vertices_setup(&model.mesh.vertices, arena ,model.num_triangles * 3);
-	model.mesh.vertices.vertices = arena_push(arena, (model.num_triangles * 3) * sizeof(Vertex));
-	model.mesh.vertices.capacity = model.num_triangles * 3;
+	//BUG: globa arena usage is causing race conditions
+//	args->model->mesh.vertices.vertices = arena_push(args->arena, (args->model->num_triangles * 3) * sizeof(Vertex));
+	args->model->mesh.vertices.vertices = malloc((args->model->num_triangles * 3) * sizeof(Vertex));
+	args->model->mesh.vertices.capacity = args->model->num_triangles * 3;
+	args->model->mesh.vertices.vertex_count = 0;
 
 
 
-	memset(&model.texture_manager, 0, sizeof(Model_Texture_Manager));
+	memset(&args->model->texture_manager, 0, sizeof(Model_Texture_Manager));
 	/*for(size_t i = 0; i < TEXTURE_AMOUNT; ++i)
 	{
 		model.textures[i].ID = 0;
-		memset(model->textures[i].model_texture_paths, 0, MAX_PATH_COUNT);
+		memset(args->model->textures[i].model_texture_paths, 0, MAX_PATH_COUNT);
 	}*/
-	for(size_t i = 0; i < attrib.num_face_num_verts; ++i)
+	for(size_t i = 0; i < args->model->attrib.num_face_num_verts; ++i)
 	{
-		assert(attrib.face_num_verts[i] % 3 == 0);
-		for(size_t j = 0; j < (size_t)attrib.face_num_verts[i]/ 3; ++j)
+		assert(args->model->attrib.face_num_verts[i] % 3 == 0);
+		for(size_t j = 0; j < (size_t)args->model->attrib.face_num_verts[i]/ 3; ++j)
 		{
 			float v[3][3];
 			float n[3][3];
@@ -540,9 +541,9 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 
 
 
-			tinyobj_vertex_index_t idx0 = attrib.faces[face_offset + 3 * j + 0];
-			tinyobj_vertex_index_t idx1 = attrib.faces[face_offset + 3 * j + 1];
-			tinyobj_vertex_index_t idx2 = attrib.faces[face_offset + 3 * j + 2];
+			tinyobj_vertex_index_t idx0 = args->model->attrib.faces[face_offset + 3 * j + 0];
+			tinyobj_vertex_index_t idx1 = args->model->attrib.faces[face_offset + 3 * j + 1];
+			tinyobj_vertex_index_t idx2 = args->model->attrib.faces[face_offset + 3 * j + 2];
 			for(size_t k = 0; k < 3; ++k)
 			{
 				int f0 = idx0.v_idx;
@@ -552,9 +553,9 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 				assert(f0 >= 0);
 				assert(f1 >= 0);
 				assert(f2 >= 0);
-				v[0][k] = attrib.vertices[3 * (size_t)f0 + k];
-				v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
-				v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
+				v[0][k] = args->model->attrib.vertices[3 * (size_t)f0 + k];
+				v[1][k] = args->model->attrib.vertices[3 * (size_t)f1 + k];
+				v[2][k] = args->model->attrib.vertices[3 * (size_t)f2 + k];
 				bmin[k] = (v[0][k] < bmin[k]) ? v[0][k] : bmin[k];
 				bmin[k] = (v[1][k] < bmin[k]) ? v[1][k] : bmin[k];
 				bmin[k] = (v[2][k] < bmin[k]) ? v[2][k] : bmin[k];
@@ -563,19 +564,19 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 				bmax[k] = (v[2][k] > bmax[k]) ? v[2][k] : bmax[k];
 			}
 
-			if(attrib.num_normals > 0)
+			if(args->model->attrib.num_normals > 0)
 			{
 				int f0 = idx0.vn_idx;
 				int f1 = idx1.vn_idx;
 				int f2 = idx2.vn_idx;
 				if (f0 >= 0 && f1 >= 0 && f2 >= 0) {
-					assert(f0 < (int)attrib.num_normals);
-					assert(f1 < (int)attrib.num_normals);
-					assert(f2 < (int)attrib.num_normals);
+					assert(f0 < (int)args->model->attrib.num_normals);
+					assert(f1 < (int)args->model->attrib.num_normals);
+					assert(f2 < (int)args->model->attrib.num_normals);
 				for (size_t k = 0; k < 3; k++) {
-				  n[0][k] = attrib.normals[3 * (size_t)f0 + k];
-				  n[1][k] = attrib.normals[3 * (size_t)f1 + k];
-				  n[2][k] = attrib.normals[3 * (size_t)f2 + k];
+				  n[0][k] = args->model->attrib.normals[3 * (size_t)f0 + k];
+				  n[1][k] = args->model->attrib.normals[3 * (size_t)f1 + k];
+				  n[2][k] = args->model->attrib.normals[3 * (size_t)f2 + k];
 				}
 			} else { /* normal index is not defined for this face */
 		/* compute geometric normal */
@@ -619,8 +620,8 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 			  int tex_idx = vert_indices[k];
 			  if(tex_idx >= 0)
 			  {
-				vert.tex_coords[0] = attrib.texcoords[2 * (size_t)tex_idx + 0];
-				vert.tex_coords[1] = 1.0 - attrib.texcoords[2 * (size_t)tex_idx + 1];
+				vert.tex_coords[0] = args->model->attrib.texcoords[2 * (size_t)tex_idx + 0];
+				vert.tex_coords[1] = 1.0 - args->model->attrib.texcoords[2 * (size_t)tex_idx + 1];
 				}else{
 
 					vert.tex_coords[0] = 0.0f;
@@ -656,14 +657,14 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 			  vert.color[2] = c[2] * 0.5f + 0.5f;
 
 		  /* now set the color from the material */
-		  if (attrib.material_ids[i] >= 0) {
-			int matidx = attrib.material_ids[i];
+		  if (args->model->attrib.material_ids[i] >= 0) {
+			int matidx = args->model->attrib.material_ids[i];
 			/*vertex_buffer[(3 * i + k) * stride + 9] = materials[matidx].diffuse[0];
 			vertex_buffer[(3 * i + k) * stride + 10] = materials[matidx].diffuse[1];
 			vertex_buffer[(3 * i + k) * stride + 11] = materials[matidx].diffuse[2];*/
-			vert.color[0]= materials[matidx].diffuse[0];
-			vert.color[1]= materials[matidx].diffuse[1];
-			vert.color[2]= materials[matidx].diffuse[2];
+			vert.color[0]= args->model->materials[matidx].diffuse[0];
+			vert.color[1]= args->model->materials[matidx].diffuse[1];
+			vert.color[2]= args->model->materials[matidx].diffuse[2];
 			
 		  } else {
 			/* Just copy the default value */
@@ -672,145 +673,151 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 			vertex_buffer[(3 * i + k) * stride + 11] = vertex_buffer[(3 * i + k) * stride + 8];*/
 		  }
 
-		  vertices_push(&model.mesh.vertices, vert);
+		  vertices_push(&args->model->mesh.vertices, vert);
 		  
 
 
 		}
 	}
-		face_offset += (size_t)attrib.face_num_verts[i];
+		face_offset += (size_t)args->model->attrib.face_num_verts[i];
 	}
-	model.mesh.m_vbo = 0;
+	tinyobj_attrib_free(&args->model->attrib);
+	tinyobj_shapes_free(args->model->shapes, num_shapes);
+
+}
+void model_setup (Model* model, Arena* arena)
+{
+	model->mesh.m_vbo = 0;
 
 	//Texture intialization code here
 	
-	for(size_t i = 0; i < num_materials; ++i)
+	for(size_t i = 0; i < model->num_materials; ++i)
 	{
-		if(materials[i].diffuse_texname)
+		if(model->materials[i].diffuse_texname)
 		{
 			//push texture
 			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
+				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].diffuse_texname );
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].diffuse_texname );
 
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_DIFFUSE;
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_DIFFUSE;
 					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
 					break;
 				}
 			}
 		}
-		if(materials[i].alpha_texname)
+		if(model->materials[i].alpha_texname)
 		{
 			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
+				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].alpha_texname);
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].alpha_texname);
 
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_ALPHA;
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_ALPHA;
 					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
-					break;
-				}
-			}
-
-		}
-		if(materials[i].ambient_texname)
-		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
-			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
-				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].ambient_texname);
-
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_AMBIENT;
-					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
 					break;
 				}
 			}
 
 		}
-		if(materials[i].displacement_texname)
+		if(model->materials[i].ambient_texname)
 		{
 			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
+				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].displacement_texname );
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_DISPLACEMENT;
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].ambient_texname);
+
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_AMBIENT;
 					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
 					break;
 				}
 			}
 
 		}
-		if(materials[i].bump_texname)
+		if(model->materials[i].displacement_texname)
 		{
 			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
+				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].bump_texname );
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_BUMP;
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].displacement_texname );
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_DISPLACEMENT;
 					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
 					break;
 				}
 			}
 
 		}
-		if(materials[i].specular_texname)
+		if(model->materials[i].bump_texname)
 		{
 			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
+				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].specular_texname );
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR;
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].bump_texname );
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_BUMP;
 					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
+					break;
+				}
+			}
+
+		}
+		if(model->materials[i].specular_texname)
+		{
+			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			{
+				if(model->texture_manager.model_textures[j].text.ID == 0)
+				{
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_texname );
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR;
+					Texture_Path path;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
 					break;
 				}
 			}
 		}
 
 		
-		if(materials[i].specular_highlight_texname)
+		if(model->materials[i].specular_highlight_texname)
 		{
 			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
-				if(model.texture_manager.model_textures[j].text.ID == 0)
+				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
-					model.texture_manager.model_textures[j].text.ID = j + 1;
-					model.texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", rel_path, materials[i].specular_highlight_texname );
-					model.texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
+					model->texture_manager.model_textures[j].text.ID = j + 1;
+					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_highlight_texname );
+					model->texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
 					Texture_Path path;
-					path.path = model.texture_manager.model_textures[j].file_path;
-					model.texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model.texture_manager.texture_count++;
+					path.path = model->texture_manager.model_textures[j].file_path;
+					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
+					model->texture_manager.texture_count++;
 					break;
 				}
 			}
@@ -820,19 +827,17 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 	}
 	
 	//Tinyobj deinitialization
-	tinyobj_attrib_free(&attrib);
-	tinyobj_shapes_free(shapes, num_shapes);
-	tinyobj_materials_free(materials, num_materials);
+	tinyobj_materials_free(model->materials, model->num_materials);
 
 	//Opengl Commands
-	glGenVertexArrays(1, &model.mesh.m_vao);
-	glBindVertexArray(model.mesh.m_vao);
+	glGenVertexArrays(1, &model->mesh.m_vao);
+	glBindVertexArray(model->mesh.m_vao);
 
-	glGenBuffers(1, &model.mesh.m_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, model.mesh.m_vbo);
+	glGenBuffers(1, &model->mesh.m_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, model->mesh.m_vbo);
 	glBufferData(GL_ARRAY_BUFFER,
-			  model.mesh.vertices.vertex_count * sizeof(Vertex),
-			  model.mesh.vertices.vertices, GL_STATIC_DRAW);
+			  model->mesh.vertices.vertex_count * sizeof(Vertex),
+			  model->mesh.vertices.vertices, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
@@ -852,7 +857,6 @@ Model model_init(const char* file_name, const char* rel_path, Arena* arena)
 	glBindVertexArray(0);
 
 
-	return model;
 
 }
 
