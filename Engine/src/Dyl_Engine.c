@@ -42,10 +42,11 @@ ENGINE_API void engine_initialize(Engine* engine)
 		dyl_profiler_add("arena_alloc1");
 		dyl_profiler_add("window+renderer setup");
 		dyl_profiler_add("event_initialization");
-
+		dyl_profiler_add("model_texture_setup");
 		dyl_profiler_add("scene_initialization");
 		dyl_profiler_add("frame_callback");
 		dyl_profiler_add("programclose");
+
 
 	#endif
 	dyl_thread_pool_init(8);
@@ -66,14 +67,8 @@ ENGINE_API void engine_initialize(Engine* engine)
 	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 100, true);
 
 
-
-
-
 	dyl_profiler_end("window+renderer setup");			
 	dyl_profiler_print_func("window+renderer setup");
-
-
-
 
 
 	dyl_profiler_start("event_initialization");
@@ -201,11 +196,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 		}
 		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
-
 		dyl_batch_renderer_set_camera_pos(engine->batch_renderer, &engine->scene_camera->camera_pos);
-
 	    dyl_instanced_renderer_set_view(engine->manager.instanced_renderer, &engine->scene_camera->view);
-
 	    dyl_instanced_renderer_set_camera_pos(engine->manager.instanced_renderer, &engine->scene_camera->camera_pos);
 
 	    //dyl_instanced_renderer_set_view(engine->test_instanced_renderer, &engine->scene_camera->view);

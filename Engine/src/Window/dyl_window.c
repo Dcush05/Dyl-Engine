@@ -165,7 +165,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 		}	
 
 
-		const int major_min = 3, minor_min = 3;
+		const int major_min = 4, minor_min = 5;
 		const int contextAttribs[] = {
 		WGL_CONTEXT_MAJOR_VERSION_ARB, major_min,
 		WGL_CONTEXT_MINOR_VERSION_ARB, minor_min,

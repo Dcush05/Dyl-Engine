@@ -49,6 +49,8 @@
 	Optimized shader/ASSET initialization code (the only bottleneck should be compilation time of shaders not the use of malloc and free slop lol)
 	Make shaders more module for the game dev, have it so that they are able to tag their own shaders to the renderer with no friction.
 
+	Lower memory usage(make better use of arena allocators)
+
 
 	
 	
@@ -56,15 +58,20 @@
 
 
 #TODO LIST:	
-	Lower memory usage(make better use of arena allocators)
+
+	Setup assets system
 	Editor Ui implementation
 	Refactor so our code has better taste
-	FBX parser
-	Setup assets system
+	GLTF AND/OR FBX parser
 	Setup a scene handling system
 		different scenes
 		each scene can have a different screen??
+	Particle system
+	Physics system
+	Optimize bindless texture initialization (multithreading shared resources on different opengl context on each thread)
+	Serialization
 	Configuration file for window settings
 	Better profiler to save and view stats
+
 	SIMDIFY
 

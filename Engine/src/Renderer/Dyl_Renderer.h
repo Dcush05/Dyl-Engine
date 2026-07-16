@@ -64,6 +64,13 @@ typedef enum
 	TEXTURE_2D = 1 << 0,
 	TEXTURE_CUBE_MAP = 1 << 1,
 }Texture_Type;
+typedef enum
+{
+	TEXTURE_BINDED = 1 << 0,
+	TEXTURE_BINDLESS = 1 << 1,
+}Texture_Bind_Status;
+
+
 
 
 #define MAX_CUBE_MAP_FACES 6
@@ -76,15 +83,19 @@ typedef union{
 
 typedef struct
 {
+	
 	Texture_Path texture_path;
+	GLuint64 handle;
 	unsigned char* data;
 	int width, height, nrChannels;
 	Texture_Type texture_type;
+	Texture_Bind_Status texture_bind;
 	GLuint ID; //stores texture data
+	
 
 }Texture;
 
-Texture texture_init(Texture_Path path, Texture_Type type);
+Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded);
 void generate(Texture* texture);
 void texture_bind(Texture* texture);
 void texture_free(Texture* texture);
@@ -176,6 +187,7 @@ typedef struct
 {
 
 	Model_Texture model_textures[TEXTURE_CAPACITY];
+	GLuint texture_buffer;
 	size_t texture_count;
 }Model_Texture_Manager;
 
@@ -468,21 +480,6 @@ typedef struct
 //we can set flags on or off to determine when we want to instance or batch render
 
 
-
-//MODEL RENDERER
-/*typedef struct
-{
-	mat4 projection;
-	mat4 view;
-	unsigned int vbo;
-	unsigned int vao;
-	Shader shader;	
-}Model_Renderer;*/
-
-
-//Model_Renderer model_renderer_init(mat4 projection);
-//void model_render_data_init(Model_Renderer* renderer, Model* model);
-//void draw_model(Model* model, vec3 pos, vec3 size, float rotation, vec3 color);
 
 
 

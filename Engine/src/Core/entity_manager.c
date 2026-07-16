@@ -144,7 +144,7 @@ ENGINE_ENTITY_API entity_id entity_sky_box_create(Entity_Manager* entity_manager
 		.face_paths[2] = DYL_STR_LIT(face_path3),. face_paths[3] = DYL_STR_LIT(face_path4),.face_paths[4] = DYL_STR_LIT(face_path5), 
 		.face_paths[5] = DYL_STR_LIT(face_path6)};
 
-	entity_manager->texture[new_entity] = texture_init(skybox_paths, TEXTURE_CUBE_MAP);
+	entity_manager->texture[new_entity] = texture_init(skybox_paths, TEXTURE_CUBE_MAP, true);
 
 	
 }
@@ -230,7 +230,7 @@ ENGINE_ENTITY_API void entity_set_texture2d_from_id(Entity_Manager* manager, ent
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Entity has invalid flags to attach model");
 		return;
 	}
-	manager->texture[id] = texture_init((Texture_Path){.path = DYL_STR_LIT(path)}, TEXTURE_2D);
+	manager->texture[id] = texture_init((Texture_Path){.path = DYL_STR_LIT(path)}, TEXTURE_2D, true);
 
 }
 

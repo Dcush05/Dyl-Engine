@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <glad/glad.h>
 #include "../core/dyl_debug_render.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -50,7 +51,7 @@ void shader_add(shader_data* data, Shader* shader, size_t id, shader_type type)
 		//	strncpy(data->shader_name[i], name, sizeof(data->shader_name[i])-1);
 		//	data->shader_name[i][sizeof(data->shader_name[i])-1] = '\0';
 			data->curr_size++;
-			break;
+break;
 		
 		}
 	}
@@ -193,7 +194,7 @@ int path_exists(const char* path)
 	return (stat(path, &sb) == 0);
 }
 
-Texture texture_init(Texture_Path path, Texture_Type type)
+Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded)
 {
 	Texture texture = (Texture){0};
 	if(type == TEXTURE_2D)
@@ -218,68 +219,118 @@ Texture texture_init(Texture_Path path, Texture_Type type)
 		
 		}
 	}
-	
+	if(is_binded)
+		texture.texture_bind = TEXTURE_BINDED;
+	else 
+		texture.texture_bind = TEXTURE_BINDLESS;
 	texture.texture_type = type;
 	generate(&texture);
 	return texture;
 }
-
+//NOTE: Bindless textures/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// (Dylan) - (Issue)This function becomes a bottleneck when loading lots of textures in a scene especially if a model has 
+// multiple texutures
+// (Solution(sorta))We should use bindless textures however bindless textures are not supported across all platforms
+// such as mobile as it is mostly a modern opengl feature, I will make sure to write more notes on this as i go on
+// Setting up bindless texture support in my renderer
+// Unsafe
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void generate(Texture *texture)
 {
+
 	ASSERT(texture, "Passed NULL texture in func")
 	stbi_set_flip_vertically_on_load(false);  
 
-	glGenTextures(1, &texture->ID);
-	
-	GLenum type = (texture->texture_type & TEXTURE_2D) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-//	printf("%d", type);
-    glBindTexture(type, texture->ID); 
-     // set the texture wrapping parameters
-	if(type == GL_TEXTURE_2D)
+	if(texture->texture_bind == TEXTURE_BINDED)
 	{
 
-		glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-		glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		// set texture filtering parameters
-		glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glGenTextures(1, &texture->ID);
 
-		texture->data = stbi_load((char*)texture->texture_path.path.string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
-		ASSERT(texture->data, "Unable to load texture(Null)");
-		GLenum format = GL_RGB;
-        if (texture->nrChannels == 4)
-        {
-            format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
-			//printf("meow\n");
-        }
-
-		glTexImage2D(type, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
-
-        glGenerateMipmap(type);  // Optionally generate mipmaps for better performance
-
-
-
-	}else{
-		glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-		for(size_t i = 0; i < MAX_CUBE_MAP_FACES; ++i)
+	
+		GLenum type = (texture->texture_type & TEXTURE_2D) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
+	//	printf("%d", type);
+		glBindTexture(type, texture->ID); 
+		 // set the texture wrapping parameters
+		if(type == GL_TEXTURE_2D)
 		{
-			texture->data = stbi_load((char*)texture->texture_path.face_paths[i].string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
+
+			glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+			glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			// set texture filtering parameters
+			glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+			texture->data = stbi_load((char*)texture->texture_path.path.string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
 			ASSERT(texture->data, "Unable to load texture(Null)");
 			GLenum format = GL_RGB;
 			if (texture->nrChannels == 4)
 			{
 				format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
-					//printf("meow\n");
+				//printf("meow\n");
 			}
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
+
+			glTexImage2D(type, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
+
+			glGenerateMipmap(type);  // Optionally generate mipmaps for better performance
+
+
+
+		}else{
+			glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+			for(size_t i = 0; i < MAX_CUBE_MAP_FACES; ++i)
+			{
+				texture->data = stbi_load((char*)texture->texture_path.face_paths[i].string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
+				ASSERT(texture->data, "Unable to load texture(Null)");
+				GLenum format = GL_RGB;
+				if (texture->nrChannels == 4)
+				{
+					format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
+						//printf("meow\n");
+				}
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
+
+			}
+				glGenerateMipmap(type);  // Optionally generate mipmaps for better performance -> NOTE: (dylan) getting invalid enum errors from this line in renderdoc at the first frame, <--- should check if im still getting this
+
 
 		}
-			glGenerateMipmap(type);  // Optionally generate mipmaps for better performance -> NOTE: (dylan) getting invalid enum errors from this line in renderdoc at the first frame, <--- should check if im still getting this
+		
+	}else {
+		glCreateTextures(GL_TEXTURE_2D, 1, &texture->ID);
+
+		texture->data = stbi_load((char*)texture->texture_path.path.string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
+
+		ASSERT(texture->data, "Unable to load texture(Null)");
+		GLenum internal_format = (texture->nrChannels == 4) ? GL_RGBA8 : GL_RGB8;
+		GLint levels = 1 + (GLint)floor(log2(fmax(texture->width, texture->height)));
+
+		glTextureStorage2D(texture->ID, levels, internal_format, texture->width, texture->height);
+			GLenum format = GL_RGB;
+			if (texture->nrChannels == 4)
+			{
+				format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
+				//printf("meow\n");
+			}
+
+		glTextureSubImage2D(texture->ID, 0,0,0, texture->width, texture->height, format, GL_UNSIGNED_BYTE, (const void*)&texture->data[0]);
+
+		glGenerateTextureMipmap(texture->ID);
+		glTextureParameteri(texture->ID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTextureParameteri(texture->ID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTextureParameteri(texture->ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTextureParameteri(texture->ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+
+		texture->handle = glGetTextureHandleARB(texture->ID);
+		ASSERT(texture->handle != 0, "Unable to setup handle for texture");
+		glMakeTextureHandleResidentARB(texture->handle);
+
+
 
 
 	}
@@ -685,18 +736,26 @@ void model_init(Model_Init_Args* args)
 	tinyobj_shapes_free(args->model->shapes, num_shapes);
 
 }
+
+
+#include "../Core/dyl_profiler.h"
 void model_setup (Model* model, Arena* arena)
 {
 	model->mesh.m_vbo = 0;
 
 	//Texture intialization code here
 	
+	dyl_profiler_start("model_texture_setup");
+
+	Temp_Arena scratch = temp_arena_scratch_get(NULL, 0, sizeof(Texture) * TEXTURE_CAPACITY);
+	GLuint64* handle_data = arena_push(scratch.arena, sizeof(GLuint64) * TEXTURE_CAPACITY);
 	for(size_t i = 0; i < model->num_materials; ++i)
 	{
+
 		if(model->materials[i].diffuse_texname)
 		{
 			//push texture
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -710,11 +769,37 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
+
+			//inline vs function call
+			//
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].diffuse_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_DIFFUSE;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
+
 		}
 		if(model->materials[i].alpha_texname)
 		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].alpha_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_ALPHA;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
+	/*		for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -728,12 +813,12 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
 
 		}
 		if(model->materials[i].ambient_texname)
 		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -747,12 +832,24 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].ambient_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_AMBIENT;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
 
 		}
 		if(model->materials[i].displacement_texname)
 		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+	/*		for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -765,12 +862,25 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].displacement_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_DISPLACEMENT;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
 
 		}
 		if(model->materials[i].bump_texname)
 		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+
+		/*	for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -783,12 +893,24 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].bump_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_BUMP;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
 
 		}
 		if(model->materials[i].specular_texname)
 		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -801,13 +923,25 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_SPECULAR;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
 		}
 
 		
 		if(model->materials[i].specular_highlight_texname)
 		{
-			for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
 			{
 				if(model->texture_manager.model_textures[j].text.ID == 0)
 				{
@@ -820,14 +954,33 @@ void model_setup (Model* model, Arena* arena)
 					model->texture_manager.texture_count++;
 					break;
 				}
-			}
+			}*/
+			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_highlight_texname );
+
+			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
+			Texture_Path path;
+			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+			//FIX: JUST PUT IN THE TYPE INSTEAD OF TRUE OR FALSE
+			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+
+			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+			model->texture_manager.texture_count++;
 
 		}
 
 	}
+
+	dyl_profiler_end("model_texture_setup");
+	dyl_profiler_print_func("model_texture_setup");
+   // exit(0);
 	
 	//Tinyobj deinitialization
 	tinyobj_materials_free(model->materials, model->num_materials);
+
+
+
 
 	//Opengl Commands
 	glGenVertexArrays(1, &model->mesh.m_vao);
@@ -856,6 +1009,13 @@ void model_setup (Model* model, Arena* arena)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+
+	//SETTING UP SSBO For texture only
+	glCreateBuffers(1, &model->texture_manager.texture_buffer);
+	glNamedBufferStorage(model->texture_manager.texture_buffer, sizeof(GLuint64) * model->texture_manager.texture_count, (const void *) handle_data, GL_DYNAMIC_STORAGE_BIT);
+	//FIX: SHADER ISSUE
+	temp_arena_scratch_end(scratch);
+	
 
 
 }
@@ -2537,6 +2697,14 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 
 	shader_on_id_set_vec3f(&renderer->shaders, SHADER_INSTANCED, "camera_pos", renderer->camera_pos);
 
+	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse_idx", -1);
+
+	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump_idx", -1);
+
+	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_idx", -1);
+	//shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "displacement_idx", -1);
+//	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "alpha_idx", -1);
+
 	int texture_unit = 0;
 	//conditional to check if the model even has textures/materials
 	if(renderer->lighting_enabled)
@@ -2553,34 +2721,66 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 		for(size_t i = 0; i < renderer->current_model->texture_manager.texture_count; ++i)
 		{
 			
-			glActiveTexture(GL_TEXTURE0 + texture_unit);
-			texture_bind(&renderer->current_model->texture_manager.model_textures[i].text);
-			switch(renderer->current_model->texture_manager.model_textures[i].texture_type)
+			if(renderer->current_model->texture_manager.model_textures[i].text.texture_bind == TEXTURE_BINDED)
 			{
-				case TEXTURE_DIFFUSE:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse", texture_unit);
-				break;
-				case TEXTURE_SPECULAR:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular", texture_unit);
-				break;
-				case TEXTURE_AMBIENT:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "ambient", texture_unit);
-				break;
-				case TEXTURE_ALPHA:
-					//BUG:(Dylan) -> This probably happens to other textures, but at a certain point it seems like it simply doesnt find the uniform and causes the program to crash.... is it because of the amount of textures we are allocating per unit?
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "alpha", texture_unit); 
-				break;
-				case TEXTURE_BUMP:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump", texture_unit);
-				break;
-				case TEXTURE_DISPLACEMENT:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "displacement", texture_unit);
-				break;
-				case TEXTURE_SPECULAR_HIGHLIGHT:
-					shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_highlight", texture_unit);
-				break;
 
+				glActiveTexture(GL_TEXTURE0 + texture_unit);
+				texture_bind(&renderer->current_model->texture_manager.model_textures[i].text);
+				switch(renderer->current_model->texture_manager.model_textures[i].texture_type)
+				{
+					case TEXTURE_DIFFUSE:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse", texture_unit);
+					break;
+					case TEXTURE_SPECULAR:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular", texture_unit);
+					break;
+					case TEXTURE_AMBIENT:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "ambient", texture_unit);
+					break;
+					case TEXTURE_ALPHA:
+						//BUG:(Dylan) -> This probably happens to other textures, but at a certain point it seems like it simply doesnt find the uniform and causes the program to crash.... is it because of the amount of textures we are allocating per unit?
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "alpha", texture_unit); 
+					break;
+					case TEXTURE_BUMP:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump", texture_unit);
+					break;
+					case TEXTURE_DISPLACEMENT:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "displacement", texture_unit);
+					break;
+					case TEXTURE_SPECULAR_HIGHLIGHT:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_highlight", texture_unit);
+					break;
+
+				}
 			}
+			else
+			{
+
+		//		glMakeTextureHandleResidentARB(renderer->current_model->texture_manager.model_textures[i].text.handle);
+				shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "is_bindless", true);
+			//	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "texture_index", i);
+
+				switch(renderer->current_model->texture_manager.model_textures[i].texture_type)
+				{
+					case TEXTURE_SPECULAR:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_idx", i);
+					break;
+					case TEXTURE_BUMP:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump_idx", i);
+					break;
+					case TEXTURE_DIFFUSE:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse_idx", i);
+					break;
+
+
+
+
+
+				}
+				
+				
+			}
+
 		}
 
 	}else{
@@ -2588,11 +2788,12 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders,SHADER_INSTANCED, "has_texture", false);
 
 	}
-	
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->current_model->instance_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);
     glBindVertexArray(renderer->current_model->mesh.m_vao);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, renderer->current_model->texture_manager.texture_buffer);
+
 	printf("Instance count every frame: %d\n", renderer->instance_count);
 	if(renderer->selected_entity_id >= 0 && renderer->selected_entity_id < (s32)renderer->instance_count)
 	{
@@ -2661,6 +2862,13 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	renderer->selected_entity_id = -1;
     glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0); // Unbind SSBO
+
+/*	if(renderer->current_model->num_materials > 0)
+	{
+		for(size_d i  = 0; i < renderer->current_model->texture_manager.texture_count; ++i)
+			glMakeTextureHandleNonResidentARB(renderer->current_model->texture_manager.model_textures[i].text.handle);
+	}*/
     renderer->instance_count = 0;
     renderer->triangle_count += renderer->current_model->num_triangles;
 	//renderer->current_model = NULL;
