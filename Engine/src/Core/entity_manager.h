@@ -4,6 +4,7 @@
 #include "../utils/dyl_base.h"
 #include "../renderer_engine_interface.h"
 #include "../Events/dyl_events.h"
+#include "../Assets/Asset_Manager.h"
 #include <stdint.h>
 
 
@@ -63,6 +64,7 @@ typedef struct
 	Entity_Type* type;
 	u32* component_flag;
 	entity_id* id;
+	Asset** asset;
 	Arena* arena;
 	s32 entity_count;
 	s32 selected_entity_id;
@@ -94,7 +96,7 @@ ENGINE_ENTITY_API void entity_render_from_view(Dyl_Renderer* renderer, Entity en
 ENGINE_ENTITY_API Entity_View entity_get_from_id(Entity_Manager* manager, u32 id);
 ENGINE_ENTITY_API entity_id entity_shape_create(Entity_Manager* entity_manager, Shape_Params shape);
 
-ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, const char* path, const char* rel_path);
+ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, Asset* asset);
 
 void entity_initialize_all_models(Entity_Manager* manager);
 ENGINE_ENTITY_API entity_id entity_actor_create(Entity_Manager* entity_manager, vec3f position, vec3f size, Color color, bool has_texture, bool is_model);

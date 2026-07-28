@@ -1,4 +1,5 @@
 #include "entity_manager.h"
+#include "../Assets/Asset_Manager.h"
 #include "cglm/types.h"
 #include "dyl_debug.h"
 #include "platform.h"
@@ -59,6 +60,10 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Rendere
 	
 	entity_manager->component_flag = arena_push(arena, MAX_ENTITY_COUNT * sizeof(u32));
 	ASSERT(entity_manager->component_flag, "Entity component_flag data is null");
+	entity_manager->asset = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Asset*));
+	ASSERT(entity_manager->asset, "Entity Asset* data is null");
+
+
 
 	entity_manager->selected_entity_id = -1;	
 
@@ -150,7 +155,7 @@ ENGINE_ENTITY_API entity_id entity_sky_box_create(Entity_Manager* entity_manager
 }
 
 
-ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, const char* path, const char* rel_path)
+ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, Asset* asset)
 {
 	ASSERT(manager, "Passing invalid manager");
 	ASSERT(manager->model[id] != NULL, "Entity model slot is NULL! Allocate the model before setting its path.");
@@ -159,28 +164,36 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Entity has invalid flags to attach model");
 		return;
 	}
-
+	manager->asset[id] = asset;
 //	Temp_Arena scratch = temp_arena_scratch_get(NULL, 0, sizeof(Model_Init_Args) * 200);
 	//
 	Model_Init_Args* args = arena_push(manager->arena, sizeof(Model_Init_Args));
 	args->model = manager->model[id];
+	args->model->attrib = asset->model.attrib;
+	args->model->materials = asset->model.materials;
+	args->model->num_materials = asset->model.material_count;
+	args->model->shapes = asset->model.shapes;
+	args->model->num_shapes = asset->model.shape_count;
+
 	//	args->model = &(Model){0};
-	args->file_name = path;
-	args->rel_path = rel_path;
+	args->file_name = (char*)asset->file_name.string_data;
+	args->rel_path = (char*)asset->rel_path.string_data;
 	args->arena = manager->arena;
 
 
 
 
-	args->model = manager->model[id];
+/*	args->model = manager->model[id];
 //	args->model = &(Model){0};
 	args->file_name = path;
 	args->rel_path = rel_path;
-	args->arena = manager->arena;
+	args->arena = manager->arena;*/
+//	Asset_Init_Args* args = arena_push(manager->arena, sizeof(Asset_Init_Args));
 
 
 	Dyl_Str thread_name = dyl_str_lit_fmt(manager->arena, "Model: %d", id);
 	dyl_thread_pool_add((char*)thread_name.string_data);
+	//dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)asset_create_thread_func, args);
 	dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)model_init, args);
 
 //	model_init(args);

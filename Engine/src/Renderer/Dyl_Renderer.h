@@ -214,6 +214,7 @@ typedef struct
 	char* rel_path;
 	u64 id;
 	size_d num_triangles;
+	size_d num_shapes;
 	size_d num_materials;
 	GLuint instance_vbo;
 	Model_Texture_Type mtt;

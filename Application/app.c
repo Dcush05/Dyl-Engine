@@ -30,13 +30,14 @@ void entity_scene_initializer(Engine* engine)
 
 
     entity = entity_actor_create(&engine->manager, entity_pos, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
-	entity_set_model_from_id(&engine->manager, entity, "assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft");
+	asset_create("aircraft","assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft", ASSET_MODEL_OBJ);
+	entity_set_model_from_id(&engine->manager, entity, global_asset_manager_get_from_name("aircraft"));
 
-    new_entity = entity_actor_create(&engine->manager, (vec3f){0.5, 0.5, 8.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
+   /* new_entity = entity_actor_create(&engine->manager, (vec3f){0.5, 0.5, 8.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
 	entity_set_model_from_id(&engine->manager, new_entity, "assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft");
 
 	tree_entity = entity_actor_create(&engine->manager, (vec3f){0.5, 0.5, 0.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
-	entity_set_model_from_id(&engine->manager, tree_entity, "assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple");
+	entity_set_model_from_id(&engine->manager, tree_entity, "assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple");*/
 
 	/*tree_entity1 = entity_actor_create(&engine->manager, (vec3f){0.8, 0.5, 0.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
 	entity_set_model_from_id(&engine->manager, tree_entity1, "assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple");

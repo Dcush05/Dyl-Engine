@@ -10,6 +10,7 @@
 #include "Events/dyl_events.h"
 #include "Core/entity_manager.h"
 #include "Core/platform.h"
+#include "Assets/Asset_Manager.h"
  
 
 #ifdef USING_SDL

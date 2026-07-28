@@ -1,3 +1,4 @@
+#include "Assets/Asset_Manager.h"
 #include "Core/dyl_debug_render.h"
 #include "Core/dyl_profiler.h"
 #include "Core/entity_manager.h"
@@ -114,6 +115,13 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	platform_set_data(&global_arena, &engine->platform);
 	platform_set_os_performance_frequency(&engine->platform);
+	global_asset_manager_init();
+	asset_create("player_idle", "assets/Oshawott2.png", "assets/", ASSET_TEXTURE);
+
+
+	Asset* texture = global_asset_manager_get_from_name("player_idle");
+	Asset* test = global_asset_manager_get_from_name("player_idle");
+
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
 	#endif

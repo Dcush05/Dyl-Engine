@@ -524,23 +524,19 @@ void model_init(Model_Init_Args* args)
 {
 	
 
-//	strncpy(model.filename, file_name, sizeof(model.filename) - 1);
+//	strncpy(moconsdel.filename, file_name, sizeof(model.filename) - 1);
 //	model.filename[sizeof(model.filename) - 1] = '\0';
 	args->model->filename = DYL_STR_LIT(args->file_name);
 	args->model->rel_path = (char*)args->rel_path;
-	size_t num_shapes = 0;
-	args->model->materials = NULL;
-	size_t num_materials = 0;
 	args->model->is_selected = false;
 
-	int check = tinyobj_parse_obj(&args->model->attrib, &args->model->shapes, &num_shapes, &args->model->materials, &num_materials, (char*)args->model->filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
+	/*int check = tinyobj_parse_obj(&args->model->attrib, &args->model->shapes, &num_shapes, &args->model->materials, &num_materials, (char*)args->model->filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
 
 	if(check != TINYOBJ_SUCCESS)
 	{
 		fprintf(stderr, "Error loading OBJ\n");
 		return;
-	}
-	args->model->num_materials = num_materials;
+	}*/
 
 	
 	float bmin[3], bmax[3];
@@ -732,8 +728,8 @@ void model_init(Model_Init_Args* args)
 	}
 		face_offset += (size_t)args->model->attrib.face_num_verts[i];
 	}
-	tinyobj_attrib_free(&args->model->attrib);
-	tinyobj_shapes_free(args->model->shapes, num_shapes);
+//	tinyobj_attrib_free(&args->model->attrib);
+//	tinyobj_shapes_free(args->model->shapes, args->model->num_shapes);
 
 }
 
