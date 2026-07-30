@@ -1,4 +1,5 @@
 C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Assets\Asset_Manager.c;C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\Asset_Manager.obj
+C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\Scene_Manager.c;C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\Scene_Manager.obj
 C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_debug_render.c;C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\dyl_debug_render.obj
 C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_profiler.c;C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\dyl_profiler.obj
 C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\entity_manager.c;C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\build\Dyl_Engine.dir\Debug\entity_manager.obj

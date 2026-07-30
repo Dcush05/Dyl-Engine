@@ -6,6 +6,7 @@ cmake_policy(SET CMP0009 NEW)
 file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/*.c")
 set(OLD_GLOB
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Assets/Asset_Manager.c"
+  "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/Scene_Manager.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_debug_render.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/dyl_profiler.c"
   "C:/Users/dcush/Desktop/Coding/C/Dyl-Engine/Engine/src/Core/entity_manager.c"

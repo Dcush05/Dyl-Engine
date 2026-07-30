@@ -50,6 +50,10 @@
 	Make shaders more module for the game dev, have it so that they are able to tag their own shaders to the renderer with no friction.
 	Lower memory usage(make better use of arena allocators)
 	Setup assets system
+	Setup a scene handling system
+		different scenes
+		each scene can have a different screen??
+
 
 
 	
@@ -58,17 +62,17 @@
 
 
 #TODO LIST:	
-	Setup a scene handling system
-		different scenes
-		each scene can have a different screen??
 	Editor Ui implementation
-	Refactor so our code has better taste
+	Better Camera System
+	Refactor so our code has better taste + PROPER COMMENTS
 	GLTF AND/OR FBX parser
-	DOC ENGINE FUNCTION
+	DOCUMENT ENGINE API FUNCTION
 	Physics system
 	Particle system
+	FLUSH OUT ENGINE API FUNCTIONALITY / GENERAL PIPELINE
 	Optimize bindless texture initialization (multithreading shared resources on different opengl context on each thread)
 	Serialization
+	Application hot reloading
 	Configuration file for window settings
 	Better profiler to save and view stats
 
@@ -81,3 +85,4 @@
 
 7/28/26 - Today we setup the implementation of the asset code and writen example code of how you would use it with creating an entity model type
 i hope to straighten out this implementation so the code is smooth and efficient for users. 
+7/29/26 - Started on scene handling system, hope to flush out the code details later for the full implementation. Need to be able to give use functions to properly handle what to do for the data in a particular scene.

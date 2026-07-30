@@ -3,6 +3,17 @@
 #include <cglm/cglm.h>
 #include <assert.h>
 #include "../events/dyl_events.h"
+
+
+
+typedef enum 
+{
+	CAMERA_NIL = 0,
+	CAMERA_STATIC,
+	CAMERA_FOLLOW,
+	CAMERA_DYNAMIC,
+
+}Camera_Type;
 typedef struct
 {
 	mat4 view;
@@ -33,5 +44,6 @@ typedef struct
 
 void camera_init(Camera* camera, vec3 pos, bool relative_mouse, float window_width, float window_height);
 void camera_input(Camera* camera, Dyl_Event* event);
+void camera_set_position(Camera* camera, vec3 pos);
 void camera_update(Camera* camera, float dt); //dt??
 #endif

@@ -1356,9 +1356,10 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
 		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 0);
 	}else if(renderer->current_mode == MODE_CUBEMAP){
-		glDepthMask(GL_FALSE);
 
 		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LEQUAL);
+		glDepthMask(GL_FALSE);
 
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
@@ -2157,6 +2158,7 @@ void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
         renderer->object_data.texture = *texture;
     }
 
+	glDepthFunc(GL_LEQUAL);
 	vec4 texCoordsConversion;
  	texCoordsConversion[0] = texture->width;
  	texCoordsConversion[1] = texture->height;

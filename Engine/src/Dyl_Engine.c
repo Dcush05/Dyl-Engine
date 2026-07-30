@@ -26,7 +26,6 @@
 #include "Core/dyl_debug.h"
 #include "Core/dyl_profiler.h"
 
-
 #define MAX_BUFFER_SIZE 64
 #define WIDTH 900
 #define HEIGHT 900
@@ -90,8 +89,8 @@ ENGINE_API void engine_initialize(Engine* engine)
 	
 	dyl_profiler_add("entity_arena alloc + init");
 
-	entity_arena = arena_alloc((sizeof(Entity_Manager) * MAX_ENTITY_COUNT) * 9000);
-	entity_manager_initialize(&engine->manager, engine->batch_renderer, engine->instanced_renderer, &entity_arena);
+	entity_manager_initialize(&engine->manager, engine->batch_renderer, engine->instanced_renderer);
+
 
 	dyl_profiler_end("entity_arena alloc + init");
 	dyl_profiler_print_func("entity_arena alloc + init");
@@ -116,7 +115,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 	platform_set_data(&global_arena, &engine->platform);
 	platform_set_os_performance_frequency(&engine->platform);
 	global_asset_manager_init();
-	asset_create("player_idle", "assets/Oshawott2.png", "assets/", ASSET_TEXTURE);
+//	asset_create("player_idle", "assets/Oshawott2.png", "assets/", ASSET_TEXTURE);
 
 
 	Asset* texture = global_asset_manager_get_from_name("player_idle");
@@ -143,11 +142,44 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 
 	dyl_profiler_add("scene_initialization");
 
+	global_scene_manager_initialization(engine->instanced_renderer, engine->batch_renderer);
+
+
 	entity_scene_callback(engine);	
+
+//	entity_initialize_all_models(&engine->manager);
+
+
+	//TESTING CODE FOR SCENES
+
+	//u64 scene1_id = global_scene_manager_add("Scene1", NULL, SCENE_GAMEPLAY);
+	//global_scene_manager_entity_manager_initialize(scene1_id, &engine->manager);
+
+
+
+	//TESTING WITH ANOTHER ENTITY_MANAGER (TEMP)
+	//
+	//
+//	entity_manager_initialize(&engine->manager2, engine->batch_renderer, engine->instanced_renderer);
+
+
+	
+   // entity_sky_box_create(&engine->manager2, "assets/night-skybox/space_rt.png", "assets/night-skybox/space_lf.png", "assets/night-skybox/space_up.png", "assets/night-skybox/space_dn.png", "assets/night-skybox/space_ft.png", "assets/night-skybox/space_bk.png");
+	
+	/*entity_id tree_entity3 = entity_actor_create(&engine->manager2, (vec3f){1.4, 0.5, 0.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
+
+	asset_create("tree","assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple", ASSET_MODEL_OBJ);
+	entity_set_model_from_id(&engine->manager2, tree_entity3, global_asset_manager_get_from_name("tree"));
+
+	entity_initialize_all_models(&engine->manager2);
+
+
+	u64 scene2_id = global_scene_manager_add("Scene2", NULL, SCENE_GAMEPLAY);
+	global_scene_manager_entity_manager_initialize(scene2_id, &engine->manager2);*/
+
+		
 	dyl_profiler_end("scene_initialization");
 
-
-	entity_initialize_all_models(&engine->manager);
 
 	dyl_profiler_print_func("scene_initialization");
 	#ifdef _WIN32
@@ -155,7 +187,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		LARGE_INTEGER end;
 		QueryPerformanceCounter(&start);
 	#endif
-
+	int current_scene = 0;
 
 	int frame_count = 0;
 	float fps_timer = 0.0f;
@@ -189,7 +221,17 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			{
 				shader_programs_all_create(&engine->batch_renderer->shaders);
 				shader_programs_all_create(&engine->instanced_renderer->shaders);
+			}/*else if(dyl_event_key_handle(engine->event, DYLKEY_Z, DYL_KEY_PRESSED))
+			{
+				global_scene_manager_make_active(scene1_id);
+				current_scene = scene1_id;
 			}
+			else if(dyl_event_key_handle(engine->event, DYLKEY_C, DYL_KEY_PRESSED))
+			{
+				global_scene_manager_make_active(scene2_id);
+				current_scene = scene2_id;
+			}*/
+
 
 			if(dyl_event_mouse_movement(engine->event))
 			{
@@ -198,15 +240,19 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			if(event_callback)
 				event_callback(engine);
 
-			camera_input(engine->scene_camera, engine->event);
+			//camera_input(engine->scene_camera, engine->event);
 			dyl_debug_entity_select(&global_arena, &engine->manager, engine->event);
 			dyl_event_end(engine->event);
 
 		}
-		dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
+	/*	dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
 		dyl_batch_renderer_set_camera_pos(engine->batch_renderer, &engine->scene_camera->camera_pos);
 	    dyl_instanced_renderer_set_view(engine->manager.instanced_renderer, &engine->scene_camera->view);
-	    dyl_instanced_renderer_set_camera_pos(engine->manager.instanced_renderer, &engine->scene_camera->camera_pos);
+	    dyl_instanced_renderer_set_camera_pos(engine->manager.instanced_renderer, &engine->scene_camera->camera_pos);*/
+
+	//	dyl_instanced_renderer_set_view(engine->manager2.instanced_renderer, &engine->scene_camera->view);
+	  //  dyl_instanced_renderer_set_camera_pos(engine->manager2.instanced_renderer, &engine->scene_camera->camera_pos);
+
 
 	    //dyl_instanced_renderer_set_view(engine->test_instanced_renderer, &engine->scene_camera->view);
 
@@ -214,7 +260,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 	
 
 
-		camera_update(engine->scene_camera, engine->delta_time);
+		//camera_update(engine->scene_camera, engine->delta_time);
 		window_start(engine->window);
 
 		dyl_profiler_start("frame_callback");
@@ -242,7 +288,12 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			dyl_debug_text_push(gpu_time_txt.string_data);
 
 
-			entity_manager_render(&engine->manager);
+		//	entity_manager_render(&engine->manager);
+		//
+			frame_callback(engine);
+		  
+		//	global_scene_manager_render_by_id(current_scene);
+			
 		
 			dyl_debug_text_render(engine->font_renderer);
 			dyl_debug_entity_render(engine->font_renderer);
@@ -267,7 +318,6 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		#endif
 
 
-		frame_callback(engine);
 		window_end(engine->window);
 
 		dyl_profiler_end("frame_callback");

@@ -65,7 +65,7 @@ typedef struct
 	u32* component_flag;
 	entity_id* id;
 	Asset** asset;
-	Arena* arena;
+	Arena arena;
 	s32 entity_count;
 	s32 selected_entity_id;
 
@@ -83,7 +83,7 @@ typedef struct
 
 typedef Entity_View* Entity;
 
-void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Renderer* batch_renderer, Dyl_Instanced_Renderer* insance_renderer, Arena* arena);
+void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Renderer* batch_renderer, Dyl_Instanced_Renderer* instance_renderer);
 void entity_manager_update(Entity_Manager* entity_manager, float dt);
 int entity_initialize(Entity_Manager* manager, u32 component_flag, Entity_Type type);
 Entity_View* get_all_entities_of_type(Entity_Manager* entity_manager, Entity_Type type);
@@ -109,7 +109,7 @@ ENGINE_ENTITY_API entity_id entity_sky_box_create(Entity_Manager* entity_manager
 
 //NOTE: (Dylan) Id right now is mostly for usage when the user knows that the entity will not be deinitliazed in the frame. In the future we must be able to set
 //the attributes of an entity through its entity_view that the user got from the initialization step. 
-//TLDR: IDX Becomes invalid when entity doesnt exist, which may lead to using an unintended entity
+//TLDR: IDX Becomes invalid when entity doesnt exist, which may lead to using an unintended entity/behavior
 
 //TODO:(Dylan) The ID and IDX are two different concepts and should be split apart
 //

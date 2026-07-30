@@ -4,6 +4,9 @@
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Assets\Asset_Manager.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\Scene_Manager.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_debug_render.c">
       <Filter>Source Files</Filter>
     </ClCompile>

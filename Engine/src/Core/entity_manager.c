@@ -10,21 +10,22 @@
 
 
 
-void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Renderer* batch_renderer, Dyl_Instanced_Renderer* instance_renderer, Arena* arena)
+void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Renderer* batch_renderer, Dyl_Instanced_Renderer* instance_renderer)
 {
-	ASSERT(entity_manager && arena, "Cannot pass null entity manager into func");
+	ASSERT(entity_manager, "Cannot pass null entity manager into func");
 
 	entity_manager->entity_count = 0;
-	entity_manager->shape = arena_push(arena,MAX_ENTITY_COUNT * sizeof(Shape_Params));
+
+	entity_manager->arena = arena_alloc((sizeof(Entity_Manager) * MAX_ENTITY_COUNT) * 9000);
+	entity_manager->shape = arena_push(&entity_manager->arena,MAX_ENTITY_COUNT * sizeof(Shape_Params));
 	if(!entity_manager->shape)
 		return;
 
 
 	entity_manager->batch_renderer = batch_renderer;
 	entity_manager->instanced_renderer = instance_renderer;
-	entity_manager->arena = arena;
-	entity_manager->model = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Model*));
-	Model* all_models = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Model));
+	entity_manager->model = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Model*));
+	Model* all_models = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Model));
 	ASSERT(all_models, "Contiguous model storage is null");
 
 	// 3. Point your array elements to the slots in that block
@@ -34,33 +35,33 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Rendere
 	}
 
 
-	entity_manager->texture_rect = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec4f));
+	entity_manager->texture_rect = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(vec4f));
 	ASSERT(entity_manager->texture_rect, "Entity texture_rect data is null");
 
-	entity_manager->texture = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Texture));
+	entity_manager->texture = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Texture));
 	ASSERT(entity_manager->texture_rect, "Entity texture_rect data is null");
 	
 	
-	entity_manager->color = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Color));
+	entity_manager->color = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Color));
 	ASSERT(entity_manager->color, "Entity color data is null");
 	
-	entity_manager->size = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec3f));
+	entity_manager->size = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(vec3f));
 	ASSERT(entity_manager->size, "Entity size data is null");
 	
-	entity_manager->position = arena_push(arena, MAX_ENTITY_COUNT * sizeof(vec3f));
+	entity_manager->position = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(vec3f));
 	ASSERT(entity_manager->position, "Entity position data is null");
 	
-	entity_manager->type = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Entity_Type));
+	entity_manager->type = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Entity_Type));
 	ASSERT(entity_manager->type, "Entity type data is null");
 	
-	entity_manager->id = arena_push(arena, MAX_ENTITY_COUNT * sizeof(entity_id));
+	entity_manager->id = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(entity_id));
 	ASSERT(entity_manager->id, "Entity id data is null");
 	
 //	memset(entity_manager->id, 0, sizeof(uint32_t) * MAX_ENTITY_COUNT);
 	
-	entity_manager->component_flag = arena_push(arena, MAX_ENTITY_COUNT * sizeof(u32));
+	entity_manager->component_flag = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(u32));
 	ASSERT(entity_manager->component_flag, "Entity component_flag data is null");
-	entity_manager->asset = arena_push(arena, MAX_ENTITY_COUNT * sizeof(Asset*));
+	entity_manager->asset = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Asset*));
 	ASSERT(entity_manager->asset, "Entity Asset* data is null");
 
 
@@ -150,6 +151,7 @@ ENGINE_ENTITY_API entity_id entity_sky_box_create(Entity_Manager* entity_manager
 		.face_paths[5] = DYL_STR_LIT(face_path6)};
 
 	entity_manager->texture[new_entity] = texture_init(skybox_paths, TEXTURE_CUBE_MAP, true);
+	return new_entity;
 
 	
 }
@@ -167,7 +169,7 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 	manager->asset[id] = asset;
 //	Temp_Arena scratch = temp_arena_scratch_get(NULL, 0, sizeof(Model_Init_Args) * 200);
 	//
-	Model_Init_Args* args = arena_push(manager->arena, sizeof(Model_Init_Args));
+	Model_Init_Args* args = arena_push(&manager->arena, sizeof(Model_Init_Args));
 	args->model = manager->model[id];
 	args->model->attrib = asset->model.attrib;
 	args->model->materials = asset->model.materials;
@@ -178,7 +180,7 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 	//	args->model = &(Model){0};
 	args->file_name = (char*)asset->file_name.string_data;
 	args->rel_path = (char*)asset->rel_path.string_data;
-	args->arena = manager->arena;
+	args->arena = &manager->arena;
 
 
 
@@ -191,7 +193,7 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 //	Asset_Init_Args* args = arena_push(manager->arena, sizeof(Asset_Init_Args));
 
 
-	Dyl_Str thread_name = dyl_str_lit_fmt(manager->arena, "Model: %d", id);
+	Dyl_Str thread_name = dyl_str_lit_fmt(&manager->arena, "Model: %d", id);
 	dyl_thread_pool_add((char*)thread_name.string_data);
 	//dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)asset_create_thread_func, args);
 	dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)model_init, args);
@@ -216,7 +218,7 @@ void entity_initialize_all_models(Entity_Manager* manager)
 		if((manager->component_flag[i] & COMP_MODEL) && (manager->type[i] == ENTITY_ACTOR))
 		{
 
-			model_setup(manager->model[i], manager->arena);
+			model_setup(manager->model[i], &manager->arena);
 			dyl_instanced_renderer_initialize_mod_and_vbo(manager->instanced_renderer, manager->model[i]);
 
 		}

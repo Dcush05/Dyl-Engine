@@ -11,6 +11,7 @@
 #include "Core/entity_manager.h"
 #include "Core/platform.h"
 #include "Assets/Asset_Manager.h"
+#include "Core/Scene_Manager.h"
  
 
 #ifdef USING_SDL
@@ -39,6 +40,7 @@ extern Arena entity_arena;
 typedef struct Engine
 {
 	Entity_Manager manager;
+	Entity_Manager manager2;
 	//Model model;
 	mat4 projection;
 	Platform platform;

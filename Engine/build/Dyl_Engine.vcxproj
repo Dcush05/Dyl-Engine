@@ -315,6 +315,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Assets\Asset_Manager.c" />
+    <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\Scene_Manager.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_debug_render.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_profiler.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\entity_manager.c" />
