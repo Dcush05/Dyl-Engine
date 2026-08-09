@@ -1,8 +1,10 @@
 #include "Assets/Asset_Manager.h"
+#include "Core/Ui_Manager.h"
 #include "Core/dyl_debug_render.h"
 #include "Core/dyl_profiler.h"
 #include "Core/entity_manager.h"
 #include "Core/platform.h"
+#include "Editor/editor_ui.h"
 #include "Events/dyl_events.h"
 #include "Renderer/Dyl_Renderer.h"
 #include "Renderer/Shader.h"
@@ -50,6 +52,10 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 	#endif
 	dyl_thread_pool_init(8);
+
+
+	//HANDLING WINDOW TOP BAR
+	
 	dyl_profiler_start("arena_alloc1");			
 	global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE * sizeof(Engine));	
 	dyl_profiler_end("arena_alloc1");			
@@ -58,11 +64,10 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_profiler_start("window+renderer setup");			
 	engine->window = (Dyl_Window*)arena_push(&global_arena, sizeof(Dyl_Window));
 	window_initialize(engine->window, "Engine", 500,250, WIDTH, HEIGHT, SDL_WINDOW_OPENGL, true, &engine->platform);
-	
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
 	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, false, engine->window->width, engine->window->height );
+	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, false, engine->window->client_width, engine->window->client_height);
 	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
 	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 100, true);
 
@@ -95,19 +100,16 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_profiler_end("entity_arena alloc + init");
 	dyl_profiler_print_func("entity_arena alloc + init");
 
-
-
-	mat4 twod_proj;
-	glm_ortho(0.0f, engine->window->width, engine->window->height, 0.0F, -1.0f, 1.0f, twod_proj);	
+	glm_ortho(0.0f, engine->window->client_width, engine->window->client_height, 0.0f, -1.0f, 1.0f, engine->twod_proj);	
 	
 	
 
 	engine->font_renderer = arena_push(&global_arena, sizeof(Font_Renderer));
-	*engine->font_renderer = font_renderer_init("assets/Fonts/vt323.ttf", 75, &twod_proj);
+	*engine->font_renderer = font_renderer_init("assets/Fonts/vt323.ttf", 75, &engine->twod_proj);
 	
 	dyl_debug_text_manager_init(&global_arena);
 	
-	glm_perspective(glm_rad(45.0f), (float)engine->window->width / (float)engine->window->height, 0.1f, 100.0f, engine->projection);
+	glm_perspective(glm_rad(45.0f), (float)engine->window->client_width / (float)engine->window->client_height, 0.1f, 100.0f, engine->projection);
 	memcpy(engine->instanced_renderer->projection, engine->projection, sizeof(mat4));
 	engine->wireframe_mode = false;
 
@@ -115,11 +117,18 @@ ENGINE_API void engine_initialize(Engine* engine)
 	platform_set_data(&global_arena, &engine->platform);
 	platform_set_os_performance_frequency(&engine->platform);
 	global_asset_manager_init();
+
+
+	global_ui_element_initialize(engine->batch_renderer, engine->event, engine->window->client_width, engine->window->client_height);
+	dyl_batch_renderer_set_proj2d(engine->batch_renderer, &engine->twod_proj);
+	dyl_batch_renderer_set_proj3d(engine->batch_renderer, &engine->projection);
 //	asset_create("player_idle", "assets/Oshawott2.png", "assets/", ASSET_TEXTURE);
 
 
 	Asset* texture = global_asset_manager_get_from_name("player_idle");
 	Asset* test = global_asset_manager_get_from_name("player_idle");
+	
+	engine->editor = editor_create(&engine->manager);
 
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING,"Completed engine initialization");
@@ -180,6 +189,8 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		
 	dyl_profiler_end("scene_initialization");
 
+	bool test = false;
+
 
 	dyl_profiler_print_func("scene_initialization");
 	#ifdef _WIN32
@@ -195,7 +206,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 	{
 	
 			
-		dyl_batch_renderer_set_proj(engine->batch_renderer,&engine->projection);
+		//dyl_batch_renderer_set_proj(engine->batch_renderer,&engine->projection);
 		
 
 		while(dyl_event_poll(engine->event))
@@ -264,39 +275,55 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		window_start(engine->window);
 
 		dyl_profiler_start("frame_callback");
-			GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
-			glPolygonMode(GL_FRONT_AND_BACK, mode);
+		GLenum mode = engine->wireframe_mode ? GL_LINE : GL_FILL;
+		glPolygonMode(GL_FRONT_AND_BACK, mode);
 
-			dyl_debug_text_push(engine->platform.os_str.string_data);
-			dyl_debug_text_push(engine->platform.window_event_str.string_data);
-			dyl_debug_text_push(engine->platform.graphics_driver_str.string_data);
+		dyl_debug_text_push(engine->platform.os_str.string_data);
+		dyl_debug_text_push(engine->platform.window_event_str.string_data);
+		dyl_debug_text_push(engine->platform.graphics_driver_str.string_data);
 
-			Dyl_Str current_fps_debug_txt = dyl_str_lit_fmt(&global_arena, "FPS: %f", engine->fps);
-			dyl_debug_text_push(current_fps_debug_txt.string_data);
-			Dyl_Str current_dt_debug_txt = dyl_str_lit_fmt(&global_arena, "Elasped Time: %f", engine->delta_time);
-			dyl_debug_text_push(current_dt_debug_txt.string_data);
+		Dyl_Str current_fps_debug_txt = dyl_str_lit_fmt(&global_arena, "FPS: %f", engine->fps);
+		dyl_debug_text_push(current_fps_debug_txt.string_data);
+		Dyl_Str current_dt_debug_txt = dyl_str_lit_fmt(&global_arena, "Elasped Time: %f", engine->delta_time);
+		dyl_debug_text_push(current_dt_debug_txt.string_data);
 
-			Dyl_Str vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Vertices (batch): %d/%d", engine->batch_renderer->object_data.vertices.vertex_count,
-												   engine->batch_renderer->object_data.vertices.capacity);
-			dyl_debug_text_push(vertices_sent_debug_txt.string_data);
-			Dyl_Str instanced_vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Triangles (instanced): %d", engine->instanced_renderer->triangle_count);
-			dyl_debug_text_push(instanced_vertices_sent_debug_txt.string_data);
-			engine->gpu_time = (float)engine->instanced_renderer->time_elasped / 1000000000;
+		Dyl_Str vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Vertices (batch): %d/%d", engine->batch_renderer->object_data.vertices.vertex_count,
+											   engine->batch_renderer->object_data.vertices.capacity);
+		dyl_debug_text_push(vertices_sent_debug_txt.string_data);
+		Dyl_Str instanced_vertices_sent_debug_txt = dyl_str_lit_fmt(&global_arena, "Triangles (instanced): %d", engine->instanced_renderer->triangle_count);
+		dyl_debug_text_push(instanced_vertices_sent_debug_txt.string_data);
+		engine->gpu_time = (float)engine->instanced_renderer->time_elasped / 1000000000;
 
 
-			Dyl_Str gpu_time_txt = dyl_str_lit_fmt(&global_arena, "GPU Time(instanced): %f", engine->gpu_time);
-			dyl_debug_text_push(gpu_time_txt.string_data);
+		Dyl_Str gpu_time_txt = dyl_str_lit_fmt(&global_arena, "GPU Time(instanced): %f", engine->gpu_time);
+		dyl_debug_text_push(gpu_time_txt.string_data);
 
 
 		//	entity_manager_render(&engine->manager);
+			//Editor UI rendering
+				
+			
 		//
-			frame_callback(engine);
+		//
 		  
 		//	global_scene_manager_render_by_id(current_scene);
 			
+		editor_events(&engine->editor);	
 		
-			dyl_debug_text_render(engine->font_renderer);
-			dyl_debug_entity_render(engine->font_renderer);
+			
+		frame_callback(engine);
+		editor_construct(&engine->editor);
+	//		engine->batch_renderer->current_mode = MODE_CUBEMAP;
+		//	db_flush(engine->	Dyl_Str ui_text;
+				//		engine->batch_renderer->current_mode = MODE_RECT;
+		dyl_debug_text_render(engine->font_renderer);
+		dyl_debug_entity_render(engine->font_renderer);
+		db_flush(engine->batch_renderer);
+
+
+			
+
+
 
 
 

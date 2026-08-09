@@ -1,5 +1,7 @@
 #include "Scene_Manager.h"
+#include "cglm/cam.h"
 #include "dyl_debug.h"
+#include "entity_manager.h"
 
 Scene_Manager global_scene_manager;
 
@@ -30,7 +32,7 @@ ENGINE_SCENE_API u64 global_scene_manager_add(const char* name, const char* cust
 	if(custom_scene_type && type != SCENE_CUSTON || (custom_scene_type == NULL && type == SCENE_CUSTON))
 	{
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Parameters are not properly matching to create a scene!");	
-		return;
+		return 0;
 	}
 
 	for(u64 idx = 0; idx < global_scene_manager.screen_capacity; ++idx)
@@ -58,10 +60,30 @@ ENGINE_SCENE_API void global_scene_manager_camera_initialization(u64 id, vec3 po
 		{
 
 			camera_init(&global_scene_manager.scenes[idx].scene_camera, pos, relative_mouse, window_width, window_height);
+		//	glm_perspective(glm_rad(45.0f), (float)window_width / (float)window_height, 0.1f, 100.0f, global_scene_manager.scenes[idx].projection);
 			break;
 
 		}
 	}
+}
+
+ENGINE_SCENE_API void global_scene_manager_entity_manager_initialize_model_from_id(u64 id, entity_id entity_id)
+{
+	for(u64 idx = 0; idx < global_scene_manager.screen_count; ++idx)
+	{
+		if(global_scene_manager.scenes[idx].id == id)
+		{
+			entity_initialize_model_from_id(&global_scene_manager.scenes[idx].scene_entities,entity_id);
+			break;
+
+		}
+	}
+
+}
+
+ENGINE_SCENE_API Scene_Id global_scene_manager_get_current_active_scene()
+{
+	return global_scene_manager.active_scene;
 }
 void global_scene_manager_make_active(u64 id)
 {
@@ -70,6 +92,7 @@ void global_scene_manager_make_active(u64 id)
 		if(global_scene_manager.scenes[idx].id == id)
 		{
 			global_scene_manager.scenes[idx].is_active = true;
+			global_scene_manager.active_scene = global_scene_manager.scenes[idx].id;
 			//NOTE: Track the count of the amount of scenes that are active
 			break;
 		}
@@ -217,15 +240,13 @@ ENGINE_SCENE_API void global_scene_manager_update_by_id(u64 id, float dt)
 	{
 		if(global_scene_manager.scenes[idx].id == id && global_scene_manager.scenes[idx].is_active == true)
 		{
+		//	dyl_batch_renderer_set_proj(global_scene_manager.shared_batch_renderer, &global_scene_manager.scenes[idx].projection);
 			dyl_batch_renderer_set_view(global_scene_manager.shared_batch_renderer, &global_scene_manager.scenes[idx].scene_camera.view);
-
 			dyl_batch_renderer_set_camera_pos(global_scene_manager.shared_batch_renderer, &global_scene_manager.scenes[idx].scene_camera.camera_pos);
-
 			dyl_instanced_renderer_set_view(global_scene_manager.shared_instanced_renderer, &global_scene_manager.scenes[idx].scene_camera.view);
-
 			dyl_instanced_renderer_set_camera_pos(global_scene_manager.shared_instanced_renderer, &global_scene_manager.scenes[idx].scene_camera.camera_pos);
-
 			camera_update(&global_scene_manager.scenes[idx].scene_camera, dt);
+		//	global_scene_manager.shared_batch_renderer->is_ui = false;
 
 
 			
@@ -255,6 +276,7 @@ ENGINE_SCENE_API void global_scene_manager_render_by_id(u64 id)
 			break;
 		}
 	}
+//	db_flush(global_scene_manager.shared_batch_renderer);
 
 
 }

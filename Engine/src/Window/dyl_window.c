@@ -1,5 +1,6 @@
 #include "dyl_window.h"
 #include <profileapi.h>
+#include <winuser.h>
 
 #ifdef USING_SDL
 #include <SDL3/SDL.h>
@@ -53,6 +54,7 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 	window->is_window_open = true;
 	window->window_name = DYL_STR_LIT(window_name);
 	window->enable_vsync = enable_vsync;
+	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	#ifdef _WIN32
 		LPCTSTR CLASS_NAME = "Dyl Engine Window";
@@ -191,6 +193,12 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 		wglSwapIntervalEXT(window->enable_vsync);
 
 		ShowWindow(window->window_handle, platform->cmd_show);
+		
+		RECT client_rect;
+		GetClientRect(window->window_handle, &client_rect);
+		window->client_width  = (float)(client_rect.right - client_rect.left);
+		window->client_height = (float)(client_rect.bottom - client_rect.top);
+	
 
 
 	#else	
@@ -205,8 +213,10 @@ void window_initialize(Dyl_Window* window, const char* window_name, u32 x, u32 y
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 		
 		window->window_handle = SDL_CreateWindow((char*)window->window_name.string_data, window->width, window->height, window->window_flags);
-		SDL_SetWindowPosition(window->window_handle, window->x, window->y);
 		ASSERT(window->window_handle, "Unable to create window: %s", SDL_GetError);
+		window->client_width = window->width;
+		window->client_width = window->height;
+		SDL_SetWindowPosition(window->window_handle, window->x, window->y);
 		window->gl_context = SDL_GL_CreateContext(window->window_handle);
 		ASSERT(window->gl_context, "Unable to create OpenGl context: %s", SDL_GetError);
 		ASSERT(gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress), "Unable to initialize Opengl");
@@ -239,7 +249,7 @@ void window_start(Dyl_Window* window)
 	#endif
 
 	//TODO: Please make a more uniformed way of sending GPU commands
-	//glViewport(0,0,window->width, window->height);
+	glViewport(0,0,window->client_width, window->client_height);
 
 	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

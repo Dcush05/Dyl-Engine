@@ -28,7 +28,7 @@ void entity_scene_initializer(Engine* engine)
 		}
 	}*/
 
-//	entity_sky_box_create(&engine->manager, "assets/right.jpg", "assets/left.jpg", "assets/top.jpg", "assets/bottom.jpg", "assets/front.jpg", "assets/back.jpg");
+	//entity_sky_box_create(&engine->manager, "assets/right.jpg", "assets/left.jpg", "assets/top.jpg", "assets/bottom.jpg", "assets/front.jpg", "assets/back.jpg");
 //	entity_pos = (vec3f){0.5, 0.5, 3.5};
 
 
@@ -65,7 +65,6 @@ void entity_scene_initializer(Engine* engine)
 
 
 
-
 	//new_entity = entity_actor_create(&engine->manager, (vec3f){0.5, 0.5, 2.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
 	//entity_set_model_from_id(&engine->manager, new_entity, "assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple");
 
@@ -81,6 +80,15 @@ void entity_scene_initializer(Engine* engine)
 	global_scene_manager_entity_manager_set_model_from_id(scene_id1,new_entity,global_asset_manager_get_from_name("aircraft"));
 
 
+	//asset_create("aircraft","assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft", ASSET_MODEL_OBJ);
+
+	global_scene_manager_entity_sky_box_create(scene_id1, "assets/right.jpg", "assets/left.jpg", "assets/top.jpg", "assets/bottom.jpg", "assets/front.jpg", "assets/back.jpg");
+
+
+	/*asset_create("tree","assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple", ASSET_MODEL_OBJ);
+
+	tree_entity = global_scene_manager_entity_actor_create(scene_id1, entity_pos, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
+	global_scene_manager_entity_manager_set_model_from_id(scene_id1,tree_entity,global_asset_manager_get_from_name("tree"));*/
 
 	global_scene_manager_make_active(scene_id1);
 	global_scene_manager_entity_manager_initialize_all_models(scene_id1);

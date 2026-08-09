@@ -36,6 +36,7 @@ typedef struct
 	GL_Context_Handle gl_context;
 	Device_Context device_context;
 	u32 x, y, width, height;
+	u32 client_width, client_height;
 	bool is_window_open;
 	bool enable_vsync;
 }Dyl_Window;

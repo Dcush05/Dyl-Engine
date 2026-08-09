@@ -82,6 +82,7 @@ typedef struct
 	Dyl_Key keys[DYL_KEY_AMOUNT];
 	Event_Handle event;
 	vec2i mouse_pos;
+	vec2i mouse_delta;
 
 }Dyl_Event;
 

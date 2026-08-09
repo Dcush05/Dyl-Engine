@@ -12,6 +12,7 @@
 #include "Core/platform.h"
 #include "Assets/Asset_Manager.h"
 #include "Core/Scene_Manager.h"
+#include "Editor/editor_ui.h"
  
 
 #ifdef USING_SDL
@@ -43,7 +44,10 @@ typedef struct Engine
 	Entity_Manager manager2;
 	//Model model;
 	mat4 projection;
+
+	mat4 twod_proj;
 	Platform platform;
+	Editor editor;
 //	Model* t_model;
 
 	//Model* tree_model;

@@ -25,8 +25,16 @@ uniform int light_type;
 in vec3 a_texture_dir;
 
 in vec3 frag_pos;
+
+in vec2 frag_ui_pos;
+
+in vec2 frag_uv;
 in vec3 frag_normals;
+in vec3 frag_size;
+uniform bool is_ui;
 uniform vec3 light_pos;
+
+uniform bool is_rounded;
 
 uniform vec3 view_pos;
 
@@ -64,9 +72,38 @@ void main()
 		FragColor = (vertexColor * vec4(result, 1.0)) * texture(u_texture, a_tex_coords);
 	}else if(is_sky_box){
 		FragColor = vertexColor * texture(cubemap, a_texture_dir);
-	}else{
+	}/*else{
 		FragColor = vertexColor * vec4(result, 1.0);
+	}*/
+
+	if(is_ui)
+	{
+		//would like to do frosted glass effect
+
+		if(is_rounded)
+		{
+
+			vec2 half_size = frag_size.xy * 0.5;
+			vec2 p = (frag_uv - vec2(0.5)) * frag_size.xy;
+			const float radius = 9.5f;
+
+			vec2 d = abs(p) - half_size + vec2(radius);
+			float rounded = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - radius;
+			//float rounded = 0.0;
+			float alpha = 1.0 - smoothstep(-1.0, 0.0, rounded);
+			if(alpha <= 0.0)
+			{
+				discard;
+			}
+			FragColor = vec4(vertexColor.rgb, vertexColor.a * alpha);
+
+			
+		}else
+		{
+			FragColor = vertexColor;
+		}
 	}
+	
 
 	if(is_light)
 	{

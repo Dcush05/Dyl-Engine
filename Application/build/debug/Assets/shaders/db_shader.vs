@@ -9,11 +9,17 @@ layout (location = 5) in vec3 size;
 uniform mat4 projection;
 uniform mat4 view;
 uniform bool is_3d;
+
+uniform bool is_ui;
+
 out vec4 vertexColor;
 out vec2 a_tex_coords;
 out vec3 a_texture_dir;
 out vec3 frag_normals;
 out vec3 frag_pos;
+out vec2 frag_ui_pos;
+out vec2 frag_uv;
+out vec3 frag_size;
 
 void main()
 {
@@ -43,8 +49,16 @@ void main()
 		float rotated_y = to_vertex.x * sin_r + to_vertex.y * cos_r;
 
 		vec2 final_pos = vec2(rotated_x, rotated_y) + center;	
+		if(!is_ui)
+		{
 
-		gl_Position = projection * view * vec4(position, 1.0);
+			gl_Position = projection * view * vec4(position, 1.0);
+		}else{
+
+
+			gl_Position = projection * vec4(position, 1.0);
+
+		}
 
 	}else{
 		gl_Position = projection * view * vec4(position, 1.0);
@@ -56,5 +70,7 @@ void main()
 	a_texture_dir = position;
 	frag_normals = normals;
 	frag_pos = position;
-	gl_Position = projection * view * vec4(position, 1.0);
+	frag_ui_pos = (tex_coords.xy * vec2(0.5)) * size.xy;
+	frag_size = size;
+	frag_uv = a_tex_coords.xy;
 }

@@ -1,5 +1,7 @@
 #include "dyl_events.h"
 #include <stdbool.h>
+#include <stdint.h>
+#include <windef.h>
 
 
 //TODO: FIX MOUSE INPUT
@@ -235,7 +237,7 @@ uint8_t dyl_key_translate(Dyl_Key_Type type)
 				return VK_RBUTTON;
 			break;
 			case DYL_MOUSE_KEY_MBUTTON:
-				return VK_RBUTTON;
+				return VK_MBUTTON;
 			break;
 
 		}
@@ -428,12 +430,14 @@ bool dyl_event_mouse_movement(Dyl_Event* event)
 
 		if((uint8_t)event->event.message == dyl_event_state_translate(DYL_MOUSE_MOVEMENT))
 		{
-			u64 mouse_x = event->event.pt.x;
-			u64 mouse_y = event->event.pt.y;
+			POINT pt;
+			GetCursorPos(&pt);
+			ScreenToClient(event->event.hwnd, &pt);
 			/*LPPOINT pos;
-			GetCursorPos(pos);
 			wprintf(L"Get Cursor pos: %lld %lld", pos->x, pos->y);*/
-			event->mouse_pos = (vec2i){mouse_x, mouse_y};
+			event->mouse_pos = (vec2i){pt.x, pt.y};
+			event->mouse_delta.x += event->mouse_pos.x;
+			event->mouse_delta.y += event->mouse_pos.y;
 			is_moved = true;
 
 		}

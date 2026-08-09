@@ -316,11 +316,13 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Assets\Asset_Manager.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\Scene_Manager.c" />
+    <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\Ui_Manager.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_debug_render.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\dyl_profiler.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\entity_manager.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Core\platform.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Dyl_Engine.c" />
+    <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Editor\editor_ui.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Events\dyl_events.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Dyl_Renderer.c" />
     <ClCompile Include="C:\Users\dcush\Desktop\Coding\C\Dyl-Engine\Engine\src\Renderer\Shader.c" />

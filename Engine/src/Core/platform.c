@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "dyl_debug.h"
 #include <handleapi.h>
 #include <processthreadsapi.h>
 #include <profileapi.h>
@@ -191,5 +192,8 @@ void dyl_thread_pool_spin()
 			dyl_global_thread_pool.threads[idx].is_active = false;
 		}
 	}
+	DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Current thread count: %zu", global_task_count);
+	dyl_global_thread_pool.in_use = 0;
+	global_task_count = 0;
 }
 

@@ -25,19 +25,19 @@ static clock_t dyl_log_start_time;
 	do{ \
 		if(level == DYL_ENGINE_LOG_INFO)  \
 		{ \
-			fprintf(stderr, "[ENGINE (INFO) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
+			fprintf(stderr, "[ENGINE (\033[32mINFO\033[0m) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
 					(double)(clock() - dyl_log_start_time) / CLOCKS_PER_SEC, \
 					__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);\
 	    }else if(level == DYL_ENGINE_LOG_ERROR){ \
-			fprintf(stderr, "[ENGINE (ERROR) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
+			fprintf(stderr, "[ENGINE (\033[31mERROR\033[0m) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
 					(double)(clock() - dyl_log_start_time) / CLOCKS_PER_SEC, \
 					__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);\
 		  }else if(level == DYL_ENGINE_LOG_WARNING){ \
-				fprintf(stderr, "[ENGINE (WARNING) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
+				fprintf(stderr, "[ENGINE (\033[33mWARNING\033[0m) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
 						(double)(clock() - dyl_log_start_time) / CLOCKS_PER_SEC, \
 						__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);\
 			}else if(level == DYL_ENGINE_LOG_DEBUG){ \
-				fprintf(stderr, "[ENGINE (DEBUG) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
+				fprintf(stderr, "[ENGINE (\033[34mDEBUG\033[0m) LOG %.3fs @%s:%s:%d]: " fmt "\n", \
 						(double)(clock() - dyl_log_start_time) / CLOCKS_PER_SEC, \
 						__FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);\
 			}\

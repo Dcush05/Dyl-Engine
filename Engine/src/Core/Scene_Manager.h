@@ -56,6 +56,7 @@ typedef struct
 	Entity_Manager scene_entities;
 	Dyl_Str name;
 	Dyl_Str custom_type_str;
+	mat4 projection;
 	u64 id;
 	u64 next_scene_id;
 	Camera scene_camera;
@@ -91,6 +92,7 @@ typedef u64 Scene_Id;
 void global_scene_manager_initialization(Dyl_Instanced_Renderer* instanced_renderer, Dyl_Batch_Renderer* batch_renderer);
 ENGINE_SCENE_API Scene_Id global_scene_manager_add(const char* name, const char* custom_scene_type /* CAN BE NULL MAKE SURE WE ARE PROPERLY HANDLING THIS
 							  */, Scene_Type type );
+ENGINE_SCENE_API Scene_Id global_scene_manager_get_current_active_scene();
 void global_scene_manager_remove(const char* name);
 //TODO: IN THE FUTURE WE SHOULD APPEND TO A MULTITUDE OF SCENE CAMERAS INSTEAD OF ONE CAMERA PER SCENE
 ENGINE_SCENE_API void global_scene_manager_camera_initialization(u64 id, vec3 pos, bool relative_mouse, float window_width, float window_height);
@@ -98,6 +100,10 @@ ENGINE_SCENE_API void global_scene_manager_camera_initialization(u64 id, vec3 po
 ENGINE_SCENE_API void global_scene_manager_make_active(u64 id);
 
 ENGINE_SCENE_API void global_scene_manager_entity_manager_initialize(u64 id);
+ENGINE_SCENE_API void global_scene_manager_entity_manager_initialize_all_models(u64 id);
+
+ENGINE_SCENE_API void global_scene_manager_entity_manager_initialize_model_from_id(u64 id, entity_id entity_id);
+
 ENGINE_SCENE_API entity_id global_scene_manager_entity_actor_create(u64 id, vec3f position, vec3f size, Color color, bool has_texture, bool is_model);
 
 ENGINE_SCENE_API void global_scene_manager_entity_manager_set_model_from_id(u64 id, entity_id entity, Asset* asset);

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <glad/glad.h>
+#include "../core/dyl_debug.h"
 #include "../core/dyl_debug_render.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -219,10 +220,11 @@ Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded)
 		
 		}
 	}
-	if(is_binded)
+/*	if(is_binded)
 		texture.texture_bind = TEXTURE_BINDED;
 	else 
-		texture.texture_bind = TEXTURE_BINDLESS;
+		texture.texture_bind = TEXTURE_BINDLESS;*/
+	texture.texture_bind = TEXTURE_BINDED;
 	texture.texture_type = type;
 	generate(&texture);
 	return texture;
@@ -276,12 +278,6 @@ void generate(Texture *texture)
 
 
 		}else{
-			glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
 			for(size_t i = 0; i < MAX_CUBE_MAP_FACES; ++i)
 			{
 				texture->data = stbi_load((char*)texture->texture_path.face_paths[i].string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
@@ -295,6 +291,13 @@ void generate(Texture *texture)
 				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
 
 			}
+				glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(type, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+
 				glGenerateMipmap(type);  // Optionally generate mipmaps for better performance -> NOTE: (dylan) getting invalid enum errors from this line in renderdoc at the first frame, <--- should check if im still getting this
 
 
@@ -356,6 +359,13 @@ void texture2D_free(Texture* texture)
 
 //RENDERER STUFF
 
+
+void vertices_setup(Vertex_Data* vertices, Arena* arena, u64 capacity)
+{
+	vertices->vertices = arena_push(arena, capacity * sizeof(Vertex));
+	vertices->capacity = capacity;
+	vertices->vertex_count = 0;
+}
 
 void vertices_push(Vertex_Data* vertices, Vertex vertex)
 {
@@ -973,7 +983,7 @@ void model_setup (Model* model, Arena* arena)
    // exit(0);
 	
 	//Tinyobj deinitialization
-	tinyobj_materials_free(model->materials, model->num_materials);
+	//tinyobj_materials_free(model->materials, model->num_materials);
 
 
 
@@ -1144,6 +1154,12 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 
 	Shader billboard = shader_init("assets/shaders/db_billboard.vs", "assets/shaders/db_billboard.fs", "assets/shaders/db_billboard.gs");
 	shader_add(&renderer.shaders, &billboard, SHADER_BILLBOARD, SHADER_HOT);
+
+
+	Shader ui_shader = shader_init("assets/shaders/db_ui_shader.vs", "assets/shaders/db_ui_shader.fs", NULL);	
+
+	shader_add(&renderer.shaders, &ui_shader, SHADER_UI, SHADER_HOT);
+
 	//TODO: LEARN HOW TO DO THIS SYNCHRONOSLY GPU SIDE WITHOUT RELYING ON THREAD POOL COE
 	shader_programs_create_type(&renderer.shaders, SHADER_HOT);
 	
@@ -1255,10 +1271,10 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 		for(size_t i = 0; i < renderer.indice_count; i += indices_per_unit)
 			{
 				indices[i] = 0 + offset;
-				indices[i + 1] = 1 + offset;
+				indices[i + 1] = 3 + offset;
 				indices[i + 2] = 2 + offset;
 				indices[i + 3] = 2 + offset;
-				indices[i + 4] = 3 + offset;
+				indices[i + 4] = 1 + offset;
 				indices[i + 5] = 0 + offset;
 				offset += vertices_per_unit;
 			}
@@ -1280,10 +1296,19 @@ Dyl_Batch_Renderer dyl_batch_renderer_init(Arena* arena, bool is_3d, size_t max_
 	return renderer;
 }
 
-void dyl_batch_renderer_set_proj(Dyl_Batch_Renderer* renderer, mat4* proj)
+void dyl_batch_renderer_set_proj2d(Dyl_Batch_Renderer* renderer, mat4* proj)
 {
 	ASSERT(renderer, "Renderer(Null)");	
-	memcpy(renderer->projection,proj ,sizeof(mat4));
+	memcpy(renderer->projection2d,proj ,sizeof(mat4));
+}
+
+void dyl_batch_renderer_set_proj3d(Dyl_Batch_Renderer* renderer, mat4* proj)
+{
+	ASSERT(renderer, "Renderer(Null)");	
+	memcpy(renderer->projection3d,proj ,sizeof(mat4));
+
+
+
 }
 
 void dyl_batch_renderer_set_shader_tag(Dyl_Batch_Renderer* renderer, shader_id shader_tag)
@@ -1315,7 +1340,12 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	if(renderer->current_mode == MODE_BILLBOARD)
 	{
 		dyl_batch_renderer_set_shader_tag(renderer, SHADER_BILLBOARD);
-	}else{
+	}else if (renderer->current_mode == MODE_UI)
+	{
+
+		dyl_batch_renderer_set_shader_tag(renderer, SHADER_UI);
+	}
+	else{
 
 		dyl_batch_renderer_set_shader_tag(renderer, SHADER_DYNAMIC);
 	}
@@ -1324,18 +1354,23 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	if(renderer->shader_tag == SHADER_DYNAMIC)
 	{
 		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_3d", renderer->is_3d);//exclusive to the dynamic tagged shader
-		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection3d);
 		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "view", renderer->view);
 
 
 	}else if(renderer->shader_tag == SHADER_BILLBOARD){
 
 		shader_on_id_set_vec3f(&renderer->shaders, renderer->shader_tag, "camera_pos", renderer->camera_pos);
-		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection3d);
 		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "view", renderer->view);
 
+	}/*else if(renderer->shader_tag == SHADER_UI)
+	{
 
-	}
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_rounded", true);
+
+	}*/
 
 
 //	shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "model", renderer->model);
@@ -1364,18 +1399,22 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 
+		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
 
 		glActiveTexture(GL_TEXTURE0 + SLOT_CUBEMAP);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->object_data.texture.ID);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 1);
-		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 1);
+
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_ui", false);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", SLOT_CUBEMAP);
 		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 0);
 
 
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
 					   "need_texture", 0);
 
-	}else if(renderer->current_mode == MODE_TERRAIN_MESH || renderer->current_mode == MODE_RECT){
+	}else if(renderer->current_mode == MODE_TERRAIN_MESH && renderer->current_mode == MODE_RECT){
 		glDisable(GL_CULL_FACE);
 
 		glEnable(GL_DEPTH_TEST);
@@ -1384,6 +1423,25 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 					   "need_texture", 0);
 		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
 
+
+
+
+	}else if (renderer->current_mode == MODE_RECT)
+	{
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE); // Reset depth write
+		glDisable(GL_CULL_FACE);
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Renderer ui bool %d", renderer->is_ui);
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_ui", true);//exclusive to the dynamic tagged shader
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "is_sky_box", 0);
+	//	shader_on_id_set_int(&renderer->shaders, renderer->shader_tag, "cubemap", 0);
+		shader_on_id_set_int(&renderer->shaders, renderer->shader_tag,
+					   "need_texture", 0);
+
+		shader_on_id_set_mat4(&renderer->shaders, renderer->shader_tag, "projection", renderer->projection2d);
+
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_3d", false);//exclusive to the dynamic tagged shader
+		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_rounded", renderer->is_rounded_rect);//exclusive to the dynamic tagged shader
 
 
 
@@ -1421,8 +1479,7 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		shader_on_id_set_bool(&renderer->shaders, renderer->shader_tag, "is_light", 1);
 
 
-	}
-	
+	}	
 
 	glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * renderer->object_data.vertices.vertex_count, renderer->object_data.vertices.vertices);
@@ -1441,6 +1498,8 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 	arena_reset(&renderer->str_arena);
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
+	renderer->is_ui = false;
+	renderer->is_rounded_rect = false;
 	glUseProgram(0);
 //	renderer->object_data.texture_id = 0;
 
@@ -1600,7 +1659,9 @@ void db_texture_draw(Dyl_Batch_Renderer* renderer,  Texture* texture ,vec4 textu
 	}
 	
 
-	if (renderer->object_data.texture.ID != texture->ID && renderer->current_mode != MODE_TEXTURE) { db_flush(renderer);
+	if (renderer->object_data.texture.ID != texture->ID || renderer->current_mode != MODE_TEXTURE) 
+	{ 
+		db_flush(renderer);
 		renderer->current_mode = MODE_TEXTURE;
         renderer->object_data.texture = *texture;
     }
@@ -1951,7 +2012,7 @@ void db_cube_texture_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 t
 	{
 		db_flush(renderer);
 	}
-	if (renderer->object_data.texture.ID != texture->ID && renderer->current_mode != MODE_CUBE_TEXTURE) {
+	if (renderer->object_data.texture.ID != texture->ID || renderer->current_mode != MODE_CUBE_TEXTURE) {
         db_flush(renderer);
 		renderer->current_mode = MODE_CUBE_TEXTURE;
         renderer->object_data.texture = *texture;
@@ -2152,13 +2213,13 @@ void db_sky_box_draw(Dyl_Batch_Renderer* renderer, Texture* texture, vec4 color)
 	{
 		db_flush(renderer);
 	}
-	if (renderer->object_data.texture.ID != texture->ID && renderer->current_mode != MODE_CUBEMAP) {
+	if (renderer->object_data.texture.ID != texture->ID || renderer->current_mode != MODE_CUBEMAP) {
         db_flush(renderer);
 		renderer->current_mode = MODE_CUBEMAP;
         renderer->object_data.texture = *texture;
     }
 
-	glDepthFunc(GL_LEQUAL);
+	//glDepthFunc(GL_LEQUAL);
 	vec4 texCoordsConversion;
  	texCoordsConversion[0] = texture->width;
  	texCoordsConversion[1] = texture->height;
@@ -2786,6 +2847,9 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 		shader_on_id_set_int(&renderer->shaders,SHADER_INSTANCED, "has_texture", false);
 
 	}
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->current_model->instance_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->instance_count * sizeof(mat4), renderer->models.models_container);

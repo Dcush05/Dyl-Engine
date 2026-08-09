@@ -33,6 +33,7 @@ typedef enum
 	SHADER_DYNAMIC,
 	SHADER_BILLBOARD,
 	SHADER_INSTANCED,
+	SHADER_UI,
 	SHADER_STENCIL,
 }shader_id;
 
@@ -305,7 +306,8 @@ typedef enum
 	MODE_LIGHT_CUBE,
 	MODE_TERRAIN_MESH, 
 	MODE_CUBEMAP,
-	MODE_BILLBOARD
+	MODE_BILLBOARD,
+	MODE_UI,
 }Renderer_Mode;
 
 
@@ -323,7 +325,8 @@ typedef struct
 
 	shader_data shaders;
 	Mesh object_data;
-	mat4 projection;
+	mat4 projection2d;
+	mat4 projection3d;
 	mat4 view;
 //	Arena vertex_arena;
 //	Arena index_arena;
@@ -339,6 +342,8 @@ typedef struct
 	shader_id shader_tag;
 	Renderer_Mode current_mode;
 	bool is_3d;
+	bool is_ui;
+	bool is_rounded_rect;
 
 
 
@@ -446,7 +451,8 @@ void dyl_instanced_renderer_set_camera_pos(Dyl_Instanced_Renderer* renderer, vec
 void dyl_instanced_renderer_current_set_selected_model(Dyl_Instanced_Renderer* renderer, bool selected);
 void dyl_instanced_push_rect(Dyl_Instanced_Renderer* renderer, vec2 position, vec2 size, float rotate);
 void dyl_instanced_push_model(Dyl_Instanced_Renderer* renderer, Model* model, vec3 position, vec3 size, float rotate, vec4 colori, bool selected);
-void dyl_instanced_renderer_set_proj(Dyl_Instanced_Renderer* renderer, mat4* proj);
+void dyl_batch_renderer_set_proj2d(Dyl_Batch_Renderer* renderer, mat4* proj);
+void dyl_batch_renderer_set_proj3d(Dyl_Batch_Renderer* renderer, mat4* proj);
 void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer);
 void dyl_instanced_draw_outline(Dyl_Instanced_Renderer* renderer);
 

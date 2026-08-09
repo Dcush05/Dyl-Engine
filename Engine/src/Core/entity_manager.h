@@ -98,6 +98,7 @@ ENGINE_ENTITY_API entity_id entity_shape_create(Entity_Manager* entity_manager, 
 
 ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, Asset* asset);
 
+void entity_initialize_model_from_id(Entity_Manager* manager, entity_id id);
 void entity_initialize_all_models(Entity_Manager* manager);
 ENGINE_ENTITY_API entity_id entity_actor_create(Entity_Manager* entity_manager, vec3f position, vec3f size, Color color, bool has_texture, bool is_model);
 

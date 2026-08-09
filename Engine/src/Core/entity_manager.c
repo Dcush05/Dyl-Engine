@@ -195,7 +195,7 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 
 	Dyl_Str thread_name = dyl_str_lit_fmt(&manager->arena, "Model: %d", id);
 	dyl_thread_pool_add((char*)thread_name.string_data);
-	//dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)asset_create_thread_func, args);
+//	dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)asset_create_thread_func, args);
 	dyl_thread_pool_task_add((char*)thread_name.string_data, (void*)model_init, args);
 
 //	model_init(args);
@@ -224,6 +224,27 @@ void entity_initialize_all_models(Entity_Manager* manager)
 		}
 
 	}
+}
+
+void entity_initialize_model_from_id(Entity_Manager* manager, entity_id id)
+{
+
+	dyl_thread_pool_spin();
+	for(size_t i = 0; i < manager->entity_count; ++i)
+	{
+
+		if((manager->component_flag[i] & COMP_MODEL) && (manager->type[i] == ENTITY_ACTOR)
+			&& manager->id[i] == id)
+		{
+
+			model_setup(manager->model[i], &manager->arena);
+			dyl_instanced_renderer_initialize_mod_and_vbo(manager->instanced_renderer, manager->model[i]);
+			break;
+
+		}
+
+	}
+
 }
 
 void entity_set_model_selection_from_id(Entity_Manager* manager, entity_id id)
