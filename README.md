@@ -1,2 +1,15 @@
 # Dyl-Engine
-Game Engine in C using Opengl
+
+Game engine in C
+---
+
+## Key Features
+
+
+
+---
+
+## Architecture & Pipeline
+
+---
+## Engine Api
