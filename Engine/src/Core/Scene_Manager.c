@@ -58,10 +58,22 @@ ENGINE_SCENE_API void global_scene_manager_camera_initialization(u64 id, vec3 po
 	{
 		if(global_scene_manager.scenes[idx].id == id)
 		{
-
-			camera_init(&global_scene_manager.scenes[idx].scene_camera, pos, relative_mouse, window_width, window_height);
+			//TEMP
+			camera_init(&global_scene_manager.scenes[idx].scene_camera, pos, CAMERA_DYNAMIC, relative_mouse, window_width, window_height);
 		//	glm_perspective(glm_rad(45.0f), (float)window_width / (float)window_height, 0.1f, 100.0f, global_scene_manager.scenes[idx].projection);
 			break;
+
+		}
+	}
+}
+ENGINE_SCENE_API Camera* global_scene_manager_get_camera_from_id(Scene_Id id)
+{
+	for(u64 idx = 0; idx < global_scene_manager.screen_count; ++idx)
+	{
+		if(global_scene_manager.scenes[idx].id == id)
+		{
+			return &global_scene_manager.scenes[idx].scene_camera;
+		//	glm_perspective(glm_rad(45.0f), (float)window_width / (float)window_height, 0.1f, 100.0f, global_scene_manager.scenes[idx].projection);
 
 		}
 	}
@@ -198,6 +210,30 @@ void global_scene_manager_update_by_name(const char* name, float dt)
 {
 	
 }
+ENGINE_SCENE_API void global_scene_manager_entity_attach_camera_from_id(Scene_Id id, entity_id entity, Entity_Camera_Mode mode, Camera* camera)
+{
+	for(u64 idx = 0; idx < global_scene_manager.screen_count; ++idx)
+	{
+		if(global_scene_manager.scenes[idx].id == id)
+		{
+			entity_attach_camera_from_id(&global_scene_manager.scenes[idx].scene_entities, entity, mode, camera);
+			break;
+		}
+	}
+
+}
+ENGINE_SCENE_API void global_scene_manager_entity_update_attached_camera_from_id(Scene_Id id, entity_id entity)
+{
+	for(u64 idx = 0; idx < global_scene_manager.screen_count; ++idx)
+	{
+		if(global_scene_manager.scenes[idx].id == id)
+		{
+			entity_update_attached_camera_from_id(&global_scene_manager.scenes[idx].scene_entities, entity);
+			break;
+		}
+	}
+}
+
 
 
 ENGINE_SCENE_API Entity_Manager* global_scene_manager_get_entity_manager(u64 id)

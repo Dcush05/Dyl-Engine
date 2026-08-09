@@ -63,7 +63,10 @@ void entity_manager_initialize(Entity_Manager* entity_manager, Dyl_Batch_Rendere
 	ASSERT(entity_manager->component_flag, "Entity component_flag data is null");
 	entity_manager->asset = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Asset*));
 	ASSERT(entity_manager->asset, "Entity Asset* data is null");
-
+	entity_manager->camera = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Camera*));
+	ASSERT(entity_manager->camera, "Entity Camera* data is null");
+	entity_manager->camera_mode = arena_push(&entity_manager->arena, MAX_ENTITY_COUNT * sizeof(Entity_Camera_Mode));
+	ASSERT(entity_manager->camera, "Entity Camera_Mode data is null")
 
 
 	entity_manager->selected_entity_id = -1;	
@@ -322,6 +325,38 @@ ENGINE_ENTITY_API Entity_View entity_get_from_id(Entity_Manager* manager, entity
 	return view;
 }
 
+ENGINE_ENTITY_API void entity_attach_camera_from_id(Entity_Manager* manager, entity_id id, Entity_Camera_Mode mode, Camera* camera)
+{
+	for(size_d idx = 0; idx < manager->entity_count; ++idx)
+	{
+		if(manager->type[idx] == ENTITY_NIL || ENTITY_SKYBOX)
+			continue;
+		if(!(manager->component_flag[idx] & COMP_RENDER))
+			continue;
+
+		manager->camera[idx] = camera;
+		manager->camera_mode[idx] = mode;
+
+
+	}
+}
+
+ENGINE_ENTITY_API void entity_update_attached_camera_from_id(Entity_Manager* manager, entity_id id)
+{
+	for(size_d idx = 0; idx < manager->entity_count; ++idx)
+	{
+		if(manager->type[idx] == ENTITY_NIL || ENTITY_SKYBOX)
+			continue;
+		if(!(manager->component_flag[idx] & COMP_RENDER))
+			continue;
+
+		camera_set_follow_position(manager->camera[idx], (vec3){manager->position[idx].x, manager->position[idx].y - 100, manager->position[idx].z - 15});
+
+
+
+	}
+
+}
 
 ENGINE_ENTITY_API void entity_manager_render(Entity_Manager* entity_manager)
 {
@@ -361,7 +396,15 @@ ENGINE_ENTITY_API void entity_manager_render(Entity_Manager* entity_manager)
 				Model* model = entity_manager->model[idx];
 
 				bool is_selected = (entity_manager->selected_entity_id == (s32)entity_manager->id[idx]);
-				
+				if(entity_manager->camera_mode[idx] != CAMERA_MODE_NIL)
+				{
+					dyl_batch_renderer_set_view(entity_manager->batch_renderer, &entity_manager->camera[idx]->view);
+					dyl_batch_renderer_set_camera_pos(entity_manager->batch_renderer, &entity_manager->camera[idx]->follow_pos);
+					dyl_instanced_renderer_set_view(entity_manager->instanced_renderer, &entity_manager->camera[idx]->view);
+					dyl_instanced_renderer_set_camera_pos(entity_manager->instanced_renderer, &entity_manager->camera[idx]->follow_pos);
+					
+
+				}
 				dyl_instanced_push_model(entity_manager->instanced_renderer, model, (vec3){entity_manager->position[idx].x,
 				entity_manager->position[idx].y, entity_manager->position[idx].z},(vec3){entity_manager->size[idx].x, 
 							 entity_manager->size[idx].y, entity_manager->size[idx].z}, 0.0, (vec4){entity_manager->color[idx].r,

@@ -112,6 +112,10 @@ void dyl_event_initalize(Dyl_Event* event)
 	key_pos++;
 	event->keys[key_pos].key_type = DYLKEY_Y;
 	key_pos++;
+	event->keys[key_pos].key_type = DYLKEY_Z;
+	key_pos++;
+	event->keys[key_pos].key_type = DYLKEY_SPACE;
+	key_pos++;
 	event->keys[key_pos].key_type = DYLKEY_TAB;
 	key_pos++;
 	event->keys[key_pos].key_type = DYLKEY_LSHIFT;
@@ -222,6 +226,9 @@ uint8_t dyl_key_translate(Dyl_Key_Type type)
 			break;
 			case DYLKEY_Z:
 				return 0x5A;
+			break;
+			case DYLKEY_SPACE:
+				return 0x20;
 			break;
 			case DYLKEY_TAB:
 				return 0x09;

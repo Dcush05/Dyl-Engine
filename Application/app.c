@@ -97,7 +97,9 @@ void entity_scene_initializer(Engine* engine)
 	global_scene_manager_camera_initialization(scene_id1, (vec3){0.5, 3.5, 8.0},
 											true, engine->window->height, engine->window->width);
 
-
+	/*entity_attach_camera_from_id(, entity_id id, Entity_Camera_Mode mode, Camera* camera);
+ENGINE_ENTITY_API void entity_update_attached_camera_from_id(Entity_Manager* manager, entity_id id)*/
+	global_scene_manager_entity_attach_camera_from_id(scene_id1, new_entity, CAMERA_MODE_FIRST_PERSON, global_scene_manager_get_camera_from_id(scene_id1) );
 	
 }
 
@@ -113,6 +115,7 @@ void frame_scene_callback(Engine* engine)
 	
 //	printf("Hello im dylan\n");
 	global_scene_manager_update_by_id(scene_id1, engine->delta_time);
+	global_scene_manager_entity_update_attached_camera_from_id(scene_id1, new_entity);
 	global_scene_manager_render_by_id(scene_id1);
 	
 }

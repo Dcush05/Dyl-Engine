@@ -1,6 +1,7 @@
 #ifndef ENTITY_MANAGER_H
 #define ENTITY_MANAGER_H	
 
+#include "../Renderer/camera.h"
 #include "../utils/dyl_base.h"
 #include "../renderer_engine_interface.h"
 #include "../Events/dyl_events.h"
@@ -45,6 +46,46 @@ typedef enum
 }Component_Flag;
 
 
+typedef enum
+{
+	CAMERA_MODE_NIL = 0,
+	CAMERA_MODE_FIRST_PERSON,
+	CAMERA_MODE_THIRD_PERSON,
+}Entity_Camera_Mode;
+
+
+typedef enum
+{
+	CUSTOM_TYPE_NIL,
+	CUSTOM_TYPE_INT,
+	CUSTOM_TYPE_FLOAT,
+	CUSTOM_TYPE_STR,
+	CUSTOM_TYPE_CHAR,
+
+}Custom_Type_Variation;
+
+typedef struct
+{
+
+	Dyl_Str name;
+	Custom_Type_Variation type;
+	union
+	{
+		s32 custom_int;
+		f32 custom_float;
+		char custom_char;
+		char* custom_str;
+	};
+	
+
+}Custom_Type;
+
+
+typedef struct
+{
+	Custom_Type variables[1024];
+}Custom_Type_Container;
+
 
 typedef struct
 {
@@ -65,6 +106,8 @@ typedef struct
 	u32* component_flag;
 	entity_id* id;
 	Asset** asset;
+	Camera** camera;
+	Entity_Camera_Mode* camera_mode;
 	Arena arena;
 	s32 entity_count;
 	s32 selected_entity_id;
@@ -98,6 +141,8 @@ ENGINE_ENTITY_API entity_id entity_shape_create(Entity_Manager* entity_manager, 
 
 ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_id id, Asset* asset);
 
+ENGINE_ENTITY_API void entity_attach_camera_from_id(Entity_Manager* manager, entity_id id, Entity_Camera_Mode mode, Camera* camera);
+ENGINE_ENTITY_API void entity_update_attached_camera_from_id(Entity_Manager* manager, entity_id id);
 void entity_initialize_model_from_id(Entity_Manager* manager, entity_id id);
 void entity_initialize_all_models(Entity_Manager* manager);
 ENGINE_ENTITY_API entity_id entity_actor_create(Entity_Manager* entity_manager, vec3f position, vec3f size, Color color, bool has_texture, bool is_model);

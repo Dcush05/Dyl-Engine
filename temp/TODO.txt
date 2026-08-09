@@ -69,10 +69,10 @@
 	DOCUMENT ENGINE API FUNCTION
 	Physics system
 	Particle system
+	Serialization
 	FLUSH OUT ENGINE API FUNCTIONALITY / GENERAL PIPELINE
 	Optimize bindless texture initialization (multithreading shared resources on different opengl context on each thread)
 	MEMORY PROFILE PROGRAM AND REMOVE ANY END OF RUNTIME LEAKS
-	Serialization
 	Application hot reloading
 	ONE THREAD PER CORE FOR MULTITHREADING SEARCH IT UP
 	PROPER README
@@ -113,3 +113,5 @@ PLEASE USE YOUR DEBUG FUNCTIONS MORE
 		-Panel/Containers dynamic resizing
 -We have also implemented a bit of our editor which can currently only spawn entities, very limited as of right now will work on additional functionality if its a need at the moment.
 -I would like to not update camera movement if my mouse is within the bounds of the editor ui
+
+-Camera is more integrated with entity setup will later add better functionality

@@ -67,7 +67,7 @@ ENGINE_API void engine_initialize(Engine* engine)
 	engine->batch_renderer = arena_push(&global_arena, sizeof(Dyl_Batch_Renderer));
 	*engine->batch_renderer = dyl_batch_renderer_init(&global_arena,true,100);
 	engine->scene_camera = arena_push(&global_arena, sizeof(Camera));
-	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, false, engine->window->client_width, engine->window->client_height);
+	camera_init(engine->scene_camera, (vec3){0.5,3.5,8.0}, CAMERA_STATIC ,false, engine->window->client_width, engine->window->client_height);
 	engine->instanced_renderer = arena_push(&global_arena, sizeof(Dyl_Instanced_Renderer));
 	*engine->instanced_renderer = dyl_instanced_setup(&global_arena, 100, true);
 

@@ -104,10 +104,13 @@ ENGINE_SCENE_API void global_scene_manager_entity_manager_initialize_all_models(
 
 ENGINE_SCENE_API void global_scene_manager_entity_manager_initialize_model_from_id(u64 id, entity_id entity_id);
 
+ENGINE_SCENE_API void global_scene_manager_entity_attach_camera_from_id(Scene_Id id, entity_id entity, Entity_Camera_Mode mode, Camera* camera);
+ENGINE_SCENE_API void global_scene_manager_entity_update_attached_camera_from_id(Scene_Id id, entity_id entity);
+
 ENGINE_SCENE_API entity_id global_scene_manager_entity_actor_create(u64 id, vec3f position, vec3f size, Color color, bool has_texture, bool is_model);
 
 ENGINE_SCENE_API void global_scene_manager_entity_manager_set_model_from_id(u64 id, entity_id entity, Asset* asset);
-
+ENGINE_SCENE_API Camera* global_scene_manager_get_camera_from_id(Scene_Id id);
 ENGINE_SCENE_API Entity_Manager* global_scene_manager_get_entity_manager(u64 id);
 
 ENGINE_SCENE_API entity_id global_scene_manager_entity_sky_box_create(u64 id,const char* face_path1, const char* face_path2, const char* face_path3, const char* face_path4, const char* face_path5, const char* face_path6);
