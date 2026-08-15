@@ -1,6 +1,7 @@
 #include "Asset_Manager.h"
 #include "../core/dyl_debug.h"
 
+
 #define INITIAL_ASSET_CAPACITY 250
 Asset_Manager global_asset_manager;
 void global_asset_manager_init()
@@ -121,26 +122,44 @@ ENGINE_ASSET_API void asset_create(const char* asset_name, const char* file_name
 	new_asset.file_name = DYL_STR_LIT(file_name);
 	new_asset.rel_path = DYL_STR_LIT(rel_path);
 	new_asset.type = type;
+	new_asset.model.gltf_data = NULL;
 
 
 	
 	switch(new_asset.type)
 	{
 		case ASSET_MODEL_OBJ:
-			s32 check = tinyobj_parse_obj(&new_asset.model.attrib, &new_asset.model.shapes, &new_asset.model.shape_count, &new_asset.model.materials, &new_asset.model.material_count, (char*)new_asset.file_name.string_data, model_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
+			s32 check = tinyobj_parse_obj(&new_asset.model.tiny_data.attrib, &new_asset.model.tiny_data.shapes, &new_asset.model.shape_count, &new_asset.model.tiny_data.materials, &new_asset.model.material_count, (char*)new_asset.file_name.string_data, model_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
 			if(check != TINYOBJ_SUCCESS)
 			{
 				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Cannot load model through obj parser");
 				exit(0);
 			}
+			new_asset.model.type = ASSET_MODEL_OBJ;
 		break;
-		case ASSET_MODEL_FBX:
-			DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "FBX PARSER IS NOT AVAILABLE");
+		case ASSET_MODEL_GLTF:
+			cgltf_options options = {0};
+			cgltf_result result = cgltf_parse_file(&options, (char*)new_asset.file_name.string_data, &new_asset.model.gltf_data);
+			if (result != cgltf_result_success)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Unable to parse file");
+				if(new_asset.model.gltf_data)
+				{
+					cgltf_free(new_asset.model.gltf_data);
+					new_asset.model.gltf_data = NULL;
+				}
+				
+			}
+			cgltf_load_buffers(&options, new_asset.model.gltf_data, (char*)new_asset.file_name.string_data);
+			new_asset.model.shape_count = new_asset.model.gltf_data->meshes_count;
+			new_asset.model.material_count = new_asset.model.gltf_data->materials_count;
+			new_asset.model.type = ASSET_MODEL_GLTF;
+
 		break;
 		case ASSET_TEXTURE:
 			Texture_Path path;
 			path.path = DYL_STR_LIT(file_name);
-			new_asset.texture = texture_init(path, TEXTURE_2D, false);
+			new_asset.texture = texture_init(path, TEXTURE_2D, TEXTURE_NIL,false);
 			if(!new_asset.texture.data)
 			{
 				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Cannot load texture");

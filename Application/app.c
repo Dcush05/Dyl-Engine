@@ -74,12 +74,11 @@ void entity_scene_initializer(Engine* engine)
 
 	scene_id1 = global_scene_manager_add("main_scene", NULL, SCENE_GAMEPLAY);
 	global_scene_manager_entity_manager_initialize(scene_id1);
-	entity_pos = (vec3f){0.5, 0.5, 3.5};
+	entity_pos = (vec3f){0.5, 0.5, 0.5};
 	new_entity = global_scene_manager_entity_actor_create(scene_id1, entity_pos, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
 	asset_create("aircraft","assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft", ASSET_MODEL_OBJ);
+	asset_create("lamp","assets/Obj/box.gltf", "assets/Obj", ASSET_MODEL_GLTF);
 	global_scene_manager_entity_manager_set_model_from_id(scene_id1,new_entity,global_asset_manager_get_from_name("aircraft"));
-
-
 	//asset_create("aircraft","assets/Obj/E-45-Aircraft/Aircraft.obj", "assets/Obj/E-45-Aircraft", ASSET_MODEL_OBJ);
 
 	global_scene_manager_entity_sky_box_create(scene_id1, "assets/right.jpg", "assets/left.jpg", "assets/top.jpg", "assets/bottom.jpg", "assets/front.jpg", "assets/back.jpg");

@@ -153,7 +153,7 @@ ENGINE_ENTITY_API entity_id entity_sky_box_create(Entity_Manager* entity_manager
 		.face_paths[2] = DYL_STR_LIT(face_path3),. face_paths[3] = DYL_STR_LIT(face_path4),.face_paths[4] = DYL_STR_LIT(face_path5), 
 		.face_paths[5] = DYL_STR_LIT(face_path6)};
 
-	entity_manager->texture[new_entity] = texture_init(skybox_paths, TEXTURE_CUBE_MAP, true);
+	entity_manager->texture[new_entity] = texture_init(skybox_paths, TEXTURE_CUBE_MAP, TEXTURE_NIL, true);
 	return new_entity;
 
 	
@@ -174,12 +174,23 @@ ENGINE_ENTITY_API void entity_set_model_from_id(Entity_Manager* manager, entity_
 	//
 	Model_Init_Args* args = arena_push(&manager->arena, sizeof(Model_Init_Args));
 	args->model = manager->model[id];
-	args->model->attrib = asset->model.attrib;
-	args->model->materials = asset->model.materials;
-	args->model->num_materials = asset->model.material_count;
-	args->model->shapes = asset->model.shapes;
-	args->model->num_shapes = asset->model.shape_count;
 
+	if(asset->model.type == ASSET_MODEL_OBJ)
+	{
+		args->model->model_parse_data.type = MODEL_PARAM_TINYOBJ;
+		args->model->model_parse_data.tiny_data.attrib = asset->model.tiny_data.attrib;
+		args->model->model_parse_data.tiny_data.materials = asset->model.tiny_data.materials;
+		args->model->model_parse_data.tiny_data.shapes = asset->model.tiny_data.shapes;
+
+
+	}else if(asset->model.type == ASSET_MODEL_GLTF)
+	{
+		args->model->model_parse_data.type = MODEL_PARAM_GLTF;
+		args->model->model_parse_data.gltf_data.data = asset->model.gltf_data;
+	}
+
+	args->model->num_shapes = asset->model.shape_count;
+	args->model->num_materials = asset->model.material_count;
 	//	args->model = &(Model){0};
 	args->file_name = (char*)asset->file_name.string_data;
 	args->rel_path = (char*)asset->rel_path.string_data;
@@ -269,7 +280,7 @@ ENGINE_ENTITY_API void entity_set_texture2d_from_id(Entity_Manager* manager, ent
 		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Entity has invalid flags to attach model");
 		return;
 	}
-	manager->texture[id] = texture_init((Texture_Path){.path = DYL_STR_LIT(path)}, TEXTURE_2D, true);
+	manager->texture[id] = texture_init((Texture_Path){.path = DYL_STR_LIT(path)}, TEXTURE_2D, TEXTURE_NIL,true);
 
 }
 

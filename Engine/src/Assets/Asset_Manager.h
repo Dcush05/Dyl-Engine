@@ -14,28 +14,37 @@
 
 
 
+
+
 typedef enum
 {
 	ASSET_NIL,
 	ASSET_TEXTURE,
 	ASSET_MODEL_OBJ,
 	ASSET_MODEL_MTL,
-	ASSET_MODEL_FBX,
+	ASSET_MODEL_GLTF,
 	ASSET_WAV,
 
 
 }Asset_Type;
 
 
+
 typedef struct
 {
-	//OBJ PARSING
 	tinyobj_attrib_t attrib;
 	tinyobj_shape_t* shapes;
 	tinyobj_material_t* materials;
 
+}Model_Tiny_Obj_Data;
 
-	//FBX PARSING 
+typedef struct
+{
+	Asset_Type type;
+	union{
+		Model_Tiny_Obj_Data tiny_data;
+		cgltf_data* gltf_data;
+	};
 
 	u64 material_count;
 	u64 shape_count;

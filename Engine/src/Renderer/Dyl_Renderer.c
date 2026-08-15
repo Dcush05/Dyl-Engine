@@ -1,5 +1,6 @@
 #include "noise.h"
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
+#define CGLTF_IMPLEMENTATION
 #include "Dyl_Renderer.h"
 #include "Shader.h"
 #include "cglm/affine-pre.h"
@@ -21,8 +22,28 @@
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//SHADER STUFF
+/*NOTE:(Dylan): Implementation of rendering based code functions such as shader setup, texture initialization, renderer setup, rendering primitives(only rects for now), 
+ * batch rendering, instanced rendering. In the future I will hope to have a more "default" renderer so that I am not always relying on the batch or instanced rendere 
+ * for basic things. I would say the rendering code is very bare bones, and not very complex as this is my first renderer which also means there are possible 
+ * problems/bugs you may run into when using this renderer. This is my agreed upong abstaction over the opengl api, in the future I would like to develop and rewrite a 
+ * renderer that makes more sense. */
+ 
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* ~Shader functions*/
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 void shader_initialize(shader_data* data)
 {
@@ -49,8 +70,6 @@ void shader_add(shader_data* data, Shader* shader, size_t id, shader_type type)
 			data->shaders[i] = *shader;
 			data->type[i] = type;
 			data->shaders[i].id = id;
-		//	strncpy(data->shader_name[i], name, sizeof(data->shader_name[i])-1);
-		//	data->shader_name[i][sizeof(data->shader_name[i])-1] = '\0';
 			data->curr_size++;
 break;
 		
@@ -89,7 +108,6 @@ void shader_on_id_use(shader_data* data, size_t id)
 	{
 		if(data->shaders[i].id == id)
 		{
-		//	printf("should be using shader for rect\n");
 			use(&data->shaders[i]);
 			break;
 		}
@@ -188,16 +206,23 @@ void shader_cleanup(shader_data* data)
     data->curr_size = 0;
 }
 
-//Texture code
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* ~Texture functions*/
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 int path_exists(const char* path)
 {
 	struct stat sb;
 	return (stat(path, &sb) == 0);
 }
 
-Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded)
+Texture texture_init(Texture_Path path, Texture_Type type, Model_Texture_Type model_type, bool is_binded)
 {
 	Texture texture = (Texture){0};
+	texture.model_texture_type = model_type;
 	if(type == TEXTURE_2D)
 	{
 		if(!path_exists((char*)path.path.string_data))
@@ -214,17 +239,15 @@ Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded)
 				fprintf(stderr, "Path %s doesnt exist\n", path.path.string_data);
 				return(Texture){0};
 			}
-			//strcpy((char*)texture.texture_path.face_paths[i].string_data, (char*)path.face_paths[i].string_data);
 			texture.texture_path.face_paths[i] = path.face_paths[i];
-
-		
 		}
 	}
-/*	if(is_binded)
+	if(is_binded)
 		texture.texture_bind = TEXTURE_BINDED;
 	else 
-		texture.texture_bind = TEXTURE_BINDLESS;*/
-	texture.texture_bind = TEXTURE_BINDED;
+		texture.texture_bind = TEXTURE_BINDLESS;
+
+
 	texture.texture_type = type;
 	generate(&texture);
 	return texture;
@@ -236,6 +259,7 @@ Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded)
 // such as mobile as it is mostly a modern opengl feature, I will make sure to write more notes on this as i go on
 // Setting up bindless texture support in my renderer
 // Unsafe
+// We can multithread this however we need to have separate opengl contexts
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void generate(Texture *texture)
 {
@@ -250,15 +274,13 @@ void generate(Texture *texture)
 
 	
 		GLenum type = (texture->texture_type & TEXTURE_2D) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-	//	printf("%d", type);
 		glBindTexture(type, texture->ID); 
-		 // set the texture wrapping parameters
+
 		if(type == GL_TEXTURE_2D)
 		{
 
 			glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
 			glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			// set texture filtering parameters
 			glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -268,7 +290,6 @@ void generate(Texture *texture)
 			if (texture->nrChannels == 4)
 			{
 				format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
-				//printf("meow\n");
 			}
 
 			glTexImage2D(type, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
@@ -286,7 +307,6 @@ void generate(Texture *texture)
 				if (texture->nrChannels == 4)
 				{
 					format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
-						//printf("meow\n");
 				}
 				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, texture->data);
 
@@ -304,12 +324,25 @@ void generate(Texture *texture)
 		}
 		
 	}else {
+
+
 		glCreateTextures(GL_TEXTURE_2D, 1, &texture->ID);
 
 		texture->data = stbi_load((char*)texture->texture_path.path.string_data, &texture->width, &texture->height, &texture->nrChannels, 0);	
 
 		ASSERT(texture->data, "Unable to load texture(Null)");
-		GLenum internal_format = (texture->nrChannels == 4) ? GL_RGBA8 : GL_RGB8;
+		GLenum internal_format;
+
+		if(texture->model_texture_type == TEXTURE_NIL)
+		{
+			internal_format = (texture->nrChannels == 4) ? GL_RGBA8 : GL_RGB8;
+		}else{
+			if(texture->model_texture_type == TEXTURE_DIFFUSE || texture->model_texture_type == TEXTURE_BASE_COLOR)
+				internal_format = GL_SRGB8_ALPHA8;	
+			else
+				internal_format = GL_RGBA8;	
+		}
+
 		GLint levels = 1 + (GLint)floor(log2(fmax(texture->width, texture->height)));
 
 		glTextureStorage2D(texture->ID, levels, internal_format, texture->width, texture->height);
@@ -317,7 +350,6 @@ void generate(Texture *texture)
 			if (texture->nrChannels == 4)
 			{
 				format = GL_RGBA;  // Use RGBA format if the image has an alpha channel
-				//printf("meow\n");
 			}
 
 		glTextureSubImage2D(texture->ID, 0,0,0, texture->width, texture->height, format, GL_UNSIGNED_BYTE, (const void*)&texture->data[0]);
@@ -332,16 +364,11 @@ void generate(Texture *texture)
 		texture->handle = glGetTextureHandleARB(texture->ID);
 		ASSERT(texture->handle != 0, "Unable to setup handle for texture");
 		glMakeTextureHandleResidentARB(texture->handle);
-
-
-
-
 	}
 }
 
 void texture_bind(Texture* texture) 
 {
-//	printf("Texture Id at bind function: %d\n", texture->ID);
 	ASSERT(texture->ID != 0, "Texture ID is not initialized");
 	glBindTexture(GL_TEXTURE_2D, texture->ID);
 }
@@ -357,7 +384,12 @@ void texture2D_free(Texture* texture)
 	texture->ID = 0;
 }
 
-//RENDERER STUFF
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* ~Vertice util functions*/
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 void vertices_setup(Vertex_Data* vertices, Arena* arena, u64 capacity)
@@ -378,9 +410,6 @@ void mesh_setup(Mesh* mesh, Mesh_Type type, size_t num_vertices)
 {
 	ASSERT(mesh, "Mesh is Null");
 	ASSERT(mesh->vertices.vertices, "Vertices in mesh is null");
-
-//	memset(mesh, 0, sizeof(Mesh));
-
 	mesh->vertices.vertex_count = 0;
 	mesh->vertices.capacity = num_vertices;
 	mesh->type = type;
@@ -408,10 +437,6 @@ void mesh_initialize_render_data(Mesh* mesh)
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
 					   (void*)offsetof(Vertex, color));
 
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-//	glBindVertexArray(0);
-
-	//setup for when mesh has a texture
 
 }
 
@@ -527,218 +552,473 @@ void my_file_reader(
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* ~Model initialization functions*/
+// Currently only does tinyobj parsing but in th future i will support diferent model types
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 #define MAX_PATH_COUNT 2046
 
 void model_init(Model_Init_Args* args)
 {
 	
-
-//	strncpy(moconsdel.filename, file_name, sizeof(model.filename) - 1);
-//	model.filename[sizeof(model.filename) - 1] = '\0';
 	args->model->filename = DYL_STR_LIT(args->file_name);
 	args->model->rel_path = (char*)args->rel_path;
 	args->model->is_selected = false;
-
-	/*int check = tinyobj_parse_obj(&args->model->attrib, &args->model->shapes, &num_shapes, &args->model->materials, &num_materials, (char*)args->model->filename.string_data, my_file_reader, NULL, TINYOBJ_FLAG_TRIANGULATE);
-
-	if(check != TINYOBJ_SUCCESS)
+	if(args->model->model_parse_data.type == MODEL_PARAM_TINYOBJ)
 	{
-		fprintf(stderr, "Error loading OBJ\n");
-		return;
-	}*/
-
-	
-	float bmin[3], bmax[3];
-	bmin[0] = FLT_MAX;
-
-	bmin[1] = FLT_MAX;
-
-	bmin[2] = FLT_MAX;
-
-	bmax[0] = -FLT_MAX;
-
-	bmax[1] = -FLT_MAX;
-
-	bmax[2] = -FLT_MAX;
 
 
-	size_t face_offset = 0;
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "Setting up model data with OBJ...");
+		float bmin[3], bmax[3];
+
+		bmin[0] = FLT_MAX;
+		bmin[1] = FLT_MAX;
+		bmin[2] = FLT_MAX;
+		bmax[0] = -FLT_MAX;
+		bmax[1] = -FLT_MAX;
+		bmax[2] = -FLT_MAX;
 
 
-	args->model->num_triangles = args->model->attrib.num_face_num_verts;
-	size_t stride = sizeof(Vertex) / sizeof(float);
+		size_t face_offset = 0;
 
-	//float* vertex_buffer = (float*)malloc(OBJ_SIZE * num_triangles * 3);
-	//vertices_setup(&model.mesh.vertices, arena ,model.num_triangles * 3);
-	//BUG: globa arena usage is causing race conditions
-//	args->model->mesh.vertices.vertices = arena_push(args->arena, (args->model->num_triangles * 3) * sizeof(Vertex));
-	args->model->mesh.vertices.vertices = malloc((args->model->num_triangles * 3) * sizeof(Vertex));
-	args->model->mesh.vertices.capacity = args->model->num_triangles * 3;
-	args->model->mesh.vertices.vertex_count = 0;
+		args->model->num_triangles = args->model->model_parse_data.tiny_data.attrib.num_face_num_verts;
+		size_t stride = sizeof(Vertex) / sizeof(float);
 
+		//BUG: globa arena usage is causing race conditions
+	//	args->model->mesh.vertices.vertices = arena_push(args->arena, (args->model->num_triangles * 3) * sizeof(Vertex));
+		
+		args->model->mesh.vertices.vertices = malloc((args->model->num_triangles * 3) * sizeof(Vertex));
+		args->model->mesh.vertices.capacity = args->model->num_triangles * 3;
+		args->model->mesh.vertices.vertex_count = 0;
 
+		memset(&args->model->texture_manager, 0, sizeof(Model_Texture_Manager));
 
-	memset(&args->model->texture_manager, 0, sizeof(Model_Texture_Manager));
-	/*for(size_t i = 0; i < TEXTURE_AMOUNT; ++i)
-	{
-		model.textures[i].ID = 0;
-		memset(args->model->textures[i].model_texture_paths, 0, MAX_PATH_COUNT);
-	}*/
-	for(size_t i = 0; i < args->model->attrib.num_face_num_verts; ++i)
-	{
-		assert(args->model->attrib.face_num_verts[i] % 3 == 0);
-		for(size_t j = 0; j < (size_t)args->model->attrib.face_num_verts[i]/ 3; ++j)
+		for(size_t i = 0; i < args->model->model_parse_data.tiny_data.attrib.num_face_num_verts; ++i)
 		{
-			float v[3][3];
-			float n[3][3];
-			float c[3];
-
-			float len2;
-
-
-
-			tinyobj_vertex_index_t idx0 = args->model->attrib.faces[face_offset + 3 * j + 0];
-			tinyobj_vertex_index_t idx1 = args->model->attrib.faces[face_offset + 3 * j + 1];
-			tinyobj_vertex_index_t idx2 = args->model->attrib.faces[face_offset + 3 * j + 2];
-			for(size_t k = 0; k < 3; ++k)
+			assert(args->model->model_parse_data.tiny_data.attrib.face_num_verts[i] % 3 == 0);
+			for(size_t j = 0; j < (size_t)args->model->model_parse_data.tiny_data.attrib.face_num_verts[i]/ 3; ++j)
 			{
-				int f0 = idx0.v_idx;
-				int f1 = idx1.v_idx;
-				int f2 = idx2.v_idx;
-				
-				assert(f0 >= 0);
-				assert(f1 >= 0);
-				assert(f2 >= 0);
-				v[0][k] = args->model->attrib.vertices[3 * (size_t)f0 + k];
-				v[1][k] = args->model->attrib.vertices[3 * (size_t)f1 + k];
-				v[2][k] = args->model->attrib.vertices[3 * (size_t)f2 + k];
-				bmin[k] = (v[0][k] < bmin[k]) ? v[0][k] : bmin[k];
-				bmin[k] = (v[1][k] < bmin[k]) ? v[1][k] : bmin[k];
-				bmin[k] = (v[2][k] < bmin[k]) ? v[2][k] : bmin[k];
-				bmax[k] = (v[0][k] > bmax[k]) ? v[0][k] : bmax[k];
-				bmax[k] = (v[1][k] > bmax[k]) ? v[1][k] : bmax[k];
-				bmax[k] = (v[2][k] > bmax[k]) ? v[2][k] : bmax[k];
-			}
+				float v[3][3];
+				float n[3][3];
+				float c[3];
 
-			if(args->model->attrib.num_normals > 0)
-			{
-				int f0 = idx0.vn_idx;
-				int f1 = idx1.vn_idx;
-				int f2 = idx2.vn_idx;
-				if (f0 >= 0 && f1 >= 0 && f2 >= 0) {
-					assert(f0 < (int)args->model->attrib.num_normals);
-					assert(f1 < (int)args->model->attrib.num_normals);
-					assert(f2 < (int)args->model->attrib.num_normals);
-				for (size_t k = 0; k < 3; k++) {
-				  n[0][k] = args->model->attrib.normals[3 * (size_t)f0 + k];
-				  n[1][k] = args->model->attrib.normals[3 * (size_t)f1 + k];
-				  n[2][k] = args->model->attrib.normals[3 * (size_t)f2 + k];
-				}
-			} else { /* normal index is not defined for this face */
-		/* compute geometric normal */
-				calc_norms(n[0], v[0], v[1], v[2]);
-				n[1][0] = n[0][0];
-				n[1][1] = n[0][1];
-				n[1][2] = n[0][2];
-				n[2][0] = n[0][0];
-				n[2][1] = n[0][1];
-				n[2][2] = n[0][2];
-			}
-			} else {
-			  /* compute geometric normal */
-				  calc_norms(n[0], v[0], v[1], v[2]);
-				  n[1][0] = n[0][0];
-				  n[1][1] = n[0][1];
-				  n[1][2] = n[0][2];
-				  n[2][0] = n[0][0];
-				  n[2][1] = n[0][1];
-				  n[2][2] = n[0][2];
-			}
+				float len2;
 
-			Vertex vert;
-			size_t vert_indices[3] = {idx0.vt_idx, idx1.vt_idx, idx2.vt_idx};
-			for (size_t k = 0; k < 3; k++) {
+				tinyobj_vertex_index_t idx0 = args->model->model_parse_data.tiny_data.attrib.faces[face_offset + 3 * j + 0];
+				tinyobj_vertex_index_t idx1 = args->model->model_parse_data.tiny_data.attrib.faces[face_offset + 3 * j + 1];
+				tinyobj_vertex_index_t idx2 = args->model->model_parse_data.tiny_data.attrib.faces[face_offset + 3 * j + 2];
+
+				for(size_t k = 0; k < 3; ++k)
+				{
+					int f0 = idx0.v_idx;
+					int f1 = idx1.v_idx;
+					int f2 = idx2.v_idx;
 					
-			  /*vertex_buffer[(3 * i + k) * stride + 0] = v[k][0];
-			  vertex_buffer[(3 * i + k) * stride + 1] = v[k][1];
-			  vertex_buffer[(3 * i + k) * stride + 2] = v[k][2];
-			  vertex_buffer[(3 * i + k) * stride + 3] = n[k][0];
-			  vertex_buffer[(3 * i + k) * stride + 4] = n[k][1];
-			  vertex_buffer[(3 * i + k) * stride + 5] = n[k][2];*/
-			  vert.position[0] = v[k][0];
-			  vert.position[1] = v[k][1];
-			  vert.position[2] = v[k][2];
-
-			  vert.normals[0] = n[k][0];
-			  vert.normals[1] = n[k][1];
-			  vert.normals[2] = n[k][2];
-
-			  int tex_idx = vert_indices[k];
-			  if(tex_idx >= 0)
-			  {
-				vert.tex_coords[0] = args->model->attrib.texcoords[2 * (size_t)tex_idx + 0];
-				vert.tex_coords[1] = 1.0 - args->model->attrib.texcoords[2 * (size_t)tex_idx + 1];
-				}else{
-
-					vert.tex_coords[0] = 0.0f;
-					vert.tex_coords[1] = 0.0f;
-
+					assert(f0 >= 0);
+					assert(f1 >= 0);
+					assert(f2 >= 0);
+					v[0][k] = args->model->model_parse_data.tiny_data.attrib.vertices[3 * (size_t)f0 + k];
+					v[1][k] = args->model->model_parse_data.tiny_data.attrib.vertices[3 * (size_t)f1 + k];
+					v[2][k] = args->model->model_parse_data.tiny_data.attrib.vertices[3 * (size_t)f2 + k];
+					bmin[k] = (v[0][k] < bmin[k]) ? v[0][k] : bmin[k];
+					bmin[k] = (v[1][k] < bmin[k]) ? v[1][k] : bmin[k];
+					bmin[k] = (v[2][k] < bmin[k]) ? v[2][k] : bmin[k];
+					bmax[k] = (v[0][k] > bmax[k]) ? v[0][k] : bmax[k];
+					bmax[k] = (v[1][k] > bmax[k]) ? v[1][k] : bmax[k];
+					bmax[k] = (v[2][k] > bmax[k]) ? v[2][k] : bmax[k];
 				}
 
+				if(args->model->model_parse_data.tiny_data.attrib.num_normals > 0)
+				{
+					int f0 = idx0.vn_idx;
+					int f1 = idx1.vn_idx;
+					int f2 = idx2.vn_idx;
+					if (f0 >= 0 && f1 >= 0 && f2 >= 0) {
+						assert(f0 < (int)args->model->model_parse_data.tiny_data.attrib.num_normals);
+						assert(f1 < (int)args->model->model_parse_data.tiny_data.attrib.num_normals);
+						assert(f2 < (int)args->model->model_parse_data.tiny_data.attrib.num_normals);
+					for (size_t k = 0; k < 3; k++) {
+					  n[0][k] = args->model->model_parse_data.tiny_data.attrib.normals[3 * (size_t)f0 + k];
+					  n[1][k] = args->model->model_parse_data.tiny_data.attrib.normals[3 * (size_t)f1 + k];
+					  n[2][k] = args->model->model_parse_data.tiny_data.attrib.normals[3 * (size_t)f2 + k];
+					}
+				} else { /* normal index is not defined for this face */
+			/* compute geometric normal */
+					calc_norms(n[0], v[0], v[1], v[2]);
+					n[1][0] = n[0][0];
+					n[1][1] = n[0][1];
+					n[1][2] = n[0][2];
+					n[2][0] = n[0][0];
+					n[2][1] = n[0][1];
+					n[2][2] = n[0][2];
+				}
+				} else {
+				  /* compute geometric normal */
+					  calc_norms(n[0], v[0], v[1], v[2]);
+					  n[1][0] = n[0][0];
+					  n[1][1] = n[0][1];
+					  n[1][2] = n[0][2];
+					  n[2][0] = n[0][0];
+					  n[2][1] = n[0][1];
+					  n[2][2] = n[0][2];
+				}
 
-				 
+				Vertex vert;
+				size_t vert_indices[3] = {idx0.vt_idx, idx1.vt_idx, idx2.vt_idx};
+				for (size_t k = 0; k < 3; k++) {
+						
+				  vert.position[0] = v[k][0];
+				  vert.position[1] = v[k][1];
+				  vert.position[2] = v[k][2];
 
+				  vert.normals[0] = n[k][0];
+				  vert.normals[1] = n[k][1];
+				  vert.normals[2] = n[k][2];
 
-			  /* Set the normal as alternate color */
-			  c[0] = n[k][0];
-			  c[1] = n[k][1];
-			  c[2] = n[k][2];
-			  vert.color[0] = c[0];
-			  vert.color[1] = c[1];
-			  vert.color[2] = c[2];
-			  len2 = c[0] * c[0] + c[1] * c[1] + c[2] * c[2];
-			  if (len2 > 0.0f) {
-				float len = (float)sqrt((double)len2);
+				  int tex_idx = vert_indices[k];
+				  if(tex_idx >= 0)
+				  {
+					vert.tex_coords[0] = args->model->model_parse_data.tiny_data.attrib.texcoords[2 * (size_t)tex_idx + 0];
+					vert.tex_coords[1] = 1.0 - args->model->model_parse_data.tiny_data.attrib.texcoords[2 * (size_t)tex_idx + 1];
+					}else{
 
-				c[0] /= len;
-				c[1] /= len;
-				c[2] /= len;
-			  }
+						vert.tex_coords[0] = 0.0f;
+						vert.tex_coords[1] = 0.0f;
+					}
 
-			  /*vertex_buffer[(3 * i + k) * stride + 6] = (c[0] * 0.5f + 0.5f);
-			  vertex_buffer[(3 * i + k) * stride + 7] = (c[1] * 0.5f + 0.5f);
-			  vertex_buffer[(3 * i + k) * stride + 8] = (c[2] * 0.5f + 0.5f);*/
-			  vert.color[0] = c[0] * 0.5f + 0.5f;
-			  vert.color[1] = c[1] * 0.5f + 0.5f;
-			  vert.color[2] = c[2] * 0.5f + 0.5f;
+				  /* Set the normal as alternate color */
+				  c[0] = n[k][0];
+				  c[1] = n[k][1];
+				  c[2] = n[k][2];
+				  vert.color[0] = c[0];
+				  vert.color[1] = c[1];
+				  vert.color[2] = c[2];
+				  len2 = c[0] * c[0] + c[1] * c[1] + c[2] * c[2];
+				  if (len2 > 0.0f) {
+					float len = (float)sqrt((double)len2);
 
-		  /* now set the color from the material */
-		  if (args->model->attrib.material_ids[i] >= 0) {
-			int matidx = args->model->attrib.material_ids[i];
-			/*vertex_buffer[(3 * i + k) * stride + 9] = materials[matidx].diffuse[0];
-			vertex_buffer[(3 * i + k) * stride + 10] = materials[matidx].diffuse[1];
-			vertex_buffer[(3 * i + k) * stride + 11] = materials[matidx].diffuse[2];*/
-			vert.color[0]= args->model->materials[matidx].diffuse[0];
-			vert.color[1]= args->model->materials[matidx].diffuse[1];
-			vert.color[2]= args->model->materials[matidx].diffuse[2];
-			
-		  } else {
-			/* Just copy the default value */
-			/*vertex_buffer[(3 * i + k) * stride + 9] = vertex_buffer[(3 * i + k) * stride + 6];
-			vertex_buffer[(3 * i + k) * stride + 10] = vertex_buffer[(3 * i + k) * stride + 7];
-			vertex_buffer[(3 * i + k) * stride + 11] = vertex_buffer[(3 * i + k) * stride + 8];*/
-		  }
+					c[0] /= len;
+					c[1] /= len;
+					c[2] /= len;
+				  }
 
-		  vertices_push(&args->model->mesh.vertices, vert);
-		  
+				  vert.color[0] = c[0] * 0.5f + 0.5f;
+				  vert.color[1] = c[1] * 0.5f + 0.5f;
+				  vert.color[2] = c[2] * 0.5f + 0.5f;
 
-
+			  /* now set the color from the material */
+			  if (args->model->model_parse_data.tiny_data.attrib.material_ids[i] >= 0) {
+				int matidx = args->model->model_parse_data.tiny_data.attrib.material_ids[i];
+				vert.color[0]= args->model->model_parse_data.tiny_data.materials[matidx].diffuse[0];
+				vert.color[1]= args->model->model_parse_data.tiny_data.materials[matidx].diffuse[1];
+				vert.color[2]= args->model->model_parse_data.tiny_data.materials[matidx].diffuse[2];
+				
+			  } 
+			  vertices_push(&args->model->mesh.vertices, vert);
+			}
 		}
+			face_offset += (size_t)args->model->model_parse_data.tiny_data.attrib.face_num_verts[i];
+		}
+
+	}else if(args->model->model_parse_data.type == MODEL_PARAM_GLTF)
+	{
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "Setting up model data with GLTF...");
+
+		//NOTE: THIS IS A HACK, I JUST WANT TO MAKE RENDERING WORKIGN WITH A BRUTE FORCE APPROACH, IN THE FUTURE I WILL DO SOMETHING DIFFERENT
+
+	//	cgltf_primitive* primitive = &args->model->model_parse_data.gltf_data.data->meshes[0].primitives[0];
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "GLTF MESH COUNT: %zu", args->model->model_parse_data.gltf_data.data->meshes_count);
+	/*	if(args->model->model_parse_data.gltf_data.data->meshes_count > 0)
+		{
+			u64 mesh_count = args->model->model_parse_data.gltf_data.data->meshes_count;
+			for(u64 idx = 0; idx < mesh_count; ++idx)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "GLTF PRIMITIVE COUNT for each mesh: (%zu,%zu)", idx,
+						 args->model->model_parse_data.gltf_data.data->meshes[idx].primitives_count);
+				u64 primitive_count = args->model->model_parse_data.gltf_data.data->meshes[idx].primitives_count;
+
+				for(u64 j = 0; j < primitive_count; ++j)
+				{
+					cgltf_primitive* primitive = &args->model->model_parse_data.gltf_data.data->meshes[idx].primitives[j];
+					cgltf_accessor* position_accessor = NULL;
+					cgltf_accessor* normal_accessor = NULL;
+					for(u64 k = 0; k < primitive->attributes_count; ++k)
+					{
+						if(primitive->attributes[k].type == cgltf_attribute_type_position)
+						{
+							position_accessor = primitive->attributes[k].data;
+							break;
+						}
+
+					}
+					for(u64 k = 0; k < primitive->attributes_count; ++k)
+					{
+						if(primitive->attributes[k].type == cgltf_attribute_type_normal)
+						{
+							normal_accessor = primitive->attributes[k].data;
+							break;
+						}
+
+					}
+					DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Pointer: %p", position_accessor);
+					if(position_accessor)
+					{
+						if(!args->model->mesh.vertices.vertices)
+						{
+							args->model->mesh.vertices.vertices = calloc(position_accessor->count * mesh_count * primitive_count, sizeof(Vertex));
+						}
+					
+						DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Getting position attrib");
+
+						DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Position accessor count: %zu", position_accessor->count);
+						for(u64 k = 0; k < position_accessor->count; ++k)
+						{
+							cgltf_accessor_read_float(position_accessor, k, args->model->mesh.vertices.vertices[k].position, 3);
+							//args->model->mesh.vertices.vertex_count++;
+						}
+
+						args->model->mesh.vertices.vertex_count += position_accessor->count;
+
+
+
+					}
+
+					if(normal_accessor){
+
+					//	if(!args->model->mesh.vertices.vertices)
+						{
+							args->model->mesh.vertices.vertices = calloc(position_accessor->count * mesh_count * primitive_count, sizeof(Vertex));
+						}
+						args->model->mesh.vertices.capacity += position_accessor->count;
+						if(!args->model->mesh.vertices.vertices)
+						{
+							args->model->mesh.vertices.vertices = calloc(normal_accessor->count * mesh_count * primitive_count, sizeof(Vertex));
+							args->model->mesh.vertices.vertex_count = normal_accessor->count;
+						}
+					
+
+						DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Getting normal attrib");
+
+						DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Normal accessor count: %zu", normal_accessor->count);
+						for(u64 k = 0; k < normal_accessor->count; ++k)
+						{
+							cgltf_accessor_read_float(normal_accessor, k, args->model->mesh.vertices.vertices[k].normals, 3);
+							//args->model->mesh.vertices.vertex_count++;
+						}
+					}else{
+							DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Unable to parse to position accessor, please check file: %s", args->model->filename.string_data);
+					}
+
+										
+				}
+			}
+
+		}*/
+		if (args->model->model_parse_data.gltf_data.data->meshes_count > 0)
+		{
+			u64 mesh_count = args->model->model_parse_data.gltf_data.data->meshes_count;
+			u64 total_vertex_count = 0;
+			for (u64 idx = 0; idx < mesh_count; ++idx)
+			{
+				cgltf_mesh* mesh = &args->model->model_parse_data.gltf_data.data->meshes[idx];
+				for (u64 j = 0; j < mesh->primitives_count; ++j)
+				{
+					cgltf_primitive* primitive = &mesh->primitives[j];
+					if (primitive->indices)
+					{
+						total_vertex_count += primitive->indices->count;
+					}
+					else
+					{
+						for (u64 k = 0; k < primitive->attributes_count; ++k)
+						{
+							if (primitive->attributes[k].type == cgltf_attribute_type_position)
+							{
+								total_vertex_count += primitive->attributes[k].data->count;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			args->model->mesh.vertices.vertices = calloc(total_vertex_count, sizeof(Vertex));
+			args->model->mesh.vertices.vertex_count = 0;
+
+			u64 write_offset = 0;
+			for (u64 idx = 0; idx < mesh_count; ++idx)
+			{
+				cgltf_mesh* mesh = &args->model->model_parse_data.gltf_data.data->meshes[idx];
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "GLTF PRIMITIVE COUNT for each mesh: (%zu,%zu)",
+									  idx, mesh->primitives_count);
+
+				for (u64 j = 0; j < mesh->primitives_count; ++j)
+				{
+					cgltf_primitive* primitive = &mesh->primitives[j];
+
+					cgltf_accessor* position_accessor = NULL;
+					cgltf_accessor* normal_accessor   = NULL;
+					for (u64 k = 0; k < primitive->attributes_count; ++k)
+					{
+						if (primitive->attributes[k].type == cgltf_attribute_type_position)
+							position_accessor = primitive->attributes[k].data;
+						else if (primitive->attributes[k].type == cgltf_attribute_type_normal)
+							normal_accessor = primitive->attributes[k].data;
+					}
+
+					if (!position_accessor)
+					{
+						DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR,
+							"Unable to parse position accessor, please check file: %s",
+							args->model->filename.string_data);
+						continue;
+					}
+
+					cgltf_accessor* index_accessor = primitive->indices;
+					u64 corner_count = index_accessor ? index_accessor->count : position_accessor->count;
+
+					DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG,
+						"Flattening primitive %zu of mesh %zu, corner_count: %zu", j, idx, corner_count);
+
+					for (u64 c = 0; c < corner_count; ++c)
+					{
+						u64 vi = index_accessor ? cgltf_accessor_read_index(index_accessor, c) : c;
+
+						cgltf_accessor_read_float(position_accessor, vi,
+							args->model->mesh.vertices.vertices[write_offset].position, 3);
+
+						if (normal_accessor)
+						{
+							cgltf_accessor_read_float(normal_accessor, vi,
+								args->model->mesh.vertices.vertices[write_offset].normals, 3);
+						}
+
+						write_offset++;
+					}
+				}
+			}
+
+			args->model->mesh.vertices.vertex_count = write_offset;
+		}
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "Successfully parsed gltf model data");
+	//	exit(0);
+
+	/*	cgltf_accessor* position_accessor = NULL;
+		for(u64 idx = 0; idx < primitive->attributes_count; ++idx)
+		{
+			if(primitive->attributes[idx].type == cgltf_attribute_type_position)
+			{
+				position_accessor = primitive->attributes[idx].data;
+				break;
+			}
+			
+		}
+			if(!position_accessor)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Unable to parse to position accessor, please check file: %s", args->model->filename.string_data);
+				exit(0);
+			}
+
+		args->model->mesh.vertices.vertices = calloc(position_accessor->count, sizeof(Vertex));
+		args->model->mesh.vertices.capacity = position_accessor->count;
+
+
+		//unpack attribs
+		//
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "Unpacking model %s attribs with count %zu...", args->model->filename.string_data, primitive->attributes_count);
+		for(u64 idx = 0; idx < primitive->attributes_count; ++idx)
+		{
+			cgltf_attribute* attrib = &primitive->attributes[idx];
+			//Vertex new_vert = {0};
+			if(attrib->type == cgltf_attribute_type_position)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Getting position attrib");
+				for(u64 j = 0; j < attrib->data->count; ++j)
+				{
+					cgltf_accessor_read_float(attrib->data, j, args->model->mesh.vertices.vertices[j].position, 3);
+				}
+
+				//args->model->mesh.vertices.vertex_count++;
+			}else if(attrib->type == cgltf_attribute_type_texcoord)
+			{
+
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Getting texcoord attrib");
+				for(u64 j = 0; j < attrib->data->count; ++j)
+				{
+					cgltf_accessor_read_float(attrib->data, j, args->model->mesh.vertices.vertices[j].tex_coords, 2);
+				}
+
+			//	args->model->mesh.vertices.vertex_count++;
+			}else if(attrib->type == cgltf_attribute_type_normal)
+			{
+
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Getting normal attrib");
+				for(u64 j = 0; j < attrib->data->count; ++j)
+				{
+					cgltf_accessor_read_float(attrib->data, j, args->model->mesh.vertices.vertices[j].normals, 3);
+				}
+
+			//	args->model->mesh.vertices.vertex_count++;
+			}else if(attrib->type == cgltf_attribute_type_color)
+			{
+
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Getting color attrib");
+				for(u64 j = 0; j < attrib->data->count; ++j)
+				{
+					cgltf_accessor_read_float(attrib->data, j, args->model->mesh.vertices.vertices[j].color, 4);
+				}
+
+			}
+
+			//vertices_push(&args->model->mesh.vertices, new_vert);
+		}*/
+
+
+		//args->model->mesh.vertices.vertex_count = position_accessor->count;
+
+
+		/*if(primitive->indices)
+		{
+			args->model->is_indexed = false;
+			args->model->mesh.index_count = primitive->indices->count;
+			args->model->mesh.indices = malloc(sizeof(u32) * primitive->indices->count);
+			args->model->mesh.indices = (u32*)primitive->indices->buffer_view->data;
+
+			cgltf_accessor* iacces = primitive->indices;
+			for(u64 idx = 0; idx < primitive->indices->count; ++idx)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_WARNING, "[%zu] -> %ul", idx, args->model->mesh.indices[idx]);
+			}
+		//	args->model->mesh.
+		}*/
+		//args->model->num_triangles = args->model->mesh.vertices.vertex_count / 3;
+		
+	
+
+
+
+
+
+			
+
+	/*	for(u64 idx = 0; idx < args->model->model_parse_data.gltf_data.data->meshes_count; ++idx)
+		{
+			args->model->num_shapes += args->model->model_parse_data.gltf_data.data->meshes[idx].primitives_count;
+			s64 prim_count = args->model->model_parse_data.gltf_data.data->meshes[idx].primitives_count;
+			cgltf_mesh** mesh = &args->model->model_parse_data.gltf_data.data->meshes;
+			for(u64 j = 0; j < prim_count; ++j)
+			{
+				mesh[idx]->primitives[j].attributes->d
+			}
+		}*/
+
 	}
-		face_offset += (size_t)args->model->attrib.face_num_verts[i];
-	}
-//	tinyobj_attrib_free(&args->model->attrib);
+//	tinyobj_model_parse_data.tiny_data.attrib_free(&args->model->attrib);
 //	tinyobj_shapes_free(args->model->shapes, args->model->num_shapes);
 
 }
@@ -755,238 +1035,192 @@ void model_setup (Model* model, Arena* arena)
 
 	Temp_Arena scratch = temp_arena_scratch_get(NULL, 0, sizeof(Texture) * TEXTURE_CAPACITY);
 	GLuint64* handle_data = arena_push(scratch.arena, sizeof(GLuint64) * TEXTURE_CAPACITY);
-	for(size_t i = 0; i < model->num_materials; ++i)
+	if(model->model_parse_data.type == MODEL_PARAM_TINYOBJ)
 	{
 
-		if(model->materials[i].diffuse_texname)
-		{
-			//push texture
-			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
-			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].diffuse_texname );
-
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_DIFFUSE;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-
-			//inline vs function call
-			//
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].diffuse_texname );
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_DIFFUSE;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
-
-		}
-		if(model->materials[i].alpha_texname)
-		{
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].alpha_texname );
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_ALPHA;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
-
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
-	/*		for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
-			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].alpha_texname);
-
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_ALPHA;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-
-		}
-		if(model->materials[i].ambient_texname)
-		{
-			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
-			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].ambient_texname);
-
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_AMBIENT;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].ambient_texname );
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_AMBIENT;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
-
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
-
-		}
-		if(model->materials[i].displacement_texname)
-		{
-	/*		for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
-			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].displacement_texname );
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_DISPLACEMENT;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].displacement_texname );
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_DISPLACEMENT;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
-
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
-
-		}
-		if(model->materials[i].bump_texname)
+		for(size_t i = 0; i < model->num_materials; ++i)
 		{
 
-		/*	for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			if(model->model_parse_data.tiny_data.materials[i].diffuse_texname)
 			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].bump_texname );
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_BUMP;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].bump_texname );
+				ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].diffuse_texname );
 
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_BUMP;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, TEXTURE_DIFFUSE, false);
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
 
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
+			}
+			if(model->model_parse_data.tiny_data.materials[i].alpha_texname)
+			{
+				ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].alpha_texname );
 
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, TEXTURE_ALPHA,false);
+
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+			}
+			if(model->model_parse_data.tiny_data.materials[i].ambient_texname)
+			{
+		
+				ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].ambient_texname );
+
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D,TEXTURE_AMBIENT, false);
+
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+			}
+			if(model->model_parse_data.tiny_data.materials[i].displacement_texname)
+			{
+
+				ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].displacement_texname );
+
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D,TEXTURE_DISPLACEMENT, false);
+
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+			}
+			if(model->model_parse_data.tiny_data.materials[i].bump_texname)
+			{
+
+				ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].bump_texname );
+
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, TEXTURE_BUMP, false);
+
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+			}
+			if(model->model_parse_data.tiny_data.materials[i].specular_texname)
+			{
+				ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].specular_texname );
+
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, TEXTURE_SPECULAR, false);
+
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+			}
+
+			
+			if(model->model_parse_data.tiny_data.materials[i].specular_highlight_texname)
+			{
+			
+
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, model->model_parse_data.tiny_data.materials[i].specular_highlight_texname );
+
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D,TEXTURE_SPECULAR_HIGHLIGHT, false);
+
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+			}
 
 		}
-		if(model->materials[i].specular_texname)
+	}else if(model->model_parse_data.type == MODEL_PARAM_GLTF)
+	{
+		for(u64 idx = 0; idx < model->model_parse_data.gltf_data.data->meshes[0].primitives_count; ++idx)
 		{
-			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
+			cgltf_material* mat = model->model_parse_data.gltf_data.data->meshes[0].primitives[idx].material;
+			if(!mat) continue;
+
+			DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "mat and texture count: %zu, %zu\n",model->model_parse_data.gltf_data.data->materials_count, model->model_parse_data.gltf_data.data->textures_count);
+			if(mat->has_pbr_metallic_roughness && mat->pbr_metallic_roughness.base_color_texture.texture)
 			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_texname );
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_texname );
 
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_SPECULAR;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Gltf texture name: %s\n",mat->pbr_metallic_roughness.base_color_texture.texture->name);
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, mat->pbr_metallic_roughness.base_color_texture.texture->image->uri);
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, TEXTURE_DIFFUSE, false);
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
 
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
 
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
-		}
+			}
+			if(mat->has_pbr_metallic_roughness && mat->pbr_metallic_roughness.metallic_roughness_texture.texture)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Gltf texture name: %s\n",mat->pbr_metallic_roughness.metallic_roughness_texture.texture->name);
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, mat->pbr_metallic_roughness.metallic_roughness_texture.texture->image->uri);
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D,TEXTURE_SPECULAR, false);
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+
+
+			}
+
+			if(mat->normal_texture.texture)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Gltf texture name: %s\n",mat->normal_texture.texture->name);
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, mat->normal_texture.texture->image->uri);
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D,TEXTURE_NORMAL, false);
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+
+			}
+			if(mat->emissive_texture.texture)
+			{
+				DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_DEBUG, "Gltf texture name: %s\n",mat->emissive_texture.texture->name);
+				model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(scratch.arena, "%s/%s", model->rel_path, mat->emissive_texture.texture->image->uri);
+				Texture_Path path;
+				path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
+				model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D,TEXTURE_EMISSIVE, false);
+				handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
+				model->texture_manager.texture_count++;
+
+
+			}
+
+
 
 		
-		if(model->materials[i].specular_highlight_texname)
-		{
-			/*for(size_t j = 0; j < TEXTURE_CAPACITY; ++j)
-			{
-				if(model->texture_manager.model_textures[j].text.ID == 0)
-				{
-					model->texture_manager.model_textures[j].text.ID = j + 1;
-					model->texture_manager.model_textures[j].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_highlight_texname );
-					model->texture_manager.model_textures[j].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
-					Texture_Path path;
-					path.path = model->texture_manager.model_textures[j].file_path;
-					model->texture_manager.model_textures[j].text = texture_init(path, TEXTURE_2D);
-					model->texture_manager.texture_count++;
-					break;
-				}
-			}*/
-			ASSERT(model->texture_manager.texture_count < TEXTURE_CAPACITY, "Reached maximum textures for models");
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text.ID = model->texture_manager.texture_count + 1;
-			model->texture_manager.model_textures[model->texture_manager.texture_count].file_path = dyl_str_lit_fmt(arena, "%s/%s", model->rel_path, model->materials[i].specular_highlight_texname );
-
-			model->texture_manager.model_textures[model->texture_manager.texture_count].texture_type = TEXTURE_SPECULAR_HIGHLIGHT;
-			Texture_Path path;
-			path.path = model->texture_manager.model_textures[model->texture_manager.texture_count].file_path;
-			//FIX: JUST PUT IN THE TYPE INSTEAD OF TRUE OR FALSE
-			model->texture_manager.model_textures[model->texture_manager.texture_count].text = texture_init(path, TEXTURE_2D, false);
-
-			handle_data[model->texture_manager.texture_count] = model->texture_manager.model_textures[model->texture_manager.texture_count].text.handle;
-			model->texture_manager.texture_count++;
-
+			
 		}
-
 	}
 
 	dyl_profiler_end("model_texture_setup");
 	dyl_profiler_print_func("model_texture_setup");
-   // exit(0);
 	
 	//Tinyobj deinitialization
 	//tinyobj_materials_free(model->materials, model->num_materials);
-
-
-
 
 	//Opengl Commands
 	glGenVertexArrays(1, &model->mesh.m_vao);
@@ -1020,6 +1254,7 @@ void model_setup (Model* model, Arena* arena)
 	glCreateBuffers(1, &model->texture_manager.texture_buffer);
 	glNamedBufferStorage(model->texture_manager.texture_buffer, sizeof(GLuint64) * model->texture_manager.texture_count, (const void *) handle_data, GL_DYNAMIC_STORAGE_BIT);
 	//FIX: SHADER ISSUE
+	
 	temp_arena_scratch_end(scratch);
 	
 
@@ -1330,7 +1565,7 @@ void dyl_batch_renderer_set_camera_pos(Dyl_Batch_Renderer* renderer, vec3* camer
 
 }
 
-//hmmm maybe sort the vertices and render them that way
+//NOTE: (Dylan)hmmm maybe sort the vertices and render them that way
 
 void db_flush(Dyl_Batch_Renderer* renderer)
 {
@@ -1493,17 +1728,13 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 		glDrawElements(GL_TRIANGLES, renderer->quad_count * 6, GL_UNSIGNED_INT, 0);
 	//NOTE: switch between renderer->triangle_count * 3 when rendering triangles
 	
-
-
 	arena_reset(&renderer->str_arena);
 	renderer->object_data.vertices.vertex_count = 0;
 	renderer->quad_count = 0;
 	renderer->is_ui = false;
 	renderer->is_rounded_rect = false;
 	glUseProgram(0);
-//	renderer->object_data.texture_id = 0;
 
-//	glDisable(GL_CULL_FACE);
     glDepthMask(GL_TRUE);
 
 
@@ -1513,9 +1744,6 @@ void db_flush(Dyl_Batch_Renderer* renderer)
 
     glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-
 	//arena_reset(&renderer->batch_arena);
 	
 }
@@ -2448,8 +2676,6 @@ Font_Renderer font_renderer_init(char* path, unsigned int size, mat4* projection
 				fprintf(stderr, "Unable to Load Glyph\n");
 				return (Font_Renderer){0};
 			}
-		//	glGenTextures(1, &new_font_renderer.texture);
-		//	glBindTexture(GL_TEXTURE_2D, new_font_renderer.texture);
 			GLuint tex;
 			glGenTextures(1, &tex);
 		    glBindTexture(GL_TEXTURE_2D, tex);
@@ -2785,7 +3011,7 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 
 				glActiveTexture(GL_TEXTURE0 + texture_unit);
 				texture_bind(&renderer->current_model->texture_manager.model_textures[i].text);
-				switch(renderer->current_model->texture_manager.model_textures[i].texture_type)
+				switch(renderer->current_model->texture_manager.model_textures[i].text.model_texture_type)
 				{
 					case TEXTURE_DIFFUSE:
 						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse", texture_unit);
@@ -2819,13 +3045,19 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 				shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "is_bindless", true);
 			//	shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "texture_index", i);
 
-				switch(renderer->current_model->texture_manager.model_textures[i].texture_type)
+				switch(renderer->current_model->texture_manager.model_textures[i].text.model_texture_type)
 				{
 					case TEXTURE_SPECULAR:
 						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "specular_idx", i);
 					break;
 					case TEXTURE_BUMP:
 						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "bump_idx", i);
+					break;
+					case TEXTURE_EMISSIVE:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "emissive_idx", i);
+					break;
+					case TEXTURE_NORMAL:
+						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "normal_idx", i);
 					break;
 					case TEXTURE_DIFFUSE:
 						shader_on_id_set_int(&renderer->shaders, SHADER_INSTANCED, "diffuse_idx", i);
@@ -2872,9 +3104,13 @@ void dyl_instanced_draw(Dyl_Instanced_Renderer* renderer)
 	glGenQueries(1, &renderer->query_id);
 
 	glBeginQuery(GL_TIME_ELAPSED, renderer->query_id);
-
-
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 3 * renderer->current_model->num_triangles, renderer->instance_count);
+	
+	//if(!renderer->current_model->is_indexed)
+//	{
+		glDrawArraysInstanced(GL_TRIANGLES, 0, renderer->current_model->mesh.vertices.vertex_count, renderer->instance_count);
+//	}else{
+//		glDrawElementsInstanced(GL_TRIANGLES, renderer->current_model->mesh.index_count, GL_UNSIGNED_INT, renderer->current_model->mesh.indices, 0);
+//	}
 
 
 

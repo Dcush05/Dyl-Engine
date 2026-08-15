@@ -42,15 +42,10 @@ typedef struct Engine
 {
 	Entity_Manager manager;
 	Entity_Manager manager2;
-	//Model model;
 	mat4 projection;
-
 	mat4 twod_proj;
 	Platform platform;
 	Editor editor;
-//	Model* t_model;
-
-	//Model* tree_model;
 	Dyl_Window* window;
 	Dyl_Batch_Renderer* batch_renderer;
 	Dyl_Instanced_Renderer* instanced_renderer;
@@ -59,23 +54,24 @@ typedef struct Engine
 	Dyl_Event* event;
 	Dyl_Debug_Text_Manager* debug_text;
 	Camera* scene_camera;
-//	Texture texture;
-	//Texture billboard;
-	//Texture sky_box_texture;
 	u64 frequency;
 	f32 fps;
 	f32 delta_time;
 	f32 gpu_time;
 	bool wireframe_mode;
-
-
 	
 }Engine;
 
 
 
-//CALLBACK FUNCTIONS
-//
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/*NOTE:(Dylan): Call back functions for the programmer to use to communicate how they want their game to run using the api functions that we may provide*/
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 typedef void(*Entity_Scene_Call_Back)(Engine*);
 typedef void(*Frame_Call_Back)(Engine*);
 typedef void(*Event_Call_Back)(Engine*);

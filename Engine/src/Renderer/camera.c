@@ -4,6 +4,21 @@
 #include "cglm/vec3.h"
 #include <stdio.h>
 #include <winuser.h>
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+/*NOTE:(Dylan): Implementation of camera code, however I am stil iffy on this code in the future if I do find a better implementation on how to handle cameras in a game
+ * engine I will most likely use that instead however I am fine with how it is right now
+ * Implemented Functions:
+ *	-camera_init
+ *	-camera_set_position
+ *	-camera_set_velocity
+ *	-camera_set_follow_position
+ *	-camera_update*/
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 

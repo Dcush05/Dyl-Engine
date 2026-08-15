@@ -10,6 +10,7 @@
 #include "Renderer/Shader.h"
 #include "SDL3/SDL_video.h"
 #include "cglm/types.h"
+#include "core/dyl_debug.h"
 #include "renderer/camera.h"
 #include "renderer_engine_interface.h"
 #include "utils/dyl_arena.h"
@@ -34,14 +35,19 @@
 
 Arena global_arena;
 Arena entity_arena;
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/*NOTE:(Dylan): Implentations of the two functions(Initialization, and Run) that are running the engine. For right now I do not plan of decoupling the run function into 
+separate event, update, and render functions.*/
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ENGINE_API void engine_initialize(Engine* engine)
 {
 	#if LOG_CONFIGURATION == DEBUG_LOG
 		DYL_ENGINE_INIT_LOG();
 		dyl_profiler_init();
-		dyl_profiler_add("arena_alloc1");
+//		dyl_profiler_add("arena_alloc1");
 		dyl_profiler_add("window+renderer setup");
 		dyl_profiler_add("event_initialization");
 		dyl_profiler_add("model_texture_setup");
@@ -51,15 +57,12 @@ ENGINE_API void engine_initialize(Engine* engine)
 
 
 	#endif
+	
 	dyl_thread_pool_init(8);
 
 
-	//HANDLING WINDOW TOP BAR
-	
-	dyl_profiler_start("arena_alloc1");			
 	global_arena = arena_alloc(GLOBAL_ARENA_START_SIZE * sizeof(Engine));	
-	dyl_profiler_end("arena_alloc1");			
-	dyl_profiler_print_func("arena_alloc1");
+	
 
 	dyl_profiler_start("window+renderer setup");			
 	engine->window = (Dyl_Window*)arena_push(&global_arena, sizeof(Dyl_Window));
@@ -81,22 +84,9 @@ ENGINE_API void engine_initialize(Engine* engine)
 	dyl_event_initalize(engine->event);
 	dyl_profiler_end("event_initialization");
 	dyl_profiler_print_func("event_initialization");
-
-/*	Texture_Path path;
-	path.path = DYL_STR_LIT("spritesheet.png");
-	printf("%s", path.path.string_data);
-	engine->texture = texture_init(path, TEXTURE_2D);
-	*/
-
-/*	Texture_Path opath;
-	opath.path = "Assets/Oshawott2.png";
-	engine->billboard = texture_init(opath, TEXTURE_2D);*/
 	
 	dyl_profiler_add("entity_arena alloc + init");
-
 	entity_manager_initialize(&engine->manager, engine->batch_renderer, engine->instanced_renderer);
-
-
 	dyl_profiler_end("entity_arena alloc + init");
 	dyl_profiler_print_func("entity_arena alloc + init");
 
@@ -122,7 +112,6 @@ ENGINE_API void engine_initialize(Engine* engine)
 	global_ui_element_initialize(engine->batch_renderer, engine->event, engine->window->client_width, engine->window->client_height);
 	dyl_batch_renderer_set_proj2d(engine->batch_renderer, &engine->twod_proj);
 	dyl_batch_renderer_set_proj3d(engine->batch_renderer, &engine->projection);
-//	asset_create("player_idle", "assets/Oshawott2.png", "assets/", ASSET_TEXTURE);
 
 
 	Asset* texture = global_asset_manager_get_from_name("player_idle");
@@ -152,66 +141,28 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 	dyl_profiler_add("scene_initialization");
 
 	global_scene_manager_initialization(engine->instanced_renderer, engine->batch_renderer);
-
-
 	entity_scene_callback(engine);	
 
-//	entity_initialize_all_models(&engine->manager);
-
-
-	//TESTING CODE FOR SCENES
-
-	//u64 scene1_id = global_scene_manager_add("Scene1", NULL, SCENE_GAMEPLAY);
-	//global_scene_manager_entity_manager_initialize(scene1_id, &engine->manager);
-
-
-
-	//TESTING WITH ANOTHER ENTITY_MANAGER (TEMP)
-	//
-	//
-//	entity_manager_initialize(&engine->manager2, engine->batch_renderer, engine->instanced_renderer);
-
-
-	
-   // entity_sky_box_create(&engine->manager2, "assets/night-skybox/space_rt.png", "assets/night-skybox/space_lf.png", "assets/night-skybox/space_up.png", "assets/night-skybox/space_dn.png", "assets/night-skybox/space_ft.png", "assets/night-skybox/space_bk.png");
-	
-	/*entity_id tree_entity3 = entity_actor_create(&engine->manager2, (vec3f){1.4, 0.5, 0.0}, (vec3f){1.0,1.0,1.0}, (Color){255,255,255,255}, false, true);
-
-	asset_create("tree","assets/Obj/Japanese_Maple/Japanese_Maple.obj", "assets/Obj/Japanese_Maple", ASSET_MODEL_OBJ);
-	entity_set_model_from_id(&engine->manager2, tree_entity3, global_asset_manager_get_from_name("tree"));
-
-	entity_initialize_all_models(&engine->manager2);
-
-
-	u64 scene2_id = global_scene_manager_add("Scene2", NULL, SCENE_GAMEPLAY);
-	global_scene_manager_entity_manager_initialize(scene2_id, &engine->manager2);*/
-
-		
 	dyl_profiler_end("scene_initialization");
 
 	bool test = false;
 
-
 	dyl_profiler_print_func("scene_initialization");
+
 	#ifdef _WIN32
 		LARGE_INTEGER start;
 		LARGE_INTEGER end;
 		QueryPerformanceCounter(&start);
 	#endif
-	int current_scene = 0;
 
+	int current_scene = 0;
 	int frame_count = 0;
 	float fps_timer = 0.0f;
+
 	while(engine->window->is_window_open)
 	{
-	
-			
-		//dyl_batch_renderer_set_proj(engine->batch_renderer,&engine->projection);
-		
-
 		while(dyl_event_poll(engine->event))
 		{
-
 			if(dyl_event_window_dispatch(engine->event, DYL_SYS_QUIT))
 			{
 				engine->window->is_window_open = false;
@@ -232,18 +183,7 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			{
 				shader_programs_all_create(&engine->batch_renderer->shaders);
 				shader_programs_all_create(&engine->instanced_renderer->shaders);
-			}/*else if(dyl_event_key_handle(engine->event, DYLKEY_Z, DYL_KEY_PRESSED))
-			{
-				global_scene_manager_make_active(scene1_id);
-				current_scene = scene1_id;
 			}
-			else if(dyl_event_key_handle(engine->event, DYLKEY_C, DYL_KEY_PRESSED))
-			{
-				global_scene_manager_make_active(scene2_id);
-				current_scene = scene2_id;
-			}*/
-
-
 			if(dyl_event_mouse_movement(engine->event))
 			{
 				printf("Mouse position is: %d, %d\n", engine->event->mouse_pos.x, engine->event->mouse_pos.y);
@@ -251,27 +191,11 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			if(event_callback)
 				event_callback(engine);
 
-			//camera_input(engine->scene_camera, engine->event);
 			dyl_debug_entity_select(&global_arena, &engine->manager, engine->event);
 			dyl_event_end(engine->event);
 
 		}
-	/*	dyl_batch_renderer_set_view(engine->batch_renderer, &engine->scene_camera->view);
-		dyl_batch_renderer_set_camera_pos(engine->batch_renderer, &engine->scene_camera->camera_pos);
-	    dyl_instanced_renderer_set_view(engine->manager.instanced_renderer, &engine->scene_camera->view);
-	    dyl_instanced_renderer_set_camera_pos(engine->manager.instanced_renderer, &engine->scene_camera->camera_pos);*/
 
-	//	dyl_instanced_renderer_set_view(engine->manager2.instanced_renderer, &engine->scene_camera->view);
-	  //  dyl_instanced_renderer_set_camera_pos(engine->manager2.instanced_renderer, &engine->scene_camera->camera_pos);
-
-
-	    //dyl_instanced_renderer_set_view(engine->test_instanced_renderer, &engine->scene_camera->view);
-
-
-	
-
-
-		//camera_update(engine->scene_camera, engine->delta_time);
 		window_start(engine->window);
 
 		dyl_profiler_start("frame_callback");
@@ -299,36 +223,15 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 		dyl_debug_text_push(gpu_time_txt.string_data);
 
 
-		//	entity_manager_render(&engine->manager);
-			//Editor UI rendering
 				
 			
-		//
-		//
-		  
-		//	global_scene_manager_render_by_id(current_scene);
 			
-		editor_events(&engine->editor);	
-		
-			
+		//editor_events(&engine->editor);	
 		frame_callback(engine);
 		editor_construct(&engine->editor);
-	//		engine->batch_renderer->current_mode = MODE_CUBEMAP;
-		//	db_flush(engine->	Dyl_Str ui_text;
-				//		engine->batch_renderer->current_mode = MODE_RECT;
 		dyl_debug_text_render(engine->font_renderer);
 		dyl_debug_entity_render(engine->font_renderer);
 		db_flush(engine->batch_renderer);
-
-
-			
-
-
-
-
-
-
-		
 
 		#ifdef _WIN32
 			QueryPerformanceCounter(&end);
@@ -344,7 +247,6 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 			}
 		#endif
 
-
 		window_end(engine->window);
 
 		dyl_profiler_end("frame_callback");
@@ -355,7 +257,13 @@ ENGINE_API void engine_run(Engine* engine, Entity_Scene_Call_Back entity_scene_c
 }
 
 
-//-------RENDERER ENGINE INTERFACE API IMPLEMENTATION-------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/*NOTE:(Dylan): Basic draw api functions to just rendering shapes on the screen without adding tot he entity manager, as of right now it is dead code*/
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 ENGINE_RENDERER_API void _draw_shape2D(Dyl_Batch_Renderer* renderer, Shape_Primitive_Type type, Shape_Params params)
 {
 	

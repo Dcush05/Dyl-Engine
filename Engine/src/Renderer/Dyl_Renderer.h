@@ -13,6 +13,8 @@
 #include "noise.h"
 #include "stb_image.h"
 #include "tinyobj_loader_c.h"
+#include "cgltf.h"
+
 
 #include FT_FREETYPE_H
 #define MAX_SHADERS 10
@@ -82,6 +84,25 @@ typedef union{
 	    Dyl_Str face_paths[MAX_CUBE_MAP_FACES];
 }Texture_Path;
 
+typedef enum
+{
+	
+	TEXTURE_NIL,
+	TEXTURE_BASE_COLOR,
+	TEXTURE_NORMAL,
+	TEXTURE_EMISSIVE,
+	TEXTURE_DIFFUSE,
+	TEXTURE_ALPHA,
+	TEXTURE_SPECULAR,
+	TEXTURE_SPECULAR_HIGHLIGHT,
+	TEXTURE_AMBIENT,
+	TEXTURE_BUMP,
+	TEXTURE_DISPLACEMENT,
+	TEXTURE_TYPE_AMOUNT,
+}Model_Texture_Type;
+
+
+
 typedef struct
 {
 	
@@ -90,13 +111,14 @@ typedef struct
 	unsigned char* data;
 	int width, height, nrChannels;
 	Texture_Type texture_type;
+	Model_Texture_Type model_texture_type;
 	Texture_Bind_Status texture_bind;
 	GLuint ID; //stores texture data
 	
 
 }Texture;
 
-Texture texture_init(Texture_Path path, Texture_Type type, bool is_binded);
+Texture texture_init(Texture_Path path, Texture_Type type, Model_Texture_Type model_texture_type,bool is_binded);
 void generate(Texture* texture);
 void texture_bind(Texture* texture);
 void texture_free(Texture* texture);
@@ -118,6 +140,7 @@ typedef struct
 	vec3 size;
 	vec2 tex_coords;
 	float rotation;
+
 
 }Vertex;
 
@@ -143,7 +166,10 @@ typedef struct
 {
 	Vertex_Data vertices;
 	Texture texture;
-	u32 indices[6]; //setting up rectangle for now
+	//
+
+	u32* indices; //setting up rectangle for now
+	u64 index_count;
 	Mesh_Type type;
 	u32 m_vao;
 	u32 m_vbo;
@@ -161,25 +187,12 @@ void mesh_initialize_render_data(Mesh* mesh);
 //shapes / objects
 
 
-typedef enum
-{
-	TEXTURE_DIFFUSE = 0,
-	TEXTURE_ALPHA,
-	TEXTURE_SPECULAR,
-	TEXTURE_SPECULAR_HIGHLIGHT,
-	TEXTURE_AMBIENT,
-	TEXTURE_BUMP,
-	TEXTURE_DISPLACEMENT,
-	TEXTURE_TYPE_AMOUNT,
-}Model_Texture_Type;
-
 #define TEXTURE_CAPACITY 64
 typedef struct
 {
 	
 	Texture text;
 	Dyl_Str file_path;
-	Model_Texture_Type texture_type;
 
 }Model_Texture;
 
@@ -201,17 +214,55 @@ typedef struct
 }model_light_data;
 
 
+typedef enum
+{
+	MODEL_PARAM_TINYOBJ,
+	MODEL_PARAM_GLTF
+}Model_Param_Type;
+
+typedef struct
+{
+
+	tinyobj_attrib_t attrib;
+	tinyobj_shape_t* shapes;
+	tinyobj_material_t* materials;
+}Tiny_Data_Parameters;
+
+
+typedef struct
+{
+	cgltf_data* data;
+
+}Gltf_Data_Parameters;
+
+
+typedef struct
+{
+	Model_Param_Type type;
+	union{
+
+		Tiny_Data_Parameters tiny_data;
+		Gltf_Data_Parameters gltf_data;
+	};
+
+}Model_Parse_Data_Parameters;
+
+
+
+
+
 typedef struct 
 {
 	
 	Model_Texture_Manager texture_manager;
-	tinyobj_attrib_t attrib;
+	//tinyobj_attrib_t attrib;
+	Model_Parse_Data_Parameters model_parse_data;
 	Mesh mesh;
 	Shader shader;
 	Dyl_Str filename;
 	model_light_data light_data;
-	tinyobj_shape_t* shapes;
-	tinyobj_material_t* materials;
+	//tinyobj_shape_t* shapes;
+	//tinyobj_material_t* materials;
 	char* rel_path;
 	u64 id;
 	size_d num_triangles;
@@ -221,6 +272,7 @@ typedef struct
 	Model_Texture_Type mtt;
 	bool is_selected; //NOTE: This is for the editor, so that we can outline selected objects
 	bool has_texture;
+	bool is_indexed;
 	
 }Model;
 

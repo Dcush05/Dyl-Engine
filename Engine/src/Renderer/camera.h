@@ -40,13 +40,7 @@ typedef struct
 	float fov;
 	float sense;
 	Camera_Type type;
-
 	int camera_speed;
-	/*bool move_forward;
-	bool move_backward;
-	bool move_left;
-	bool move_right;
-	bool move_up;*/
 	u16 move_flags;
 	bool first_mouse;
 	bool rel_mouse;
@@ -54,10 +48,12 @@ typedef struct
 }Camera;
 
 void camera_init(Camera* camera, vec3 pos, Camera_Type type,  bool relative_mouse, float window_width, float window_height);
-
 void camera_input(Camera* camera, Dyl_Event* event);
 void camera_set_position(Camera* camera, vec3 pos);
-
 void camera_set_follow_position(Camera* camera, vec3 pos);
 void camera_update(Camera* camera, float dt); //dt??
+
+
+
+
 #endif

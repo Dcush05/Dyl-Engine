@@ -79,10 +79,12 @@ Dyl_Thread dyl_thread_create(const char* thread_name)
 	new_thread.thread_name = DYL_STR_LIT(thread_name);
 
 	#ifdef _WIN32
-		printf("Creatiing windows thread");
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_INFO, "Creating windows thread");
 	
 	#else
-		printf("Not supported by other platforms");
+		//printf("Not supported by other platforms");
+		DYL_ENGINE_PRINT_LOG(DYL_ENGINE_LOG_ERROR, "Not supported by other platforms");
+		exit(0);
 	#endif
 
 	return new_thread;

@@ -25,6 +25,9 @@ uniform int alpha_idx;
 uniform int displacement_idx;
 uniform int specular_highlight_idx;
 
+uniform int emissive_idx;
+uniform int normal_idx;
+
 
 uniform bool is_bindless;
 
@@ -83,8 +86,8 @@ void main()
 			vec3 N = normalize(o_normals);
 			if(bump_idx >= 0)
 			{
-
-				vec3 normal_tex = texture(textures[bump_idx], o_tex_coords).rgb;
+				//Testing using normal instead of bump in this case
+				vec3 normal_tex = texture(textures[normal_idx], o_tex_coords).rgb;
 				N = normalize(N + normal_tex * 0.5);
 			}
 

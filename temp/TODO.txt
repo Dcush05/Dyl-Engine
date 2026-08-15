@@ -54,8 +54,10 @@
 		different scenes
 		each scene can have a different screen??
 
+	Better Camera System
 	Editor Ui implementation
-
+	Refactor so our code has better taste + PROPER COMMENTS
+	GLTF AND/OR FBX parser(I have decided on GLTF for now)
 
 	
 	
@@ -63,14 +65,12 @@
 
 
 #TODO LIST:	
-	Better Camera System
-	Refactor so our code has better taste + PROPER COMMENTS
-	GLTF AND/OR FBX parser
-	DOCUMENT ENGINE API FUNCTION
 	Physics system
 	Particle system
 	Serialization
 	FLUSH OUT ENGINE API FUNCTIONALITY / GENERAL PIPELINE
+	DOCUMENT ENGINE API FUNCTION
+
 	Optimize bindless texture initialization (multithreading shared resources on different opengl context on each thread)
 	MEMORY PROFILE PROGRAM AND REMOVE ANY END OF RUNTIME LEAKS
 	Application hot reloading
@@ -115,3 +115,6 @@ PLEASE USE YOUR DEBUG FUNCTIONS MORE
 -I would like to not update camera movement if my mouse is within the bounds of the editor ui
 
 -Camera is more integrated with entity setup will later add better functionality
+
+
+8/15/26 - GLTF Parser is working need to add more functionality to it tho
